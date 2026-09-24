@@ -1,0 +1,759 @@
+/* ================================================= */
+/* SỔ TAY AI & NOTEBOOKLM ASSISTANT (NOTEBOOK CSS)   */
+/* ULTRA-PREMIUM MINIMALIST + HI-TECH REFINED DESIGN */
+/* ================================================= */
+
+.notebook-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ================================================= */
+/* 1. HEADER BANNER & TELEMETRY                      */
+/* ================================================= */
+.nb-header-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.nb-header-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+}
+
+.nb-title-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.nb-icon-badge {
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(0, 255, 157, 0.05));
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 10px;
+    box-shadow: 0 0 15px var(--cyan-dim);
+}
+
+.nb-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-subtitle {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.nb-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ================================================= */
+/* 2. QUOTA & RPD TELEMETRY HUD                      */
+/* ================================================= */
+.nb-quota-hud {
+    background: rgba(10, 14, 23, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.nb-quota-hud::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+.nb-quota-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.nb-quota-metric {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.nb-quota-label {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.nb-quota-val {
+    color: #fff;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-quota-progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nb-quota-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00f0ff, #00ff9d);
+    border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.nb-quota-progress-fill.warning {
+    background: linear-gradient(90deg, #ffb400, #ff8800);
+    box-shadow: 0 0 10px rgba(255, 180, 0, 0.5);
+}
+
+.nb-quota-progress-fill.danger {
+    background: linear-gradient(90deg, #ff3366, #ff0044);
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+}
+
+/* ================================================= */
+/* 3. TWO-COLUMN LAYOUT                              */
+/* ================================================= */
+.nb-layout-grid {
+    display: grid;
+    grid-template-columns: 390px 1fr;
+    gap: 18px;
+    align-items: stretch;
+}
+
+@media (max-width: 992px) {
+    .nb-layout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Column Panel Base */
+.nb-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    transition: border-color 0.2s ease;
+}
+
+.nb-panel:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.nb-panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.nb-panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ================================================= */
+/* 4. LEFT: DOCUMENT LIBRARY                         */
+/* ================================================= */
+.nb-doc-tools {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.nb-search-input {
+    width: 100%;
+    background: rgba(4, 7, 13, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-size: 12.5px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.nb-search-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan-dim);
+    background: rgba(5, 10, 20, 0.95);
+}
+
+.nb-tags-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.nb-tag-chip {
+    font-size: 11px;
+    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-tag-chip:hover {
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.nb-tag-chip.active {
+    background: var(--cyan-dim);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.nb-doc-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 560px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nb-doc-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.nb-doc-card:hover {
+    border-color: var(--border-hover);
+    background: rgba(255, 255, 255, 0.04);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.nb-doc-card.active {
+    border-color: var(--cyan);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(0, 255, 157, 0.03));
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.15);
+}
+
+.nb-doc-card-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.nb-doc-card-preview {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.nb-doc-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-doc-card-badge {
+    padding: 2px 8px;
+    background: rgba(0, 255, 157, 0.08);
+    border: 1px solid rgba(0, 255, 157, 0.25);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ================================================= */
+/* 5. RIGHT: AI CHAT & RAG ASSISTANT                 */
+/* ================================================= */
+.nb-chat-context-bar {
+    padding: 10px 18px;
+    background: rgba(0, 240, 255, 0.03);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.nb-quick-prompts {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.nb-prompt-chip {
+    font-size: 11.5px;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-prompt-chip:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.nb-chat-messages {
+    flex: 1;
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: radial-gradient(circle at 80% 20%, rgba(0, 240, 255, 0.02) 0%, transparent 60%);
+}
+
+.nb-msg {
+    display: flex;
+    gap: 12px;
+    max-width: 88%;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.nb-msg-user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.nb-msg-ai {
+    align-self: flex-start;
+}
+
+.nb-msg-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.nb-msg-user .nb-msg-avatar {
+    background: var(--purple-dim);
+    border: 1px solid var(--purple);
+}
+
+.nb-msg-ai .nb-msg-avatar {
+    background: var(--cyan-dim);
+    border: 1px solid var(--cyan);
+}
+
+.nb-msg-bubble {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nb-msg-user .nb-msg-bubble {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(0, 240, 255, 0.04));
+    border-color: rgba(0, 240, 255, 0.3);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.nb-msg-ai .nb-msg-bubble {
+    border-bottom-left-radius: 4px;
+}
+
+.nb-msg-bubble pre {
+    background: #030509;
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin: 10px 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.nb-msg-bubble code {
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    font-size: 12px;
+}
+
+.nb-citation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 8px;
+    background: rgba(0, 255, 157, 0.08);
+    border: 1px solid rgba(0, 255, 157, 0.25);
+    color: var(--accent);
+    border-radius: 6px;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+}
+
+/* ================================================= */
+/* 6. CHAT INPUT BAR                                 */
+/* ================================================= */
+.nb-chat-input-bar {
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    background: rgba(4, 7, 13, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nb-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.nb-chat-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 16px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    resize: none;
+    height: 46px;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.nb-chat-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 14px var(--cyan-dim);
+    background: rgba(4, 8, 16, 0.9);
+}
+
+.nb-btn-send {
+    background: var(--cyan);
+    color: #040810;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    padding: 0 18px;
+    height: 46px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+}
+
+.nb-btn-send:hover {
+    background: #4df4ff;
+    box-shadow: 0 0 18px var(--cyan-glow);
+    transform: translateY(-1px);
+}
+
+.nb-btn-attach {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    height: 46px;
+    padding: 0 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nb-btn-attach:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: var(--cyan-dim);
+}
+
+.nb-attachment-preview-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #fff;
+    margin-bottom: 4px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.nb-badge-native-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 51, 102, 0.15);
+    border: 1px solid rgba(255, 51, 102, 0.35);
+    color: #ff6685;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-btn-send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.nb-input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ================================================= */
+/* 7. MODALS                                         */
+/* ================================================= */
+.nb-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(3, 5, 10, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.nb-modal-box {
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nb-modal-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.nb-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-modal-body {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.nb-modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.nb-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nb-form-label {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.nb-form-control {
+    background: #030509;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.nb-form-control:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan-dim);
+}
+
+.nb-notice-box {
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.55;
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge AI & Embedded Hub - Mr. Thai</title>
+
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#070b14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Edge%20AI%20%26%20Embedded%20Hub%22%2C%22short_name%22%3A%22EdgeAIHub%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b14%22%2C%22theme_color%22%3A%22%23070b14%22%7D">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- PDF.js Engine for Client-side PDF Reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Modular CSS Stylesheets -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/learning.css">
+    <link rel="stylesheet" href="css/simulator.css">
+    <link rel="stylesheet" href="css/practice.css">
+    <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="css/cheatsheet.css">
+    <link rel="stylesheet" href="css/interview.css">
+    <link rel="stylesheet" href="css/notebook.css">
+    <link rel="stylesheet" href="css/projects.css">
+    <link rel="stylesheet" href="css/hexmem.css">
+</head>
+
+<body>
+<div class="container">
+        <!-- Main App Header -->
+        <header>
+            <div class="header-left">
+                <div class="brand-hud">
+                    <div class="hud-logo">⚡</div>
+                    <div class="brand-title-wrap">
+                        <div class="brand-name">
+                            <span>EDGE AI // HUB</span>
+                            <span class="pulse-dot"></span>
+                            <span class="badge badge-gold" id="header-xp-badge">0 XP</span>
+                        </div>
+                        <div class="brand-telemetry">SYSTEM ONLINE • ESP32-S3 CORE • MR. THAI</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <!-- Pomodoro Capsule -->
+                <div class="pomodoro-box" id="pomodoro-widget" title="Kỹ sư Focus Timer (25/5)">
+                    <span class="pomo-time-text" id="pomo-timer-text">25:00</span>
+                    <span class="pomo-mode-badge pomo-mode-work" id="pomo-badge">FOCUS</span>
+                    <button class="pomo-btn-icon" id="pomo-btn-play" onclick="togglePomodoro()" title="Bắt đầu/Tạm dừng">▶</button>
+                    <button class="pomo-btn-icon" onclick="resetPomodoro()" title="Đặt lại">↺</button>
+                    <button class="pomo-btn-icon" onclick="switchPomodoroMode()" title="Chuyển chế độ">☕</button>
+                </div>
+
+                <!-- CheatSheet Drawer Button -->
+                <button class="btn btn-secondary" onclick="openCheatSheet()" title="Tra cứu nhanh thanh ghi, bản đồ bộ nhớ & APIs">
+                    📖 CheatSheet
+                </button>
+
+                <!-- Backup & Restore Buttons -->
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-secondary" onclick="exportBackupData()" title="Tải xuống file JSON sao lưu">
+                        📥 Lưu
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('restore-file-input').click()" title="Nạp file JSON phục hồi">
+                        📤 Nạp
+                    </button>
+                </div>
+                <input type="file" id="restore-file-input" style="display: none;" accept=".json" onchange="handleRestoreFile(event)">
+                
+                <button class="btn btn-secondary" id="btn-install-pwa" style="display: none;" onclick="installPwaApp()">
+                    💻 App
+                </button>
+
+                <!-- English Portal Button -->
+                <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="btn btn-english" title="Mở trang Tiếng Anh Ra Trường">
+                    🇬🇧 Tiếng Anh ↗
+                </a>
+            </div>
+        </header>
+
+        <!-- Minimalist Hi-Tech Navigation Dock -->
+        <nav class="tab-nav">
+            <button class="tab-btn active active-menu" id="tab-menu" onclick="switchTab('menu')">
+                <span>🧭 Tổng Quan</span>
+            </button>
+            <button class="tab-btn" id="tab-simulator" onclick="switchTab('simulator')">
+                <span>⚡ Lab & Sim</span>
+            </button>
+            <button class="tab-btn" id="tab-learning" onclick="switchTab('learning')">
+                <span>🗺️ Lộ Trình</span>
+                <span class="tab-badge" id="tab-learning-count">0/24</span>
+            </button>
+            <button class="tab-btn" id="tab-practice" onclick="switchTab('practice')">
+                <span>💻 Code C</span>
+                <span class="tab-badge tab-badge-gold" id="tab-practice-count">0/72</span>
+            </button>
+            <button class="tab-btn" id="tab-projects" onclick="switchTab('projects')">
+                <span>🏆 Dự Án</span>
+                <span class="tab-badge tab-badge-gold" id="tab-projects-count">0/6</span>
+            </button>
+            <button class="tab-btn" id="tab-interview" onclick="switchTab('interview')">
+                <span>🎯 Phỏng Vấn</span>
+                <span class="tab-badge tab-badge-gold" id="quiz-score-badge">0/8</span>
+            </button>
+            <button class="tab-btn" id="tab-notebook" onclick="switchTab('notebook')">
+                <span>📚 Sổ Tay AI</span>
+                <span class="tab-badge" id="tab-notebook-count">4 Doc</span>
+            </button>
+            <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
+                <span>👤 Kỹ Sư Thai</span>
+            </button>
+        </nav>
+
+        <!-- ============================================== -->
+        <!-- VIEW 0: GIAO DIỆN MENU RIÊNG (WELCOME MR. THAI)-->
+        <!-- ============================================== -->
+        <div id="view-menu">
+            <div class="menu-view-container">
+                <div class="menu-hero-center">
+                    
+                    <!-- Top Crown Badge -->
+                    <div class="menu-crown-badge">
+                        <span>🤖 EDGE AI & TINYML SYSTEM ARCHITECT • ESP32-S3 PORTAL</span>
+                    </div>
+
+                    <!-- Welcome Mr. Thai Heading -->
+                    <h1 class="welcome-title">
+                        Welcome, <span class="gradient-thai">Mr. Thai</span>
+                    </h1>
+
+                    <!-- Motivational Quote Card -->
+                    <div class="quote-card">
+                        <div class="quote-text" id="motivational-quote-text">
+                            "Con người không được sinh ra để dành cho thất bại. Một người có thể bị hủy diệt, nhưng không bao giờ bị đánh bại."
+                        </div>
+                        <div class="quote-footer">
+                            <div class="quote-author" id="motivational-quote-author">
+                                <span>✍️ Ernest Hemingway</span>
+                                <span class="quote-work">— Ông già và biển cả (The Old Man and the Sea)</span>
+                            </div>
+                            <button class="btn-refresh-quote" onclick="changeRandomQuote()" title="Đổi danh ngôn ngẫu nhiên">
+                                🎲 Đổi danh ngôn
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ================================================= -->
+                    <!-- HỆ THỐNG QUYẾT ĐỊNH HÔM NAY SẼ HỌC GÌ? (FOCUS PLAN)-->
+                    <!-- ================================================= -->
+                    <div class="decision-section">
+                        <div class="decision-card">
+                            <div class="decision-header">
+                                <div class="decision-header-title">
+                                    <span style="font-size: 22px;">🎯</span>
+                                    <div>
+                                        <h2>Hôm Nay Mr. Thai Sẽ Học Gì?</h2>
+                                        <div style="font-size: 12px; color: var(--text-muted);" id="decision-date-label">
+                                            Kế hoạch cân bằng: Lộ trình Edge AI + Luyện Code + Tiếng Anh tốt nghiệp
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Thời lượng lựa chọn -->
+                                <div class="decision-duration-modes">
+                                    <button class="mode-btn" id="mode-btn-30" onclick="setDecisionDuration(30)">⚡ 30 phút</button>
+                                    <button class="mode-btn active" id="mode-btn-60" onclick="setDecisionDuration(60)">🔥 60 phút</button>
+                                    <button class="mode-btn" id="mode-btn-120" onclick="setDecisionDuration(120)">🚀 120 phút</button>
+                                </div>
+                            </div>
+
+                            <!-- Danh sách mục tiêu hôm nay -->
+                            <div class="decision-tasks-list" id="decision-tasks-container">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+
+                            <div class="decision-footer">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span id="streak-counter" style="color: var(--gold); font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+                                        🔥 Chuỗi học: 1 ngày liên tục
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="generateDailyDecision(true)">
+                                        🎲 Đổi kế hoạch khác
+                                    </button>
+                                    <button class="btn btn-accent" style="font-size: 12px; padding: 6px 14px;" onclick="completeDailyGoals()">
+                                        ✓ Hoàn thành mục tiêu hôm nay
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 Entrance Portal Cards -->
+                    <div class="portal-grid">
+                        
+                        <!-- Portal 1: Roadmap & Notebook -->
+                        <div class="portal-card" onclick="switchTab('learning')">
+                            <div>
+                                <div class="portal-icon">📚</div>
+                                <div class="portal-card-title">Lộ Trình Edge AI (6 Bước)</div>
+                                <div class="portal-card-desc">
+                                    C & Bộ nhớ → Timer & Ngắt → Cảm biến → Đa nhiệm → Network/OTA → AI Model.
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span id="portal-roadmap-stat">0/24 Hoàn thành</span>
+                                <span>Mở →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal: Virtual Lab Simulator -->
+                        <div class="portal-card" onclick="switchTab('simulator')">
+                            <div>
+                                <div class="portal-icon">🔬</div>
+                                <div class="portal-card-title">Phòng Lab Ảo & Simulator</div>
+                                <div class="portal-card-desc">
+                                    Mô phỏng Tensor Arena, tính toán SRAM vi điều khiển, phổ FFT & Đa nhiệm FreeRTOS.
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span style="color: #c084fc;">3 Mô hình mô phỏng</span>
+                                <span>Mở Lab →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal 2: CodeLearn Practice -->
+                        <div class="portal-card" onclick="switchTab('practice')">
+                            <div>
+                                <div class="portal-icon">💻</div>
+                                <div class="portal-card-title">Đấu Trường Code C & AI</div>
+                                <div class="portal-card-desc">
+                                    Luyện 72 bài toán thuật toán nhúng & tiền xử lý tín hiệu AI với Test Runner (12 bài/module).
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span id="portal-code-stat">0/72 Bài • 0 XP</span>
+                                <span>Vào giải →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal: Capstone Projects (Kiểm Tra Thành Tựu) -->
+                        <div class="portal-card" onclick="switchTab('projects')" style="border-color: rgba(251, 191, 36, 0.45); background: linear-gradient(145deg, rgba(16, 24, 40, 0.95), rgba(251, 191, 36, 0.05));">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);">🏆</div>
+                                <div class="portal-card-title" style="color: #fbbf24;">Dự Án Nghiệm Thu Thành Tựu</div>
+                                <div class="portal-card-desc">
+                                    6 Đồ án Capstone kiểm tra toàn diện: Ring Buffer Flash, DSP IMU, RTOS Kép, Edge IoT OTA, TinyML KWS & PDM Audio.
+                                </div>
+                            </div>
+                            <div class="portal-card-action" style="color: #fbbf24;">
+                                <span id="portal-projects-stat">0/6 Dự Án Hoàn Thành</span>
+                                <span>Thực Hiện →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal 3: Profile & Portfolio -->
+                        <div class="portal-card" onclick="switchTab('profile')">
+                            <div>
+                                <div class="portal-icon">🤖</div>
+                                <div class="portal-card-title">Hồ Sơ Năng Lực Edge AI</div>
+                                <div class="portal-card-desc">
+                                    Ma trận 24 kỹ năng TinyML thực chiến và hồ sơ CV tự động sinh.
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span id="portal-rank-stat">LV.1 Novice C</span>
+                                <span>Xem →</span>
+                            </div>
+                        </div>
+
+                                                <!-- Portal: Interview Prep Arena -->
+                        <div class="portal-card" onclick="switchTab('interview')" style="border-color: rgba(251, 191, 36, 0.4);">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.35);">🏆</div>
+                                <div class="portal-card-title" style="color: var(--gold);">Đấu Trường Phỏng Vấn</div>
+                                <div class="portal-card-desc">
+                                    Ngân hàng 25+ câu hỏi tuyển dụng kỹ sư nhúng & TinyML chuẩn bị tốt nghiệp ra trường.
+                                </div>
+                            </div>
+                            <div class="portal-card-action" style="color: var(--gold);">
+                                <span>25 Câu Tuyển Dụng</span>
+                                <span>Vào Thi →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal: Sổ Tay AI & NotebookLM -->
+                        <div class="portal-card" onclick="switchTab('notebook')" style="border-color: rgba(0, 240, 255, 0.4);">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.35);">📓</div>
+                                <div class="portal-card-title" style="color: var(--cyan);">Sổ Tay AI (NotebookLM & Gemini)</div>
+                                <div class="portal-card-desc">
+                                    Nhập ghi chú từ NotebookLM, tra cứu tài liệu ESP32/TinyML và hỏi đáp trực tiếp bằng Gemini 2.5 Flash RAG.
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span style="color: var(--accent);">Gemini RAG ⚡</span>
+                                <span>Mở Sổ Tay →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal 4: TIENGANHRATRUONG.COM DASHBOARD -->
+                        <div class="portal-card portal-card-english" onclick="openTiengAnhRaTruong()">
+                            <div>
+                                <div class="portal-icon portal-icon-english">🇬🇧</div>
+                                <div class="portal-card-title" style="color: #60a5fa;">Tiếng Anh Ra Trường</div>
+                                <div class="portal-card-desc">
+                                    Luyện thi chứng chỉ ngoại ngữ chuẩn đầu ra & đọc hiểu tài liệu Datasheet nhúng.
+                                </div>
+                            </div>
+                            <div class="portal-card-action">
+                                <span>tienganhratruong.com</span>
+                                <span>Mở ngay ↗</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 1: LỘ TRÌNH EDGE AI 6 BƯỚC & SỔ TAY GHI CHÚ-->
+        <!-- ============================================== -->
+        
+        <!-- ============================================== -->
+        <!-- VIEW: PHÒNG LAB ẢO & MÔ PHỎNG PHẦN CỨNG        -->
+        <!-- ============================================== -->
+        <div id="view-simulator" style="display: none;">
+            <div class="simulator-grid">
+                
+                <!-- Virtual Lab Cockpit Header & Real-time Telemetry -->
+                <div class="sim-cockpit-banner">
+                    <div class="sim-cockpit-top">
+                        <div>
+                            <div class="sim-cockpit-tag">
+                                <span>🔬 EMBEDDED SYSTEM SIMULATOR</span>
+                                <span class="pulse-dot"></span>
+                                <span>VIRTUAL HARDWARE COCKPIT</span>
+                            </div>
+                            <h2 class="sim-cockpit-title">
+                                Phòng Thí Nghiệm & Mô Phỏng Phần Cứng Edge AI
+                            </h2>
+                            <p class="sim-cockpit-desc">
+                                Môi trường mô phỏng trực quan 4 trụ cột kỹ thuật phần cứng nhúng: Cấp phát Tensor Arena trong SRAM, Tiền xử lý tín hiệu DSP & Phổ FFT, Lập lịch FreeRTOS Đa nhân, và Trình soi ô nhớ Hex Memory / Stack Frame.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px;" onclick="copyCurrentSimulatorCode()">
+                                📋 Sao Chép Code C Mô Phỏng
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry Row -->
+                    <div class="sim-telemetry-row">
+                        <div class="sim-telemetry-item">
+                            <span class="sim-telem-lbl">Chip Đang Chọn:</span>
+                            <span class="sim-telem-val" id="telem-chip-name" style="color: var(--cyan);">ESP32-S3 (Xtensa LX7)</span>
+                        </div>
+                        <div class="sim-telemetry-item">
+                            <span class="sim-telem-lbl">Xung Nhịp CPU:</span>
+                            <span class="sim-telem-val" style="color: #38bdf8;">240 MHz (Dual-Core)</span>
+                        </div>
+                        <div class="sim-telemetry-item">
+                            <span class="sim-telem-lbl">Tần Số Lấy Mẫu DSP:</span>
+                            <span class="sim-telem-val" id="telem-dsp-rate" style="color: #a78bfa;">16,000 Hz (Nyquist: 8kHz)</span>
+                        </div>
+                        <div class="sim-telemetry-item">
+                            <span class="sim-telem-lbl">FreeRTOS Tick:</span>
+                            <span class="sim-telem-val" style="color: #34d399;">1,000 Hz (1ms Time Slice)</span>
+                        </div>
+                        <div class="sim-telemetry-item">
+                            <span class="sim-telem-lbl">Trạng Thái Bộ Nhớ:</span>
+                            <span class="sim-telem-val" id="telem-sram-status" style="color: var(--gold);">Đang theo dõi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulator Sub-Navigation Cards -->
+                <div class="sim-subnav">
+                    <button class="sim-subnav-btn active" id="sim-btn-sram" onclick="switchSimModule('sram')">
+                        <div class="sim-subnav-topline">
+                            <div class="sim-subnav-icon-title">
+                                <span>🧠</span> 1. TENSOR ARENA & SRAM
+                            </div>
+                            <span class="badge" style="font-size: 9px; padding: 1px 6px;">Memory Map</span>
+                        </div>
+                        <div class="sim-subnav-desc">
+                            Tính toán bộ nhớ mô hình TinyML, Tensor Arena & dự báo tràn RAM.
+                        </div>
+                    </button>
+
+                    <button class="sim-subnav-btn" id="sim-btn-dsp" onclick="switchSimModule('dsp')">
+                        <div class="sim-subnav-topline">
+                            <div class="sim-subnav-icon-title">
+                                <span>📡</span> 2. WAVEFORM & PHỔ FFT
+                            </div>
+                            <span class="badge" style="font-size: 9px; padding: 1px 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Signal DSP</span>
+                        </div>
+                        <div class="sim-subnav-desc">
+                            Biến đổi miền thời gian sang tần số, lọc số IIR & kiểm tra Micro thật.
+                        </div>
+                    </button>
+
+                    <button class="sim-subnav-btn" id="sim-btn-rtos" onclick="switchSimModule('rtos')">
+                        <div class="sim-subnav-topline">
+                            <div class="sim-subnav-icon-title">
+                                <span>⚡</span> 3. DUAL-CORE FREERTOS
+                            </div>
+                            <span class="badge" style="font-size: 9px; padding: 1px 6px; background: rgba(52, 211, 153, 0.15); color: #34d399;">Multi-task</span>
+                        </div>
+                        <div class="sim-subnav-desc">
+                            Lập lịch đa nhiệm Core 0/Core 1, chống nghẽn CPU & tràn Watchdog.
+                        </div>
+                    </button>
+
+                    <button class="sim-subnav-btn" id="sim-btn-hexmem" onclick="switchSimModule('hexmem')">
+                        <div class="sim-subnav-topline">
+                            <div class="sim-subnav-icon-title">
+                                <span>🔍</span> 4. HEX MEMORY & STACK
+                            </div>
+                            <span class="badge" style="font-size: 9px; padding: 1px 6px; background: rgba(251, 191, 36, 0.15); color: #fbbf24;">Low-Level</span>
+                        </div>
+                        <div class="sim-subnav-desc">
+                            Soi từng byte Hex 0x3FFB0000, giải mã Endianness & tràn Stack Pointer.
+                        </div>
+                    </button>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- MODULE 1: TENSOR ARENA & SRAM CALCULATOR   -->
+                <!-- ========================================== -->
+                <div id="sim-module-sram" class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">🧠 Mô Phỏng Cấp Phát Tensor Arena & Phân Bổ SRAM Vi Điều Khiển</span>
+                        <span class="badge badge-ai" id="sim-sram-chip-badge">ESP32-S3 (320 KB SRAM)</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                        Kéo thanh trượt để tinh chỉnh các thành phần bộ nhớ của mô hình TinyML. Hệ thống sẽ tính toán kích thước <code>kTensorArenaSize</code> tối thiểu (chuẩn 16-byte alignment) và dự báo nguy cơ tràn RAM trên chip mục tiêu.
+                    </p>
+
+                    <!-- Presets Mẫu Nhanh -->
+                    <div class="sim-preset-row">
+                        <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mô Hình Mẫu (Presets):</span>
+                        <button type="button" class="sim-preset-btn" onclick="loadModelPreset('kws')">🎤 Voice KWS (98 KB)</button>
+                        <button type="button" class="sim-preset-btn" onclick="loadModelPreset('vision')">👁️ Vision MobileNet (360 KB - Báo Tràn)</button>
+                        <button type="button" class="sim-preset-btn" onclick="loadModelPreset('imu')">📉 IMU Gesture (37 KB)</button>
+                    </div>
+
+                    <!-- Chọn Vi Điều Khiển Mục Tiêu -->
+                    <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                        🎯 1. CHỌN CHIP MỤC TIÊU (TARGET MCU):
+                    </div>
+                    <div class="chip-selector-grid">
+                        <div class="chip-card selected" id="chip-esp32s3" onclick="selectSimChip('esp32s3')">
+                            <div class="chip-name"><span>🔥</span> ESP32-S3</div>
+                            <div class="chip-spec">Dual-Core 240MHz • 320 KB SRAM</div>
+                        </div>
+                        <div class="chip-card" id="chip-stm32f4" onclick="selectSimChip('stm32f4')">
+                            <div class="chip-name"><span>⚡</span> STM32F401</div>
+                            <div class="chip-spec">Cortex-M4 84MHz • 96 KB SRAM</div>
+                        </div>
+                        <div class="chip-card" id="chip-nrf52840" onclick="selectSimChip('nrf52840')">
+                            <div class="chip-name"><span>📶</span> nRF52840</div>
+                            <div class="chip-spec">Cortex-M4 64MHz • 256 KB SRAM</div>
+                        </div>
+                        <div class="chip-card" id="chip-rp2040" onclick="selectSimChip('rp2040')">
+                            <div class="chip-name"><span>🍓</span> RP2040 Pico</div>
+                            <div class="chip-spec">Dual Cortex-M0+ • 264 KB SRAM</div>
+                        </div>
+                    </div>
+
+                    <!-- 2 Cột: Sliders Điều Chỉnh & Biểu Đồ SRAM -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                        
+                        <!-- Cột Trái: Sliders -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 12px;">
+                                🎚️ 2. THÀNH PHẦN KÍCH THƯỚC MÔ HÌNH:
+                            </div>
+
+                            <div class="sim-slider-row">
+                                <div class="sim-slider-label">
+                                    <span>📦 Trọng số mô hình (Model Weights / Flatbuffer):</span>
+                                    <span class="sim-slider-val" id="val-weights">45 KB</span>
+                                </div>
+                                <input type="range" class="sim-range" id="slider-weights" min="5" max="220" value="45" oninput="updateSramSimulation()">
+                            </div>
+
+                            <div class="sim-slider-row">
+                                <div class="sim-slider-label">
+                                    <span>📥 Input Tensor (Ảnh 28x28 hoặc Audio Spectrogram):</span>
+                                    <span class="sim-slider-val" id="val-input">8 KB</span>
+                                </div>
+                                <input type="range" class="sim-range" id="slider-input" min="1" max="50" value="8" oninput="updateSramSimulation()">
+                            </div>
+
+                            <div class="sim-slider-row">
+                                <div class="sim-slider-label">
+                                    <span>🔄 Intermediate Activation Buffers (Lớp Conv/Dense):</span>
+                                    <span class="sim-slider-val" id="val-act">32 KB</span>
+                                </div>
+                                <input type="range" class="sim-range" id="slider-act" min="4" max="150" value="32" oninput="updateSramSimulation()">
+                            </div>
+
+                            <div class="sim-slider-row">
+                                <div class="sim-slider-label">
+                                    <span>📤 Output Tensor (Xác suất các phân lớp):</span>
+                                    <span class="sim-slider-val" id="val-output">2 KB</span>
+                                </div>
+                                <input type="range" class="sim-range" id="slider-output" min="1" max="15" value="2" oninput="updateSramSimulation()">
+                            </div>
+
+                            <!-- Preset Nhanh -->
+                            <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadModelPreset('kws')">
+                                    🎤 Keyword Spotting (48KB)
+                                </button>
+                                <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadModelPreset('vision')">
+                                    👁️ Person Detection (140KB)
+                                </button>
+                                <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadModelPreset('imu')">
+                                    📈 Anomaly Detection (18KB)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cột Phải: Trực Quan Hóa SRAM & Cảnh Báo -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 12px;">
+                                📊 3. TRỰC QUAN HÓA BỘ NHỚ SRAM THỰC TẾ:
+                            </div>
+
+                            <div class="sram-bar-container">
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                                    <span>Tổng Tensor Arena Cần: <strong id="sim-arena-total" style="color: #38bdf8;">99.2 KB</strong></span>
+                                    <span id="sim-sram-percent" style="font-weight: 700; color: #10b981;">31% SRAM</span>
+                                </div>
+
+                                <div class="sram-track">
+                                    <div class="sram-segment sram-model" id="bar-model" style="width: 14%;" title="Model Weights"></div>
+                                    <div class="sram-segment sram-input" id="bar-input" style="width: 3%;" title="Input Tensor"></div>
+                                    <div class="sram-segment sram-act" id="bar-act" style="width: 10%;" title="Activations"></div>
+                                    <div class="sram-segment sram-output" id="bar-output" style="width: 1%;" title="Output Tensor"></div>
+                                    <div class="sram-segment sram-free" id="bar-free" style="width: 72%;" title="Free SRAM"></div>
+                                </div>
+
+                                <div class="sram-legend">
+                                    <div class="legend-item"><div class="legend-color" style="background: #38bdf8;"></div> Weights</div>
+                                    <div class="legend-item"><div class="legend-color" style="background: #10b981;"></div> Input</div>
+                                    <div class="legend-item"><div class="legend-color" style="background: #a855f7;"></div> Activations</div>
+                                    <div class="legend-item"><div class="legend-color" style="background: #f59e0b;"></div> Output</div>
+                                    <div class="legend-item"><div class="legend-color" style="background: #475569;"></div> Còn trống (Free)</div>
+                                </div>
+                            </div>
+
+                            <!-- Khối Cảnh Báo & Lời Khuyên Tối Ưu -->
+                            <div id="sim-sram-advice-box" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px 14px; font-size: 12.5px; color: #a7f3d0;">
+                                <strong id="sim-sram-status-title">✅ TRẠNG THÁI: AN TOÀN</strong>
+                                <p id="sim-sram-status-desc" style="margin-top: 4px; color: var(--text);">
+                                    Mô hình tiêu tốn dưới 50% SRAM của vi điều khiển. Hệ thống còn đủ bộ nhớ dồi dào cho Wi-Fi Stack (cần ~45KB) và các Task của FreeRTOS.
+                                </p>
+                            </div>
+
+                            <!-- Đoạn Code C Cấp Phát Tương Ứng -->
+                            <div style="margin-top: 14px;">
+                                <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); margin-bottom: 4px;">
+                                    MÃ C KHỞI TẠO TƯƠNG ỨNG:
+                                </div>
+                                <pre style="background: #03060c; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; font-size: 11.5px; color: #38bdf8; font-family: 'JetBrains Mono', monospace; overflow-x: auto;" id="sim-c-code-snippet">
+constexpr int kTensorArenaSize = 101580; // 99.2 KB
+static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Engineering Insight Card -->
+                    <div class="sim-insight-card">
+                        <div class="sim-insight-header">
+                            <span>💡</span> BÍ QUYẾT TỐI ƯU TENSOR ARENA TỪ KỸ SƯ TRƯỞNG:
+                        </div>
+                        <div>
+                            • <strong>Chuẩn căn chỉnh 16-byte (16-Byte Alignment):</strong> Bộ hướng lệnh SIMD / DSP (Xtensa và ARM Cortex Helium) yêu cầu con trỏ mảng Tensor Arena phải chia hết cho 16 để nạp dữ liệu song song 128-bit không bị Exception.<br>
+                            • <strong>Không cấp phát động (Zero Dynamic Allocation):</strong> Trong TFLite Micro, toàn bộ bộ nhớ trung gian (Activation Buffers) được tái sử dụng chồng lên nhau theo đồ thị tĩnh. Kích thước <code>kTensorArenaSize</code> được cấp phát tĩnh ngay từ lúc khởi động giúp loại bỏ hoàn toàn nguy cơ phân mảnh SRAM.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- MODULE 2: SENSOR WAVEFORM & FFT SPECTRUM   -->
+                <!-- ========================================== -->
+                <div id="sim-module-dsp" class="card" style="display: none;">
+                    <div class="card-title">
+                        <span class="card-title-text">📡 Mô Phỏng Tiền Xử Lý Tín Hiệu Cảm Biến & Biến Đổi Phổ FFT</span>
+                        <span class="badge badge-live"><span class="pulse-dot"></span> Real-time Generator</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        Mô hình AI trên Edge không nhận tín hiệu vật lý trực tiếp. Dữ liệu sóng thời gian phải qua <strong>Bộ lọc số</strong> và <strong>Biến đổi Fourier (FFT)</strong> để chuyển sang miền tần số trước khi đưa vào Tensor đầu vào.
+                    </p>
+
+                                        <!-- Chọn Dạng Tín Hiệu Mẫu -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 12px; font-weight: 700;">Nguồn tín hiệu:</span>
+                        <button class="btn btn-secondary" id="btn-live-mic" onclick="toggleLiveMicrophone()">🎙️ Bật Micro Thật (Live Audio Stream)</button>
+                        <button class="btn btn-secondary active" id="dsp-preset-kws" onclick="setDspPreset('kws')">🎤 Giọng Nói (16kHz Audio)</button>
+                        <button class="btn btn-secondary" id="dsp-preset-imu" onclick="setDspPreset('imu')">📉 Rung Động Động Cơ (100Hz IMU)</button>
+                        <button class="btn btn-secondary" id="dsp-preset-ecg" onclick="setDspPreset('ecg')">💓 Nhịp Tim (ECG 250Hz)</button>
+                        <button class="btn btn-secondary" id="dsp-preset-noise" onclick="setDspPreset('noise')">⚠️ Nhiễu Sóng Điện Lưới (50Hz)</button>
+                    </div>
+
+                    <!-- 2 Canvas Trực Quan -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
+                        <div class="canvas-card">
+                            <div class="canvas-title">
+                                <span>📈 1. DẠNG SÓNG MIỀN THỜI GIAN x(t)</span>
+                                <span id="dsp-time-status" style="color: #38bdf8;">16,000 Samples/s</span>
+                            </div>
+                            <canvas id="canvas-waveform" width="500" height="180"></canvas>
+                        </div>
+
+                        <div class="canvas-card">
+                            <div class="canvas-title">
+                                <span>📊 2. PHỔ TẦN SỐ FFT X(f) (INPUT TENSOR)</span>
+                                <span id="dsp-fft-status" style="color: #c084fc;">64 Tần Số Đặc Trưng</span>
+                            </div>
+                            <canvas id="canvas-fft" width="500" height="180"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Điều Khiển Tần Số & Nhiễu -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px;">
+                        <div class="sim-slider-row">
+                            <div class="sim-slider-label">
+                                <span>Tần số chính (Base Frequency):</span>
+                                <span class="sim-slider-val" id="val-dsp-freq">440 Hz</span>
+                            </div>
+                            <input type="range" class="sim-range" id="slider-dsp-freq" min="50" max="2500" value="440" oninput="updateDspParams()">
+                        </div>
+
+                        <div class="sim-slider-row">
+                            <div class="sim-slider-label">
+                                <span>Mức độ nhiễu trắng (Gaussian Noise):</span>
+                                <span class="sim-slider-val" id="val-dsp-noise">15%</span>
+                            </div>
+                            <input type="range" class="sim-range" id="slider-dsp-noise" min="0" max="80" value="15" oninput="updateDspParams()">
+                        </div>
+
+                        <div class="sim-slider-row">
+                            <div class="sim-slider-label">
+                                <span>Bộ lọc số (Digital Low-Pass Filter):</span>
+                                <span class="sim-slider-val" id="val-dsp-filter">BẬT (Fc = 1.2 kHz)</span>
+                            </div>
+                            <button class="btn btn-secondary" style="font-size: 11px; padding: 6px;" onclick="toggleDspFilter()" id="btn-toggle-filter">
+                                🛡️ Bật / Tắt Bộ Lọc Số
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Engineering Insight Card -->
+                    <div class="sim-insight-card">
+                        <div class="sim-insight-header">
+                            <span>💡</span> ĐỊNH LÝ NYQUIST & TẠI SAO PHẢI DÙNG PHỔ FFT TRÊN EDGE AI:
+                        </div>
+                        <div>
+                            • <strong>Định lý Lấy mẫu Nyquist-Shannon:</strong> Để khôi phục chính xác tín hiệu có tần số tối đa $f_{max}$, tần số lấy mẫu $f_s$ bắt buộc phải thỏa mãn $f_s \ge 2 \cdot f_{max}$. Ví dụ: giọng nói người $4kHz$ cần lấy mẫu tối thiểu $8kHz$ (chuẩn thực tế $16kHz$).<br>
+                            • <strong>Miền thời gian vs Miền tần số:</strong> Dạng sóng thô $x(t)$ rất dễ bị nhiễu pha và lệch thời gian. Khi đưa qua FFT hoặc MFCC Spectrogram, các đặc trưng âm sắc (formant frequencies) trở nên bất biến theo thời gian, giúp mô hình Neural Network nhận diện từ khóa (KWS) chính xác gấp 10 lần.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- MODULE 3: FREERTOS DUAL-CORE SCHEDULER     -->
+                <!-- ========================================== -->
+                <div id="sim-module-rtos" class="card" style="display: none;">
+                    <div class="card-title">
+                        <span class="card-title-text">⚡ Mô Phỏng Lập Lịch Đa Nhiệm FreeRTOS (Dual-Core vs Single-Core)</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="toggleRtosMode()" id="btn-rtos-mode">
+                                🔄 Đổi: Chế độ FreeRTOS Song Song
+                            </button>
+                        </div>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        Mô phỏng sự khác biệt sống còn giữa: <strong>Hệ thống Đơn Nhân (bị đóng băng CPU khi AI chạy 80ms)</strong> và <strong>FreeRTOS Đa Nhân (Core 0 đọc cảm biến mượt mà, Core 1 chạy suy luận qua Queue)</strong>.
+                    </p>
+
+                    <!-- Gantt Timeline Canvas -->
+                    <div class="canvas-card">
+                        <div class="canvas-title">
+                            <span id="rtos-status-label">🟢 FREERTOS DUAL-CORE MODE (CORE 0: IO • CORE 1: AI INFERENCE)</span>
+                            <span id="rtos-fps-label" style="color: #10b981;">0 Jitter • 100% Deterministic</span>
+                        </div>
+                        <canvas id="canvas-rtos" width="900" height="200"></canvas>
+                    </div>
+
+                    <!-- Queue Buffer Indicator & Controls -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px;">
+                        <div style="background: #060a15; border: 1px solid var(--card-border); border-radius: 10px; padding: 14px;">
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
+                                📥 HÀNG ĐỢI DỮ LIỆU (FREERTOS QUEUE):
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="flex: 1; height: 16px; background: #1e293b; border-radius: 6px; overflow: hidden; display: flex;">
+                                    <div id="rtos-queue-bar" style="width: 40%; background: #38bdf8; transition: width 0.2s;"></div>
+                                </div>
+                                <span id="rtos-queue-text" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #38bdf8;">
+                                    2/5 Gói
+                                </span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                                Đệm an toàn giữa luồng đọc cảm biến (Core 0) và luồng Invoke mô hình (Core 1).
+                            </div>
+                        </div>
+
+                        <div style="background: #060a15; border: 1px solid var(--card-border); border-radius: 10px; padding: 14px;">
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
+                                🛡️ TASK WATCHDOG TIMER (TWDT):
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="badge badge-live" id="rtos-wdt-badge">✓ ACTIVE (NO TIMEOUT)</span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;" id="rtos-wdt-desc">
+                                CPU không bị giữ độc quyền quá 300ms, hệ thống chạy ổn định 24/7.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engineering Insight Card -->
+                    <div class="sim-insight-card">
+                        <div class="sim-insight-header">
+                            <span>💡</span> THIẾT KẾ ĐA NHIỆM CHUẨN TRÁNH NGHẼN CPU (DETERMINISTIC EMBEDDED):
+                        </div>
+                        <div>
+                            • <strong>Ghim Task vào Core (Task Pinning):</strong> Dùng <code>xTaskCreatePinnedToCore()</code> để ghim Task đọc cảm biến & giao tiếp mạng vào <strong>Core 0</strong>, và ghim Task chạy mô hình <code>tflite::MicroInterpreter::Invoke()</code> vào <strong>Core 1</strong>.<br>
+                            • <strong>FreeRTOS Queue (Hàng đợi luồng an toàn):</strong> Tránh dùng biến toàn cục không khóa. Dữ liệu từ Core 0 đẩy vào Queue bằng <code>xQueueSend()</code>, Core 1 đọc ra bằng <code>xQueueReceive()</code>, đảm bảo tính Thread-safe và cách ly hoàn toàn độ trễ của AI với ngắt cảm biến.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- MODULE 4: HEX MEMORY & STACK FRAME INSPECTOR -->
+                <!-- ========================================== -->
+                <div id="sim-module-hexmem" class="card" style="display: none;">
+                    <div class="card-title">
+                        <span class="card-title-text">🔍 Trình Soi Ô Nhớ Hex Cấp Thấp & Ngăn Xếp ESP32-S3 (SRAM 0x3FFB0000)</span>
+                        <span class="badge badge-ai">Little-Endian • Stack/Heap • Alignment</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        Khám phá cách vi điều khiển và trình biên dịch GCC bố trí bộ nhớ vật lý: quan sát từng byte Hex, kiểm tra tràn Stack, phát hiện phân mảnh Heap và tối ưu hóa Memory Alignment cho Struct.
+                    </p>
+
+                    <!-- Hex Memory Section Legend & Shortcuts -->
+                    <div class="hexmem-top-controls">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Phân vùng ô nhớ:</span>
+                            <span class="badge" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 11px;">.data (0x00 - 0x2F)</span>
+                            <span class="badge" style="background: rgba(192, 132, 252, 0.1); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); font-size: 11px;">.bss (0x30 - 0x4F)</span>
+                            <span class="badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); font-size: 11px;">Heap malloc (0x50 - 0x9F)</span>
+                            <span class="badge" style="background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); font-size: 11px;">Stack & SP (0xA0 - 0xFF)</span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0)">Jump .data</button>
+                            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0x50)">Jump Heap</button>
+                            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0xF0)">Jump Stack</button>
+                        </div>
+                    </div>
+
+                    <!-- Main Hex Dump Table -->
+                    <div class="hex-dump-panel">
+                        <table class="hex-table">
+                            <thead>
+                                <tr>
+                                    <th>Địa chỉ</th>
+                                    <th>00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F</th>
+                                    <th style="padding-left: 14px;">ASCII</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hex-table-body">
+                                <!-- Rendered by js/hexmem.js -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Endianness & Live Byte Decoder Card -->
+                    <div style="margin-top: 14px;">
+                        <div style="font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+                            🔬 Bộ Giải Mã Giá Trị Byte Được Chọn (Endianness & Data Types Inspector):
+                        </div>
+                        <div class="hex-decoder-card">
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">Địa chỉ bộ nhớ:</span>
+                                <span class="hex-dec-val" id="dec-addr" style="color: #38bdf8;">0x3FFB0000</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">Byte Hex (8-bit):</span>
+                                <span class="hex-dec-val" id="dec-hex" style="color: var(--cyan);">0xEF</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">Mã Nhị Phân (Binary):</span>
+                                <span class="hex-dec-val" id="dec-bin" style="color: #34d399;">11101111</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">Ký tự ASCII:</span>
+                                <span class="hex-dec-val" id="dec-char" style="color: #cbd5e1;">N/A</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">uint16_t (2 Bytes):</span>
+                                <span class="hex-dec-val" id="dec-u16" style="color: #fbbf24;">LE: 48879 • BE: 61422</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">uint32_t (4 Bytes):</span>
+                                <span class="hex-dec-val" id="dec-u32" style="color: #f472b6;">LE: 3735928559 (0xDEADBEEF)</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">float (IEEE-754 4B):</span>
+                                <span class="hex-dec-val" id="dec-f32" style="color: #a78bfa;">-3.036e-38</span>
+                            </div>
+                            <div class="hex-dec-item">
+                                <span class="hex-dec-label">Vùng Nhớ Thực Tế:</span>
+                                <span class="hex-dec-val" id="dec-section" style="color: #38bdf8;">.data (Global Init)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Stack Frame & Heap Visualizer Grid -->
+                    <div style="margin-top: 24px;">
+                        <h3 style="font-size: 15px; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span>⚡</span> Mô Phỏng Ngăn Xếp Gọi Hàm (Call Stack) & Phân Mảnh Bộ Nhớ Heap
+                        </h3>
+                        
+                        <div class="stack-viz-grid">
+                            <!-- Left: Interactive Call Stack -->
+                            <div class="stack-column">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #34d399;">📥 Call Stack (Ngăn Xếp Đầy Đủ Chiều Xuống)</div>
+                                        <div style="font-size: 11px; color: var(--text-dim);">SP hiện tại: <strong id="current-sp-display" style="color: #ef4444;">0x3FFB00F4</strong></div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="resetStackFrames()">↺ Reset Stack</button>
+                                </div>
+
+                                <div id="stack-frames-list" style="flex: 1;">
+                                    <!-- Rendered by js/hexmem.js -->
+                                </div>
+
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; border-top: 1px solid #1f2937; padding-top: 10px;">
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="stackPushFunction(1)">+ Gọi filter_imu_data()</button>
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="stackPushFunction(2)">+ Gọi compute_fft_peak()</button>
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="stackPopFunction()">- Return (Pop Frame)</button>
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #ef4444; border-color: rgba(239,68,68,0.4);" onclick="stackPushFunction('overflow')">💥 Gây Tràn Stack!</button>
+                                </div>
+                            </div>
+
+                            <!-- Right: Heap Fragmentation & Struct Padding -->
+                            <div class="stack-column">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;">
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 13px; color: #fbbf24;">📦 Phân Mảnh Bộ Nhớ Heap (Heap Fragmentation)</div>
+                                        <div style="font-size: 11px; color: var(--text-dim);">512B Heap chia làm 16 khối 32B</div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="resetHeapSimulator()">↺ Reset Heap</button>
+                                </div>
+
+                                <div class="heap-blocks-grid" id="heap-blocks-container">
+                                    <!-- Rendered by js/hexmem.js -->
+                                </div>
+
+                                <div id="heap-malloc-result" style="margin-bottom: 10px;"></div>
+
+                                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                    <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;" onclick="freeHeapBlockB()">🗑️ free(Block B 128B) [Tạo lỗ hổng]</button>
+                                    <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 5px 10px;" onclick="tryMallocFail()">⚠️ Thử malloc(160B) liên tục</button>
+                                </div>
+
+                                <!-- Struct Padding Visualizer -->
+                                <div style="border-top: 1px solid #1f2937; padding-top: 12px; margin-top: auto;">
+                                    <div style="font-weight: 700; font-size: 12px; color: #38bdf8; margin-bottom: 6px;">
+                                        📐 Căn Chỉnh Bộ Nhớ Struct (Memory Alignment 4-Byte):
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">
+                                        Thứ tự khai báo biến trong C quyết định dung lượng RAM lãng phí do byte đệm (Padding):
+                                    </div>
+                                    
+                                    <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #cbd5e1;">
+                                        ❌ Chưa tối ưu: <code>struct { uint8_t a; uint32_t b; uint8_t c; }</code> = <strong>12 Bytes</strong> (4B đệm đỏ)
+                                    </div>
+                                    <div class="struct-layout-box">
+                                        <div class="struct-byte-slot field-u8">a (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot field-u32" style="flex: 4;">b (uint32_t 4B)</div>
+                                        <div class="struct-byte-slot field-u8">c (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                    </div>
+
+                                    <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #34d399; margin-top: 8px;">
+                                        ✅ Đã tối ưu (Sắp xếp theo thứ tự giảm dần): <code>struct { uint32_t b; uint8_t a; uint8_t c; }</code> = <strong>8 Bytes</strong> (Tiết kiệm 33% RAM!)
+                                    </div>
+                                    <div class="struct-layout-box">
+                                        <div class="struct-byte-slot field-u32" style="flex: 4;">b (uint32_t 4B)</div>
+                                        <div class="struct-byte-slot field-u8">a (1B)</div>
+                                        <div class="struct-byte-slot field-u8">c (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
+                                    </div>
+                                </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engineering Insight Card -->
+                    <div class="sim-insight-card">
+                        <div class="sim-insight-header">
+                            <span>💡</span> QUY TẮC SỐNG CÒN VỀ BỘ NHỚ TRONG PHỎNG VẤN KỸ SƯ NHÚNG:
+                        </div>
+                        <div>
+                            • <strong>Tránh Stack Overflow trong ISR:</strong> Hàm ngắt phần cứng (ISR) chạy trên ngăn xếp riêng hoặc dùng chung stack với Task hiện tại. Tuyệt đối không khai báo mảng lớn (như <code>char buf[256]</code>) bên trong hàm ngắt.<br>
+                            • <strong>Tại sao cấm malloc/free trong hệ thống nhúng quan trọng:</strong> Vì hàm <code>malloc</code> có thời gian thực thi không xác định (Non-deterministic timing) và gây ra phân mảnh bộ nhớ (Heap Fragmentation). Sau 3-7 ngày chạy liên tục, heap sẽ bị thủng lỗ chỗ dẫn đến crash thiết bị bất ngờ.
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-learning" style="display: none;">
+            
+            <!-- Dynamic Overall Progress Widget -->
+            <section class="progress-card">
+                <div class="progress-header">
+                    <div class="progress-status">
+                        <span>Tiến độ làm chủ Lộ trình Edge AI:</span>
+                        <span class="badge badge-ai" id="roadmap-status-text">Giai đoạn 1: C & Quản lý Bộ Nhớ</span>
+                    </div>
+                    <strong id="progress-percent">0% (0/24)</strong>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+            </section>
+
+            <div class="main-grid">
+                <!-- Cột trái: Lộ trình 6 Giai Đoạn & Checkbox -->
+                <div>
+                    <div class="card">
+                        <div class="card-title">
+                            <span class="card-title-text">📌 Lộ Trình Edge AI Chuẩn (6 Bước từ Cột lõi đến Mô hình AI)</span>
+                            <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Tick để mở khóa năng lực</span>
+                        </div>
+                        <div id="roadmap-list"></div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Ghi chú & Thêm bài học mới -->
+                <div>
+                    <!-- Form Thêm Ghi Chú -->
+                    <div class="card">
+                        <h2 class="card-title">✍️ Lưu kiến thức & Mã nguồn thực hành Edge AI</h2>
+                        <form id="note-form">
+                            <div class="form-group">
+                                <label for="note-title">Tiêu đề kiến thức</label>
+                                <input type="text" id="note-title" placeholder="VD: Cấp phát Tensor Arena trong TFLite Micro" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="note-category">Phân loại chủ đề</label>
+                                <select id="note-category">
+                                    <option value="1. C & Bộ nhớ">1. C & Quản lý Bộ Nhớ (Stack/Heap/PSRAM)</option>
+                                    <option value="2. Timer & Interrupt">2. Timer & Ngắt ISR (Lấy mẫu thời gian thực)</option>
+                                    <option value="3. Cảm biến">3. Cảm biến & Thu thập tín hiệu (IMU/Mic/Camera)</option>
+                                    <option value="4. Multiple Task">4. Multiple Task (FreeRTOS Đa nhiệm Dual-Core)</option>
+                                    <option value="5. Network & OTA">5. Network & OTA (Wi-Fi, MQTT, Nâng cấp từ xa)</option>
+                                    <option value="6. AI Model">6. AI Model (TinyML, TFLite Micro & Lượng tử hóa INT8)</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="note-content">Nội dung tóm tắt / Giải thích chuyên sâu</label>
+                                <textarea id="note-content" placeholder="Ghi lại các ý chính cần nhớ, hiện tượng hoặc bài học rút ra..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="note-code">Đoạn mã C/C++ minh họa (Tùy chọn)</label>
+                                <textarea id="note-code" placeholder="// Code minh họa..." style="min-height: 60px;"></textarea>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; color: var(--text-muted);">
+                                <input type="checkbox" id="note-sync-notebook" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="note-sync-notebook" style="cursor: pointer; text-transform: none; font-size: 12px; margin: 0; color: var(--text);">
+                                    Đồng bộ vào Kho Tài Liệu Sổ Tay AI (để Gemini đọc & hỏi đáp)
+                                </label>
+                            </div>
+                            <button type="submit" class="btn" style="width: 100%;">💾 Lưu vào sổ tay kiến thức</button>
+                        </form>
+                    </div>
+
+                    <!-- Danh sách bài học đã lưu -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h2 class="card-title" style="margin-bottom: 0;">📚 Sổ tay của bạn</h2>
+                            <button id="btn-export" class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px;">
+                                ⬇️ Xuất JSON Backup
+                            </button>
+                        </div>
+                        <div class="notes-feed" id="notes-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: ĐẤU TRƯỜNG LUYỆN CODE (CODELEARN STYLE) -->
+        <!-- ============================================== -->
+        <div id="view-practice" style="display: none;">
+            
+            <!-- Accepted Banner -->
+            <div class="accepted-banner" id="accepted-banner">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <span style="font-size: 28px;">🎉</span>
+                    <div>
+                        <div style="font-weight: 800; font-size: 16px; color: #f8fafc;" id="accepted-banner-title">
+                            ACCEPTED - LỜI GIẢI CHÍNH XÁC 100%!
+                        </div>
+                        <div style="font-size: 13px; color: #a7f3d0;" id="accepted-banner-desc">
+                            Bạn đã vượt qua toàn bộ Test Cases và nhận được điểm thưởng XP! Kỹ năng này đã được tự động mở khóa trong Hồ sơ cá nhân.
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="saveExerciseToNotebook()">
+                    💾 Lưu code này vào Sổ tay
+                </button>
+            </div>
+
+            <div class="practice-arena">
+                <!-- Sidebar: Danh sách bài tập & Đề bài -->
+                <div class="problem-sidebar">
+                    <div class="sidebar-header">
+                        <span style="font-weight: 700; font-size: 14px; color: #f8fafc;">
+                            🎯 Thử Thách Nhúng & Edge AI (72 Bài)
+                        </span>
+                        <span class="badge badge-gold" id="practice-xp-tag">⭐ 0 XP</span>
+                    </div>
+
+                    <!-- Thanh Lọc Theo Module (M1 -> M6) -->
+                    <div class="practice-filter-row" id="practice-filter-row">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Danh sách bài tập -->
+                    <div class="problem-list" id="problem-list-container">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Chi tiết đề bài hiện tại -->
+                    <div class="problem-details-card">
+                        <div class="problem-desc-title" id="prob-title">Đang tải đề bài...</div>
+                        <div class="problem-meta-row">
+                            <span class="difficulty-tag diff-easy" id="prob-diff">Dễ</span>
+                            <span style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--gold);" id="prob-xp">+50 XP</span>
+                            <span style="font-size: 12px; color: var(--text-muted);" id="prob-topic">C Core / Bitwise</span>
+                        </div>
+                        
+                        <div id="prob-desc" style="color: var(--text); margin-bottom: 12px;"></div>
+
+                        <div style="font-weight: 700; font-size: 12px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
+                            Ví dụ minh họa:
+                        </div>
+                        <div class="example-box" id="prob-example"></div>
+
+                        <!-- Gợi ý kiến thức / Lý thuyết -->
+                        <details class="hint-accordion">
+                            <summary>💡 Gợi ý lý thuyết & Thuật toán</summary>
+                            <div id="prob-hint" style="font-size: 12px; color: #bae6fd; margin-top: 8px; line-height: 1.6;"></div>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Trình soạn thảo & Bảng Test Runner -->
+                <div class="code-workspace">
+                    
+                    <!-- Editor Box -->
+                    <div class="editor-container">
+                        <div class="editor-topbar">
+                            <div class="editor-lang-tag">
+                                <span>⚡</span>
+                                <span>Embedded C / Edge AI (GCC 11+)</span>
+                            </div>
+                            <div class="editor-actions">
+                                <button class="editor-btn-small" onclick="resetCurrentCode()">↺ Reset Code</button>
+                                <button class="editor-btn-small" onclick="loadSolutionCode()">💡 Lời giải mẫu</button>
+                            </div>
+                        </div>
+
+                        <!-- Embedded Code Smell Linter Banner -->
+                        <div id="embedded-linter-box" class="linter-box" style="display: none;">
+                            <span class="linter-badge" id="linter-badge">⚠️ EMBEDDED CODE SMELL</span>
+                            <div id="linter-message">Phát hiện vấn đề tiềm ẩn trong mã nguồn nhúng.</div>
+                        </div>
+                        <textarea id="code-editor" class="code-editor-area" spellcheck="false"></textarea>
+
+                        <div class="editor-footer">
+                            <div style="font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                                Nhấn <kbd style="background: #1e293b; padding: 2px 6px; border-radius: 4px;">Tab</kbd> để thụt dòng code
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-secondary" id="btn-run-test" onclick="executeTests(false)">
+                                    ▶ Chạy thử nghiệm (Run Test)
+                                </button>
+                                <button class="btn btn-accent" id="btn-submit-code" onclick="executeTests(true)">
+                                    🚀 Nộp bài & Chấm điểm (Submit)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Console & Test Cases Results -->
+                    <div class="console-container">
+                        <div class="console-header">
+                            <div class="console-tab-switch">
+                                <button class="console-tab-btn active" id="tab-btn-tests" onclick="switchConsoleTab('tests')">
+                                    📋 Bộ Kiểm Thử (Test Cases)
+                                </button>
+                                <button class="console-tab-btn" id="tab-btn-serial" onclick="switchConsoleTab('serial')">
+                                    ⚡ Virtual Serial Port (COM3 • 115200)
+                                </button>
+                            </div>
+                            <span id="test-summary-badge" class="badge" style="display: none;">0/0 Passed</span>
+                        </div>
+
+                        <!-- Virtual Serial Monitor Panel (Chế độ Cổng COM ESP32) -->
+                        <div id="panel-serial-monitor" style="display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">
+                                    <span class="pulse-dot"></span>
+                                    <span id="serial-port-name-label">ESP32-S3 (USB-JTAG/CDC) @ 115200 bps</span>
+                                </div>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    <button class="btn btn-secondary" id="btn-real-serial" style="font-size: 11px; padding: 4px 10px;" onclick="toggleRealWebSerial()">
+                                        🔌 Kết Nối Thiết Bị Thật (USB COM)
+                                    </button>
+                                    <button class="btn btn-accent" style="font-size: 11px; padding: 4px 10px;" onclick="flashVirtualEsp32()">
+                                        ⚡ Nạp Code Ảo & Boot ESP32
+                                    </button>
+                                    <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="clearSerialLog()">
+                                        🧹 Xóa
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="serial-terminal-wrap" id="serial-terminal-logs">
+                                <div class="serial-line serial-dim">--- ESP-IDF Serial Monitor Connected [115200 Baud] ---</div>
+                                <div class="serial-line serial-info">[SYS] Waiting for flash command... Press "⚡ Nạp Code & Boot ESP32" to simulate COM port output.</div>
+                            </div>
+                            <div class="serial-input-row">
+                                <input type="text" class="serial-input" id="serial-cmd-input" placeholder="Gõ lệnh Serial (VD: help, status, predict, temp, heap)..." onkeydown="handleSerialCommand(event)">
+                                <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 12px;" onclick="sendSerialInput()">
+                                    Gửi
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grid hiển thị từng test case -->
+                        <div class="test-cases-grid" id="test-cards-container">
+                            <div style="font-size: 12.5px; color: var(--text-muted); padding: 10px 0;">
+                                Nhấn <strong>"▶ Chạy thử nghiệm"</strong> hoặc <strong>"🚀 Nộp bài"</strong> để bắt đầu kiểm tra tính đúng đắn của code.
+                            </div>
+                        </div>
+
+                        <!-- Console Output log -->
+                        <div class="console-output-box" id="console-output">Hệ thống sẵn sàng biên dịch mã nguồn C của bạn...</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: CAPSTONE PROJECTS (KIỂM TRA THÀNH TỰU)  -->
+        <!-- ============================================== -->
+        <div id="view-projects" style="display: none;">
+            <div class="projects-container">
+                <!-- Hero Banner -->
+                <div class="projects-hero-banner">
+                    <div class="projects-hero-content">
+                        <div class="projects-hero-tag">
+                            <span>🏆 CAPSTONE VERIFICATION</span>
+                            <span class="pulse-dot"></span>
+                            <span>ĐỒ ÁN TỐT NGHIỆP TỪNG GIAI ĐOẠN</span>
+                        </div>
+                        <h2 class="projects-hero-title">
+                            Kiểm Tra Thành Tựu & Đồ Án Thực Chiến Edge AI
+                        </h2>
+                        <p class="projects-hero-desc">
+                            Sau khi hoàn thành lý thuyết lộ trình và các bài tập code C/AI, hãy thực hiện 6 Đồ án Milestone thực tế. Mỗi đồ án mô phỏng trọn vẹn một sản phẩm IoT / Edge AI công nghiệp chạy trên vi điều khiển ESP32-S3, đi kèm kiến trúc luồng dữ liệu, starter code chuẩn sản xuất, tiêu chuẩn nghiệm thu và chứng nhận thành tựu có dấu chứng thực.
+                        </p>
+                    </div>
+
+                    <!-- Progress Stats -->
+                    <div class="projects-stats-row">
+                        <div class="pstat-card">
+                            <div class="pstat-val" id="projects-stat-completed">0/6</div>
+                            <div class="pstat-lbl">Đồ Án Nghiệm Thu</div>
+                        </div>
+                        <div class="pstat-card">
+                            <div class="pstat-val" id="projects-stat-xp" style="color: var(--gold);">0 XP</div>
+                            <div class="pstat-lbl">XP Thành Tựu</div>
+                        </div>
+                        <div class="pstat-card">
+                            <div class="pstat-val" style="color: var(--accent);">ESP32-S3</div>
+                            <div class="pstat-lbl">Mục Tiêu Phần Cứng</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects Cards Grid -->
+                <div class="projects-grid" id="projects-grid-container">
+                    <!-- Rendered dynamically by js/projects.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 4: ÔN LUYỆN PHỎNG VẤN KỸ SƯ NHÚNG & AI    -->
+        <!-- ============================================== -->
+        <div id="view-interview" style="display: none;">
+            <div class="interview-container">
+                <!-- Hero Banner -->
+                <div class="interview-hero">
+                    <div class="interview-hero-left">
+                        <h2><span>🏆</span> Đấu Trường Ôn Luyện Phỏng Vấn Kỹ Sư Nhúng & Edge AI</h2>
+                        <p>Bộ câu hỏi tuyển dụng thực tế từ các tập đoàn công nghệ (Bosch, Qualcomm, Viettel, FPT, Renesas) kèm giải thích chi tiết kiến trúc phần cứng.</p>
+                    </div>
+                    <div class="interview-score-box">
+                        <div>
+                            <div class="score-num" id="quiz-score-display">0/8</div>
+                            <div class="score-label">Đã Trả Lời Đúng</div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="userQuizAnswers = {}; renderInterviewArena(); showToast('Đã đặt lại bài làm trắc nghiệm!');">↺ Làm Lại</button>
+                    </div>
+                </div>
+
+                <!-- Filter Category Buttons -->
+                <div class="quiz-filter-bar">
+                    <button class="quiz-filter-btn active" id="quiz-filter-all" onclick="setQuizFilter('all')">Tất Cả Câu Hỏi</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-c_memory" onclick="setQuizFilter('c_memory')">🧠 C & Quản Lý Bộ Nhớ</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-freertos" onclick="setQuizFilter('freertos')">⚡ FreeRTOS & Concurrency</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-peripherals" onclick="setQuizFilter('peripherals')">📡 Ngoại Vi & Lấy Mẫu</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-tinyml" onclick="setQuizFilter('tinyml')">🤖 TinyML & Quantization</button>
+                </div>
+
+                <!-- Questions Container -->
+                <div id="quiz-questions-container">
+                    <!-- Rendered by js/interview.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 6: SỔ TAY AI & TRỢ LÝ TÀI LIỆU NOTEBOOKLM  -->
+        <!-- ============================================== -->
+        <div id="view-notebook" style="display: none;">
+            <div class="notebook-container">
+                <!-- Header Status Bar -->
+                <div class="nb-header-bar">
+                    <div class="nb-title-group">
+                        <div class="nb-icon-badge">📓</div>
+                        <div>
+                            <div class="nb-title">
+                                Sổ Tay Nghiên Cứu & Trợ Lý Tài Liệu Nhúng (NotebookLM & Gemini Doc AI)
+                            </div>
+                            <div class="nb-subtitle">
+                                Nhập tài liệu/ghi chú từ NotebookLM, tra cứu datasheet và hỏi đáp thời gian thực bằng Gemini 2.5 Flash RAG
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nb-actions-group">
+                        <div class="badge" id="nb-api-status" style="font-size: 11.5px; padding: 6px 10px; cursor: pointer;" onclick="openGeminiKeyModal()" title="Cấu hình Google Gemini API Key">
+                            ⚪ Local Knowledge Engine
+                        </div>
+                        <button class="btn btn-secondary" onclick="openGeminiKeyModal()" title="Nhập hoặc đổi Gemini API Key">
+                            ⚙️ Cấu Hình Key
+                        </button>
+                        <button class="btn btn-secondary" onclick="openImportNotebookModal()" title="Nhập ghi chú từ NotebookLM">
+                            📥 + Nhập Tài Liệu
+                        </button>
+                        <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer" class="btn btn-english" title="Mở Google NotebookLM trong tab mới">
+                            Google NotebookLM ↗
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Gemini API Quota Telemetry Bar -->
+                <div class="nb-quota-hud" id="nb-quota-telemetry-hud">
+                    <div class="nb-quota-top">
+                        <div class="nb-quota-metric">
+                            <span class="nb-quota-label">⚡ LƯỢT GỌI HÔM NAY (RPD):</span>
+                            <span class="nb-quota-val" id="nb-quota-req-text" style="color: var(--cyan);">0 / 1,500 Lượt (0%)</span>
+                        </div>
+                        <div class="nb-quota-metric">
+                            <span class="nb-quota-label">🧠 TOKENS TIÊU THỤ:</span>
+                            <span class="nb-quota-val" id="nb-quota-tok-text" style="color: var(--accent);">0 Tokens</span>
+                        </div>
+                        <div class="nb-quota-metric">
+                            <span class="nb-quota-label">⏱️ TỐC ĐỘ (RPM):</span>
+                            <span class="nb-quota-val" style="color: var(--gold);">Tối đa 15 yêu cầu / phút</span>
+                        </div>
+                        <div class="nb-quota-metric">
+                            <span class="nb-quota-label">🔄 TỰ ĐỘNG RESET:</span>
+                            <span class="nb-quota-val" id="nb-quota-reset-text" style="color: var(--text-muted);">00:00 mỗi ngày</span>
+                            <button type="button" class="btn-icon" style="font-size: 11px; margin-left: 6px; padding: 1px 5px;" onclick="resetGeminiDailyUsage()" title="Đặt lại bộ đếm hôm nay">↺</button>
+                        </div>
+                    </div>
+                    <div class="nb-quota-progress-track" title="Thanh theo dõi hạn mức gọi Gemini 2.5 Flash Free Tier">
+                        <div class="nb-quota-progress-fill" id="nb-quota-progress-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Two-Column Hi-Tech Workspace -->
+                <div class="nb-layout-grid">
+                    <!-- Left: Document Library -->
+                    <div class="nb-panel">
+                        <div class="nb-panel-header">
+                            <div class="nb-panel-title">
+                                <span>📚</span> Kho Tài Liệu & Ghi Chú (<span id="nb-doc-count-badge">4</span>)
+                            </div>
+                            <button class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="openImportNotebookModal()">
+                                + Nhập Mới
+                            </button>
+                        </div>
+                        <div class="nb-doc-tools">
+                            <input type="text" class="nb-search-input" id="nb-doc-search" placeholder="Tìm kiếm nhanh tiêu đề, từ khóa, nội dung..." oninput="renderNotebookDocsList()">
+                            <div class="nb-tags-row">
+                                <span class="nb-tag-chip active" data-tag="all" onclick="setDocTagFilter('all')">#Tất Cả</span>
+                                <span class="nb-tag-chip" data-tag="#LộTrình" onclick="setDocTagFilter('#LộTrình')" style="color: var(--cyan); border-color: rgba(0,240,255,0.3);">🗺️ #Lộ Trình (6 Bước)</span>
+                                <span class="nb-tag-chip" data-tag="#ESP32" onclick="setDocTagFilter('#ESP32')">#ESP32</span>
+                                <span class="nb-tag-chip" data-tag="#FreeRTOS" onclick="setDocTagFilter('#FreeRTOS')">#FreeRTOS</span>
+                                <span class="nb-tag-chip" data-tag="#TinyML" onclick="setDocTagFilter('#TinyML')">#TinyML</span>
+                                <span class="nb-tag-chip" data-tag="#Memory" onclick="setDocTagFilter('#Memory')">#Memory</span>
+                                <span class="nb-tag-chip" data-tag="#Datasheet" onclick="setDocTagFilter('#Datasheet')">#Datasheet</span>
+                            </div>
+                        </div>
+                        <div class="nb-doc-list" id="nb-doc-list-container">
+                            <!-- Rendered by js/notebook.js -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Gemini AI Doc Assistant & RAG -->
+                    <div class="nb-panel">
+                        <div class="nb-panel-header">
+                            <div class="nb-panel-title" style="color: var(--accent);">
+                                <span>🤖</span> Trợ Lý Hỏi Đáp Tài Liệu (Gemini Doc AI)
+                            </div>
+                            <button class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="clearNotebookChat()">
+                                ↺ Xóa Hội Thoại
+                            </button>
+                        </div>
+
+                        <!-- Context Bar -->
+                        <div class="nb-chat-context-bar">
+                            <div>
+                                <span>🎯 Ngữ cảnh truy vấn: </span>
+                                <strong id="nb-chat-context-name" style="color: var(--cyan);">Toàn bộ kho tài liệu</strong>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-dim);">
+                                Powered by Gemini 2.5 Flash / Local RAG
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Prompts -->
+                        <div class="nb-quick-prompts">
+                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('summary')">📝 Tóm tắt cốt lõi</div>
+                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('extract')">🔬 Trích xuất thanh ghi & API</div>
+                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('quiz')">🎯 Tạo 3 câu hỏi phỏng vấn</div>
+                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('code')">⚡ Viết code C mẫu</div>
+                        </div>
+
+                        <!-- Chat Messages Container -->
+                        <div class="nb-chat-messages" id="nb-chat-messages-container">
+                            <!-- Rendered by js/notebook.js -->
+                        </div>
+
+                        <!-- Chat Input Bar -->
+                        <div class="nb-chat-input-bar">
+                            <!-- Direct PDF Attachment Preview -->
+                            <div class="nb-attachment-preview-bar" id="nb-chat-pdf-preview">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 16px;">📕</span>
+                                    <span>Đang đính kèm PDF gốc: <strong id="nb-chat-pdf-name" style="color: var(--cyan);">datasheet.pdf</strong> (<span id="nb-chat-pdf-size">0 MB</span>)</span>
+                                </div>
+                                <button type="button" class="btn-icon" onclick="removeChatPdfAttachment()" style="color: var(--text-muted); font-size: 14px; cursor: pointer;" title="Gỡ đính kèm">✕</button>
+                            </div>
+
+                            <div class="nb-input-row">
+                                <button type="button" class="nb-btn-attach" onclick="document.getElementById('nb-chat-pdf-input').click()" title="Đính kèm file PDF để Gemini đọc trực tiếp bảng biểu & sơ đồ">
+                                    <span>📎</span> PDF Gốc
+                                </button>
+                                <input type="file" id="nb-chat-pdf-input" accept=".pdf" style="display: none;" onchange="handleDirectPdfAttach(event)">
+                                <textarea class="nb-chat-input" id="nb-chat-input" placeholder="Hỏi bất kỳ điều gì về tài liệu nhúng, thanh ghi, bộ nhớ hoặc đính kèm PDF gốc..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();handleSendNotebookQuery();}"></textarea>
+                                <button class="nb-btn-send" id="nb-btn-send" onclick="handleSendNotebookQuery()">
+                                    <span>Gửi</span> ➔
+                                </button>
+                            </div>
+                            <div class="nb-input-footer">
+                                <span>Mẹo: Nhấn <code>Enter</code> để gửi câu hỏi, <code>Shift + Enter</code> để xuống dòng.</span>
+                                <span>Hỗ trợ trích dẫn nguồn & code C/C++</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW 3: CỬA SỔ GIỚI THIỆU BẢN THÂN & NĂNG LỰC   -->
+        <!-- ============================================== -->
+        <div id="view-profile" style="display: none;">
+            <div class="profile-container">
+                
+                <!-- Hero Profile Card -->
+                <div class="profile-hero">
+                    <div class="profile-hero-grid">
+                        <div class="avatar-wrap">
+                            <span id="profile-avatar-icon">🤖</span>
+                            <span class="avatar-rank-badge" id="hero-badge-lvl">LV.1</span>
+                        </div>
+                        <div class="profile-info">
+                            <h2>
+                                <span id="hero-name-display">Mr. Thai</span>
+                                <span class="badge badge-ai" id="hero-rank-display">Novice C & Edge AI Learner</span>
+                                <span class="badge badge-gold" id="hero-total-xp">⭐ 0 XP</span>
+                            </h2>
+                            <div class="profile-role" id="hero-role-display">
+                                Edge AI & Embedded Systems Engineer (TinyML / ESP-IDF / FreeRTOS)
+                            </div>
+                            <p class="profile-bio" id="hero-bio-display">
+                                Nghiên cứu và triển khai mô hình học sâu (Deep Learning) lên vi điều khiển ESP32, tối ưu bộ nhớ SRAM/PSRAM, lượng tử hóa INT8 và đa nhiệm thời gian thực FreeRTOS.
+                            </p>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button class="btn btn-secondary" onclick="openEditProfileModal()">
+                                ✏️ Chỉnh sửa thông tin
+                            </button>
+                            <button class="btn btn-accent" onclick="copyAutoIntroduction()">
+                                📋 Sao chép CV Bio
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Stats Bar -->
+                    <div class="profile-metrics-bar">
+                        <div class="metric-box">
+                            <div class="metric-value" id="metric-tasks-done">0/24</div>
+                            <div class="metric-label">Nhiệm vụ 6 Giai đoạn</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value" id="metric-code-solved">0/72</div>
+                            <div class="metric-label">Bài tập Code & AI</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value" id="metric-notes-count">1</div>
+                            <div class="metric-label">Ghi chép kỹ thuật</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value" id="metric-mastery-percent">0%</div>
+                            <div class="metric-label">Tỷ lệ hoàn thành</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6 Domain Mastery Cards -->
+                <div>
+                    <h3 style="font-size: 16.5px; margin-bottom: 14px; color: #f8fafc;">
+                        📊 Tiến Độ Phân Theo 6 Lĩnh Vực Chuyên Môn Edge AI
+                    </h3>
+                    <div class="domain-grid" id="domain-cards-container">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Live Verified Skills Matrix (24 Skills) -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">🛡️ Ma Trận 24 Kỹ Năng Đã Mở Khóa (Cập nhật song song với Lộ trình Edge AI)</span>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">
+                            Tự động xác thực qua từng đầu việc và bài tập đã hoàn thành
+                        </span>
+                    </div>
+                    <div class="skills-grid" id="skills-matrix-container">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Auto-Generated Self Introduction (For CV / Cover Letter / GitHub Profile) -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">📝 Đoạn Giới Thiệu Bản Thân Động (Chuẩn Kỹ Sư Edge AI / TinyML)</span>
+                        <button class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px;" onclick="copyAutoIntroduction()">
+                            📋 Sao chép Markdown
+                        </button>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                        Bạn có thể sao chép đoạn văn dưới đây để dán vào hồ sơ CV, thư ứng tuyển hoặc file README giới thiệu trên GitHub.
+                    </p>
+                    <div class="cv-intro-box">
+                        <div class="cv-text" id="auto-cv-text">Đang tải đoạn giới thiệu...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- ROADMAP TASK THEORY MODAL                      -->
+    <!-- ============================================== -->
+    <div class="modal-overlay" id="task-theory-modal">
+        <div class="modal-card" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3 id="task-modal-title">📖 Lý Thuyết Kỹ Thuật Chuyên Sâu</h3>
+                <button class="btn-close" onclick="closeTaskTheoryModal()">✕</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 4px 6px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
+                    <span class="badge badge-ai" id="task-modal-stage">Bước 1</span>
+                    <span class="badge badge-gold" id="task-modal-skill">Skill</span>
+                </div>
+                <div id="task-modal-content" style="font-size: 13.5px; color: var(--text); line-height: 1.65; margin-bottom: 14px;"></div>
+                <div id="task-modal-code-wrap">
+                    <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); margin-bottom: 4px;">
+                        MÃ C / KIẾN TRÚC MINH HỌA:
+                    </div>
+                    <pre style="background: #030509; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); overflow-x: auto;" id="task-modal-code"></pre>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="saveTaskToMyNotes()">
+                    📝 Lưu Vào Sổ Tay Riêng
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-accent" id="btn-task-modal-ai" onclick="askAiFromTaskModal()">
+                        🤖 Hỏi Trợ Lý Gemini AI ↗
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskTheoryModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- EDIT PROFILE MODAL                             -->
+    <!-- ============================================== -->
+    <div class="modal-overlay" id="edit-profile-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✏️ Cập Nhật Thông Tin Bản Thân</h3>
+                <button class="btn-close" onclick="closeEditProfileModal()">✕</button>
+            </div>
+            <form id="edit-profile-form">
+                <div class="form-group">
+                    <label for="edit-profile-name">Họ và tên của bạn</label>
+                    <input type="text" id="edit-profile-name" placeholder="VD: Mr. Thai" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-role">Vị trí / Mục tiêu nghề nghiệp</label>
+                    <input type="text" id="edit-profile-role" placeholder="VD: Edge AI & Embedded Systems Engineer" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-icon">Biểu tượng / Avatar</label>
+                    <select id="edit-profile-icon">
+                        <option value="🤖">🤖 Robot & AI</option>
+                        <option value="⚡">⚡ Tia chớp công nghệ</option>
+                        <option value="🧠">🧠 Neural Network / AI Model</option>
+                        <option value="💻">💻 Lập trình viên C/C++</option>
+                        <option value="🔌">🔌 Vi điều khiển / Phần cứng</option>
+                        <option value="🚀">🚀 Nhà sáng chế IoT</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-bio">Đoạn tự giới thiệu ngắn (Bio)</label>
+                    <textarea id="edit-profile-bio" placeholder="Mô tả mục tiêu học tập, định hướng nghề nghiệp của bạn..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-profile-contact">Liên kết (GitHub / LinkedIn / Email)</label>
+                    <input type="text" id="edit-profile-contact" placeholder="VD: github.com/username | email@example.com">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">Hủy</button>
+                    <button type="submit" class="btn">💾 Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <!-- CheatSheet Backdrop & Drawer -->
+    <div class="cs-backdrop" id="cs-backdrop" onclick="closeCheatSheet()"></div>
+    <div class="cheatsheet-drawer" id="cheatsheet-drawer">
+        <div class="cs-header">
+            <div class="cs-title">
+                <span>📖</span> Tra Cứu CheatSheet & Thanh Ghi Nhúng
+            </div>
+            <button class="btn-close" onclick="closeCheatSheet()">✕</button>
+        </div>
+        <div class="cs-search-bar">
+            <input type="text" class="cs-search-input" id="cs-search-input" placeholder="Tìm kiếm nhanh thanh ghi, hàm API FreeRTOS, memory map..." oninput="renderCheatSheet()">
+        </div>
+        <div class="cs-categories">
+            <button class="cs-cat-btn active" id="cs-cat-all" onclick="setCheatSheetCategory('all')">Tất Cả</button>
+            <button class="cs-cat-btn" id="cs-cat-memory" onclick="setCheatSheetCategory('memory')">🧠 Memory Map</button>
+            <button class="cs-cat-btn" id="cs-cat-freertos" onclick="setCheatSheetCategory('freertos')">⚡ FreeRTOS</button>
+            <button class="cs-cat-btn" id="cs-cat-peripherals" onclick="setCheatSheetCategory('peripherals')">📡 Ngoại Vi</button>
+            <button class="cs-cat-btn" id="cs-cat-tinyml" onclick="setCheatSheetCategory('tinyml')">🤖 TinyML</button>
+        </div>
+        <div class="cs-body" id="cs-content-container">
+            <!-- Rendered by js/cheatsheet.js -->
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast-msg">
+        <span>✓ Đã sao chép vào bộ nhớ tạm!</span>
+    </div>
+
+    <!-- Modal: Nhập tài liệu từ NotebookLM -->
+    <div class="nb-modal-backdrop" id="nb-import-modal">
+        <div class="nb-modal-box">
+            <div class="nb-modal-header">
+                <div class="nb-modal-title">
+                    <span>📥</span> Nhập Tài Liệu / Ghi Chú Từ NotebookLM
+                </div>
+                <button class="btn-close" onclick="closeImportNotebookModal()">✕</button>
+            </div>
+            <div class="nb-modal-body">
+                <div class="nb-notice-box">
+                    💡 Mẹo: Bạn có thể mở sổ tay trên <a href="https://notebooklm.google.com/" target="_blank" style="color: var(--cyan); text-decoration: underline;">Google NotebookLM</a>, sao chép phần tóm tắt (Study Guide, FAQ, Mindmap hoặc Timeline) rồi dán vào đây để lưu trữ ngoại tuyến và dùng Gemini AI hỏi đáp.
+                </div>
+                <div class="nb-form-group">
+                    <label class="nb-form-label">Tiêu đề tài liệu</label>
+                    <input type="text" class="nb-form-control" id="nb-import-title" placeholder="VD: Sổ tay Khởi tạo Tensor Arena ESP32-S3...">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="nb-form-group">
+                        <label class="nb-form-label">Chuyên mục chính</label>
+                        <select class="nb-form-control" id="nb-import-category">
+                            <option value="ESP32">ESP32 & Phần Cứng</option>
+                            <option value="FreeRTOS">FreeRTOS & Đa Nhiệm</option>
+                            <option value="TinyML">TinyML & Lượng Tử Hóa</option>
+                            <option value="Datasheet">Datasheet & TRM</option>
+                            <option value="English">Tiếng Anh Kỹ Thuật</option>
+                        </select>
+                    </div>
+                    <div class="nb-form-group">
+                        <label class="nb-form-label">Thẻ gắn nhãn (Tags)</label>
+                        <input type="text" class="nb-form-control" id="nb-import-tags" placeholder="VD: #Memory, #SIMD, #DMA">
+                    </div>
+                </div>
+                <div class="nb-form-group">
+                    <label class="nb-form-label">Tải tệp từ máy tính (.pdf, .txt, .md, .json)</label>
+                    <input type="file" id="nb-file-upload" accept=".pdf,.txt,.md,.json" onchange="handleNotebookFileUpload(event)" style="font-size: 12px; color: var(--text-muted);">
+                    <div style="font-size: 11px; color: var(--accent); margin-top: 3px;" id="nb-upload-status">
+                        📄 Hỗ trợ trích xuất tự động văn bản từ Datasheet / Giáo trình PDF
+                    </div>
+                </div>
+                <div class="nb-form-group">
+                    <label class="nb-form-label">Nội dung ghi chú / Markdown</label>
+                    <textarea class="nb-form-control" id="nb-import-content" rows="7" placeholder="Dán nội dung văn bản, bảng mã nguồn C, hoặc bản dịch tóm tắt từ NotebookLM vào đây..."></textarea>
+                </div>
+            </div>
+            <div class="nb-modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeImportNotebookModal()">Hủy</button>
+                <button type="button" class="btn btn-accent" onclick="saveImportedNotebookDoc()">💾 Lưu Vào Kho Tài Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cấu hình Gemini API Key -->
+    <div class="nb-modal-backdrop" id="nb-key-modal">
+        <div class="nb-modal-box" style="max-width: 520px;">
+            <div class="nb-modal-header">
+                <div class="nb-modal-title">
+                    <span>⚙️</span> Cấu Hình Google Gemini API Key
+                </div>
+                <button class="btn-close" onclick="closeGeminiKeyModal()">✕</button>
+            </div>
+            <div class="nb-modal-body">
+                <div class="nb-notice-box">
+                    🔒 Khóa API được lưu trữ cục bộ an toàn trong trình duyệt của bạn (LocalStorage) và chỉ được dùng khi bạn gửi câu hỏi trực tiếp đến Google Gemini API (model <code>gemini-2.5-flash</code>).
+                </div>
+                <div class="nb-form-group">
+                    <label class="nb-form-label">Gemini API Key (AI Studio)</label>
+                    <input type="password" class="nb-form-control" id="nb-api-key-input" placeholder="AIzaSy...">
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                    👉 Chưa có khóa API? Bạn có thể lấy khóa miễn phí hoàn toàn tại:<br>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: underline;">
+                        Google AI Studio API Keys ↗
+                    </a>
+                </div>
+            </div>
+            <div class="nb-modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeGeminiKeyModal()">Đóng</button>
+                <button type="button" class="btn btn-accent" onclick="saveGeminiApiKey()">💾 Lưu Cấu Hình</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Chi Tiết Lý Thuyết Nhiệm Vụ Lộ Trình -->
+    <div class="nb-modal-backdrop" id="task-theory-modal">
+        <div class="nb-modal-box" style="max-width: 680px;">
+            <div class="nb-modal-header">
+                <div class="nb-modal-title" id="task-modal-title">
+                    📖 Lý Thuyết Nhiệm Vụ
+                </div>
+                <button class="btn-close" onclick="closeTaskTheoryModal()">✕</button>
+            </div>
+            <div class="nb-modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <span class="nb-doc-card-badge" id="task-modal-stage">Bước 1</span>
+                    <span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3);" id="task-modal-skill">Skill</span>
+                </div>
+                <div style="font-size: 13px; line-height: 1.65; color: #cbd5e1; margin-bottom: 14px;" id="task-modal-content">
+                    Đang nạp lý thuyết...
+                </div>
+                <div style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+                    💻 Khung Code C Triển Khai Thực Chiến:
+                </div>
+                <pre class="stage-theory-code" style="margin: 0;"><code id="task-modal-code">// Code mẫu</code></pre>
+            </div>
+            <div class="nb-modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeTaskTheoryModal()">✕ Đóng</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="saveTaskToMyNotes()" title="Lưu lý thuyết này vào Sổ tay">
+                        💾 Lưu Vào Sổ Tay
+                    </button>
+                    <button type="button" class="btn btn-secondary" style="color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="openPracticeFromTaskModal()" title="Làm bài tập thực hành tương ứng">
+                        💻 Thực Hành (+XP) ↗
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="askAiFromTaskModal()" title="Hỏi Gemini phân tích sâu">
+                        🤖 Hỏi Trợ Lý AI ↗
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Chi Tiết Đồ Án & Kiến Trúc Sản Xuất -->
+    <div class="nb-modal-backdrop" id="project-details-modal">
+        <div class="nb-modal-box" style="max-width: 860px;">
+            <div class="nb-modal-header">
+                <div class="nb-modal-title" id="pdm-title">
+                    🏆 Chi Tiết Đồ Án
+                </div>
+                <button class="btn-close" onclick="closeProjectDetailsModal()">✕</button>
+            </div>
+            <div class="nb-modal-body" style="max-height: 75vh; overflow-y: auto;">
+                <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;">
+                    <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);" id="pdm-badge">Huy hiệu</span>
+                    <span class="badge badge-gold" id="pdm-xp">+300 XP</span>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 13px; color: var(--cyan); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        📋 Tổng Quan Đồ Án:
+                    </div>
+                    <div id="pdm-overview" style="font-size: 13.5px; line-height: 1.6; color: #cbd5e1;"></div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 13px; color: #a78bfa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        🏛️ Kiến Trúc Hệ Thống & Luồng Xử Lý Phần Cứng:
+                    </div>
+                    <pre class="stage-theory-code" style="margin: 0; background: #030712; border: 1px solid #1f2937; color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5;"><code id="pdm-arch"></code></pre>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 13px; color: #34d399; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        💻 Khung Code Khởi Động Chuẩn Sản Xuất (C / ESP-IDF):
+                    </div>
+                    <pre class="stage-theory-code" style="margin: 0; background: #030712; border: 1px solid #1f2937; color: #a7f3d0; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; max-height: 260px; overflow-y: auto;"><code id="pdm-code"></code></pre>
+                </div>
+
+                <div>
+                    <div style="font-weight: 700; font-size: 13px; color: #fbbf24; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        🎯 Tiêu Chuẩn Nghiệm Thu Kỹ Thuật (Rubric):
+                    </div>
+                    <ul id="pdm-rubric-list" style="margin: 0; padding-left: 20px; font-size: 13px; color: #cbd5e1; line-height: 1.7;">
+                    </ul>
+                </div>
+            </div>
+            <div class="nb-modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeProjectDetailsModal()">✕ Đóng</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" style="color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="if(currentActiveProjectModal) askAiAboutProject(currentActiveProjectModal.id)">
+                        🤖 Nhờ Gemini AI Hướng Dẫn Kiến Trúc ↗
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="if(currentActiveProjectModal) { closeProjectDetailsModal(); verifyProjectAchievement(currentActiveProjectModal.id); }">
+                        🏆 Nghiệm Thu & Xác Thực Thành Tựu (+XP)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Giấy Chứng Nhận Thành Tựu Capstone -->
+    <div class="nb-modal-backdrop" id="project-cert-modal">
+        <div class="nb-modal-box cert-modal-box">
+            <div class="cert-border-inner">
+                <div class="cert-badge-stamp">★ ĐẠT CHUẨN ★</div>
+                <div class="cert-header">
+                    <div class="cert-org">EDGE AI & EMBEDDED SYSTEM ACADEMY</div>
+                    <div class="cert-title">GIẤY CHỨNG NHẬN THÀNH TỰU ĐỒ ÁN</div>
+                    <div class="cert-sub">CHỨNG NHẬN KỸ SƯ HOÀN THÀNH ĐỒ ÁN THỰC CHIẾN CẤP ĐỘ SẢN XUẤT</div>
+                </div>
+
+                <div class="cert-body">
+                    <div class="cert-recipient-label">Cấp cho Kỹ sư:</div>
+                    <div class="cert-recipient-name">MR. THAI</div>
+                    <div class="cert-desc">
+                        Đã hoàn thành xuất sắc toàn bộ tiêu chuẩn nghiệm thu kỹ thuật, thiết kế luồng kiến trúc nhúng chuẩn tối ưu bộ nhớ và triển khai thành công đồ án:
+                    </div>
+                    <div class="cert-project-name" id="cert-proj-title">TÊN ĐỒ ÁN</div>
+                    <div class="cert-badge-pill" id="cert-badge-name">HUY HIỆU THÀNH TỰU</div>
+                </div>
+
+                <div class="cert-footer">
+                    <div class="cert-seal">
+                        <div class="cert-seal-icon">⚡</div>
+                        <div class="cert-seal-text">VERIFIED<br>ENGINEER</div>
+                    </div>
+                    <div class="cert-info">
+                        <div id="cert-date">Cấp ngày: 24/09/2026</div>
+                        <div id="cert-id" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold);">Mã xác thực: CAPSTONE-XXX-0000</div>
+                        <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Chứng thực bởi Edge AI Hub Automated Evaluation System</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 18px; display: flex; justify-content: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="closeCertificateModal()">✕ Đóng</button>
+                <button type="button" class="btn btn-accent" onclick="window.print()">🖨️ In / Xuất PDF Chứng Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modular JavaScript Scripts -->
+    <script src="js/state.js"></script>
+    <script src="js/quotes.js"></script>
+    <script src="js/practice.js"></script>
+    <script src="js/decision.js"></script>
+    <script src="js/roadmap.js"></script>
+    <script src="js/simulator.js"></script>
+    <script src="js/serial-monitor.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/pomodoro.js"></script>
+    <script src="js/backup.js"></script>
+    <script src="js/cheatsheet.js"></script>
+    <script src="js/interview.js"></script>
+    <script src="js/notebook.js"></script>
+    <script src="js/projects.js"></script>
+    <script src="js/hexmem.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

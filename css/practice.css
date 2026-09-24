@@ -1,0 +1,446 @@
+/* ================================================= */
+/* MINIMALIST + HI-TECH PRACTICE ARENA (PRACTICE.CSS)*/
+/* ================================================= */
+.practice-arena {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    min-height: 640px;
+    animation: fadeIn 0.25s ease;
+}
+
+@media (max-width: 980px) {
+    .practice-arena {
+        grid-template-columns: 1fr;
+    }
+}
+
+.problem-sidebar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+
+.practice-filter-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+}
+
+.practice-filter-chip {
+    background: #090d16;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.practice-filter-chip:hover {
+    border-color: rgba(0, 240, 255, 0.4);
+    color: #e2e8f0;
+}
+
+.practice-filter-chip.active {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.problem-stage-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.problem-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.problem-item {
+    background: #04060a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.problem-item:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.problem-item.active {
+    border-color: var(--cyan);
+    background: rgba(0, 240, 255, 0.05);
+}
+
+.problem-item-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.difficulty-tag {
+    font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.diff-easy {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+.diff-med {
+    background: var(--amber-dim);
+    color: var(--amber);
+    border: 1px solid rgba(255, 180, 0, 0.3);
+}
+
+.diff-hard {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+}
+
+/* Problem Details Card */
+.problem-details-card {
+    background: #04060b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.problem-desc-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 6px;
+}
+
+.problem-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.example-box {
+    background: #020306;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 8px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-muted);
+}
+
+.hint-accordion {
+    margin-top: 12px;
+    background: rgba(0, 240, 255, 0.03);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.hint-accordion summary {
+    font-weight: 600;
+    color: var(--cyan);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    user-select: none;
+}
+
+/* Code Workspace */
+.code-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.editor-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.editor-topbar {
+    background: #04060a;
+    padding: 8px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.editor-lang-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--cyan);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.editor-btn-small {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.editor-btn-small:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.code-editor-area {
+    width: 100%;
+    height: 260px;
+    background: #020306;
+    color: #a5f3fc;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 14px;
+    border: none;
+    outline: none;
+    resize: vertical;
+    line-height: 1.55;
+    tab-size: 4;
+}
+
+.editor-footer {
+    background: #04060a;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Console & Test Cases */
+.console-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+
+.test-cases-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.test-case-card {
+    background: #04060a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+
+.test-case-card.passed {
+    border-color: rgba(0, 255, 157, 0.3);
+    background: rgba(0, 255, 157, 0.04);
+}
+
+.test-case-card.failed {
+    border-color: rgba(255, 51, 102, 0.3);
+    background: rgba(255, 51, 102, 0.04);
+}
+
+.test-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+
+.console-output-box {
+    background: #020306;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: #94a3b8;
+    min-height: 70px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+/* Linter */
+.linter-box {
+    background: rgba(255, 180, 0, 0.06);
+    border: 1px solid rgba(255, 180, 0, 0.25);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #fde68a;
+    animation: fadeIn 0.2s ease;
+}
+
+.linter-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    background: rgba(255, 180, 0, 0.15);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--amber);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* Serial Monitor */
+.console-tab-switch {
+    display: flex;
+    gap: 4px;
+}
+
+.console-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.console-tab-btn:hover {
+    color: #fff;
+}
+
+.console-tab-btn.active {
+    background: rgba(0, 240, 255, 0.08);
+    color: var(--cyan);
+    border-color: rgba(0, 240, 255, 0.25);
+}
+
+.serial-terminal-wrap {
+    background: #020306;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: #cbd5e1;
+    min-height: 180px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.serial-line {
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.serial-info { color: var(--cyan); }
+.serial-warn { color: var(--amber); }
+.serial-error { color: var(--red); }
+.serial-success { color: var(--green); }
+.serial-dim { color: var(--text-dim); }
+
+.serial-input-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.serial-input {
+    flex: 1;
+    background: #020306;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+}
+
+.serial-input:focus {
+    outline: none;
+    border-color: var(--cyan);
+}
