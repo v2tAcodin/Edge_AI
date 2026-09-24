@@ -1,204 +1,268 @@
 // ==========================================
 // 4. ROADMAP & NOTEBOOK MANAGEMENT
 // ==========================================
-// CÁC HÀM TÍNH TOÁN TIẾN ĐỘ THỜI GIAN THỰC
-        // ==========================================
-        function calculateStats() {
-            let totalTasks = 0;
-            let completedTasks = 0;
-            let stageStats = [];
+// ==========================================
+// CÁC HÀM TÍNH TOÁN TIẾN ĐỘ THỜI GIAN THỰC & CHẶNG NGHỀ NGHIỆP
+// ==========================================
+let activeRoadmapPhase = "all";
 
-            roadmap.forEach((stage) => {
-                let stageTotal = stage.tasks.length;
-                let stageDone = stage.tasks.filter(t => t.done).length;
-                totalTasks += stageTotal;
-                completedTasks += stageDone;
+const ROADMAP_PHASES = [
+    { id: "all", label: "Toàn Bộ (14 Bước)", icon: "🌐" },
+    { id: "academic", label: "1. Sinh Viên (Bước 1-3)", icon: "🎓" },
+    { id: "thesis", label: "2. Đồ Án Tốt Nghiệp A+ (Bước 4-8)", icon: "🏆" },
+    { id: "intern", label: "3. Phỏng Vấn Intern (Bước 9-11)", icon: "💼" },
+    { id: "fresher", label: "4. Fresher ➔ Junior (Bước 12-14)", icon: "🚀" }
+];
 
-                stageStats.push({
-                    stageName: stage.stage,
-                    domain: stage.domain,
-                    icon: stage.icon,
-                    total: stageTotal,
-                    done: stageDone,
-                    percent: stageTotal === 0 ? 0 : Math.round((stageDone / stageTotal) * 100)
-                });
-            });
+const PHASE_META = {
+    academic: { label: "Nền Tảng Sinh Viên", cssClass: "phase-badge-academic" },
+    thesis: { label: "Đồ Án Tốt Nghiệp A+", cssClass: "phase-badge-thesis" },
+    intern: { label: "Phỏng Vấn Intern", cssClass: "phase-badge-intern" },
+    fresher: { label: "Fresher ➔ Junior", cssClass: "phase-badge-fresher" }
+};
 
-            const percent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+function setRoadmapPhase(phase) {
+    activeRoadmapPhase = phase;
+    renderRoadmap();
+}
 
-            // Xác định Rank & Cấp độ
-            let rank = { title: "Cấp độ 1: Novice C & Hardware Explorer", code: "LV.1" };
-            if (percent >= 80 || profile.xp >= 600) {
-                rank = { title: "Cấp độ 4: Senior Edge AI & TinyML Architect", code: "LV.4" };
-            } else if (percent >= 50 || profile.xp >= 350) {
-                rank = { title: "Cấp độ 3: RTOS Concurrency & IoT Engineer", code: "LV.3" };
-            } else if (percent >= 25 || profile.xp >= 150) {
-                rank = { title: "Cấp độ 2: Sensor & Interrupt Practitioner", code: "LV.2" };
-            }
+function calculateStats() {
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let stageStats = [];
 
-            return {
-                totalTasks,
-                completedTasks,
-                percent,
-                stageStats,
-                rank
-            };
-        }
+    roadmap.forEach((stage) => {
+        let stageTotal = stage.tasks.length;
+        let stageDone = stage.tasks.filter(t => t.done).length;
+        totalTasks += stageTotal;
+        completedTasks += stageDone;
 
-        function updatePortalStats() {
-            const stats = calculateStats();
-            const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
+        stageStats.push({
+            stageName: stage.stage,
+            domain: stage.domain,
+            icon: stage.icon,
+            phase: stage.phase || "academic",
+            total: stageTotal,
+            done: stageDone,
+            percent: stageTotal === 0 ? 0 : Math.round((stageDone / stageTotal) * 100)
+        });
+    });
 
-            document.getElementById("portal-roadmap-stat").innerText = `${stats.completedTasks}/${stats.totalTasks} Hoàn thành (${stats.percent}%)`;
-            document.getElementById("portal-code-stat").innerText = `${solvedCount}/${practiceExercises.length} Bài • ${profile.xp} XP`;
-            document.getElementById("portal-rank-stat").innerText = `${stats.rank.code} • ${stats.rank.title.split(':')[1] || stats.rank.title}`;
-        }
+    const percent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
+    // Xác định Rank & Cấp độ theo 5 mốc nghề nghiệp
+    let rank = { title: "Cấp độ 1: Sinh Viên Nhập Môn C & Thanh Ghi", code: "LV.1" };
+    if (percent >= 85 || profile.xp >= 800) {
+        rank = { title: "Cấp độ 5: Kỹ Sư Nhúng Fresher & Automotive Chuẩn MISRA", code: "LV.5" };
+    } else if (percent >= 65 || profile.xp >= 550) {
+        rank = { title: "Cấp độ 4: Ứng Viên Sẵn Sàng Phỏng Vấn Intern Firmware", code: "LV.4" };
+    } else if (percent >= 45 || profile.xp >= 350) {
+        rank = { title: "Cấp độ 3: Kiến Trúc Sư Đồ Án Edge AI & RTOS (Điểm A+)", code: "LV.3" };
+    } else if (percent >= 20 || profile.xp >= 150) {
+        rank = { title: "Cấp độ 2: Kỹ Sư Thực Hành Ngoại Vi & Cảm Biến", code: "LV.2" };
+    }
+
+    return {
+        totalTasks,
+        completedTasks,
+        percent,
+        stageStats,
+        rank
+    };
+}
+
+function updatePortalStats() {
+    const stats = calculateStats();
+    const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
+
+    const portalRm = document.getElementById("portal-roadmap-stat");
+    if (portalRm) portalRm.innerText = `${stats.completedTasks}/${stats.totalTasks} Hoàn thành (${stats.percent}%)`;
+    
+    const portalCode = document.getElementById("portal-code-stat");
+    if (portalCode) portalCode.innerText = `${solvedCount}/${practiceExercises.length} Bài • ${profile.xp} XP`;
+    
+    const portalRank = document.getElementById("portal-rank-stat");
+    if (portalRank) portalRank.innerText = `${stats.rank.code} • ${stats.rank.title.split(':')[1] || stats.rank.title}`;
+}
+
+// ==========================================
+// RENDER ROADMAP & CHECKLIST (14 STAGES - 4 CAREER PHASES)
+// ==========================================
+function toggleStageTheory(stageIndex) {
+    const drawer = document.getElementById(`stage-theory-${stageIndex}`);
+    if (drawer) {
+        drawer.classList.toggle("open");
+    }
+}
+
+function renderRoadmap() {
+    const container = document.getElementById("roadmap-list");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const stats = calculateStats();
+
+    // 1. Render Career Phase Filter Bar
+    const filterBar = document.createElement("div");
+    filterBar.className = "phase-filter-container";
+
+    ROADMAP_PHASES.forEach(ph => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `phase-filter-btn ${activeRoadmapPhase === ph.id ? 'active' : ''}`;
         
-
-// RENDER ROADMAP & CHECKLIST (6 STAGES)
-// RENDER ROADMAP & CHECKLIST (6 STAGES)
-        // ==========================================
-        function toggleStageTheory(stageIndex) {
-            const drawer = document.getElementById(`stage-theory-${stageIndex}`);
-            if (drawer) {
-                drawer.classList.toggle("open");
-            }
+        let countText = "";
+        if (ph.id === "all") {
+            countText = `${stats.completedTasks}/${stats.totalTasks}`;
+        } else {
+            const phaseStages = roadmap.filter(s => (s.phase || "academic") === ph.id);
+            const phTotal = phaseStages.reduce((acc, s) => acc + s.tasks.length, 0);
+            const phDone = phaseStages.reduce((acc, s) => acc + s.tasks.filter(t => t.done).length, 0);
+            countText = `${phDone}/${phTotal}`;
         }
 
-        function renderRoadmap() {
-            const container = document.getElementById("roadmap-list");
-            if (!container) return;
-            container.innerHTML = "";
+        btn.innerHTML = `<span>${ph.icon}</span> <span>${ph.label}</span> <span style="opacity: 0.7; font-size: 10px;">(${countText})</span>`;
+        btn.onclick = () => setRoadmapPhase(ph.id);
+        filterBar.appendChild(btn);
+    });
 
-            const stats = calculateStats();
+    container.appendChild(filterBar);
 
-            roadmap.forEach((stage, stageIndex) => {
-                const stageEl = document.createElement("div");
-                stageEl.className = "stage-group";
+    // 2. Render Stages
+    roadmap.forEach((stage, stageIndex) => {
+        const stagePhase = stage.phase || "academic";
+        if (activeRoadmapPhase !== "all" && stagePhase !== activeRoadmapPhase) {
+            return; // Skip stages not matching filter
+        }
 
-                const stageDoneCount = stage.tasks.filter(t => t.done).length;
-                const stageTheory = (typeof ROADMAP_STAGE_THEORY !== 'undefined') ? ROADMAP_STAGE_THEORY[stageIndex] : null;
+        const stageEl = document.createElement("div");
+        stageEl.className = "stage-group";
 
-                stageEl.innerHTML = `
-                    <div class="stage-header">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span class="stage-title">${stage.icon} ${stage.stage}</span>
-                            <span class="stage-count">${stageDoneCount}/${stage.tasks.length} Hoàn thành</span>
-                        </div>
-                        <div class="stage-header-actions">
-                            <button type="button" class="stage-theory-btn" onclick="toggleStageTheory(${stageIndex})" title="Đọc tóm tắt lý thuyết giai đoạn này">
-                                📖 Tóm Tắt
-                            </button>
-                            <button type="button" class="stage-theory-btn" onclick="openNotebookForStage(${stageIndex})" title="Mở giáo trình đầy đủ trong Sổ Tay AI">
-                                📚 Sổ Tay AI
-                            </button>
-                            <button type="button" class="stage-theory-btn stage-ai-btn" onclick="askAiAboutStage(${stageIndex})" title="Hỏi trợ lý Gemini về giai đoạn này">
-                                🤖 Hỏi AI
-                            </button>
-                        </div>
+        const stageDoneCount = stage.tasks.filter(t => t.done).length;
+        const stageTheory = (typeof ROADMAP_STAGE_THEORY !== 'undefined') ? ROADMAP_STAGE_THEORY[stageIndex] : null;
+        const phaseMeta = PHASE_META[stagePhase] || PHASE_META.academic;
+
+        stageEl.innerHTML = `
+            <div class="stage-header">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="stage-title">${stage.icon} ${stage.stage}</span>
+                    <span class="phase-badge-pill ${phaseMeta.cssClass}">${phaseMeta.label}</span>
+                    <span class="stage-count">${stageDoneCount}/${stage.tasks.length} Hoàn thành</span>
+                </div>
+                <div class="stage-header-actions">
+                    <button type="button" class="stage-theory-btn" onclick="toggleStageTheory(${stageIndex})" title="Đọc tóm tắt lý thuyết giai đoạn này">
+                        📖 Tóm Tắt
+                    </button>
+                    <button type="button" class="stage-theory-btn" onclick="openNotebookForStage(${stageIndex})" title="Mở giáo trình đầy đủ trong Sổ Tay AI">
+                        📚 Sổ Tay AI
+                    </button>
+                    <button type="button" class="stage-theory-btn stage-ai-btn" onclick="askAiAboutStage(${stageIndex})" title="Hỏi trợ lý Gemini về giai đoạn này">
+                        🤖 Hỏi AI
+                    </button>
+                </div>
+            </div>
+            ${stageTheory ? `
+            <div class="stage-theory-drawer" id="stage-theory-${stageIndex}">
+                <div class="stage-theory-content">
+                    <h4>📖 ${stageTheory.title}</h4>
+                    <p>${stageTheory.summary}</p>
+                    <div class="stage-theory-highlight">
+                        <strong>💡 Điểm cốt lõi cần nhớ:</strong>
+                        <ul style="margin-left: 18px; margin-top: 4px;">
+                            ${stageTheory.highlights.map(h => `<li>${h}</li>`).join('')}
+                        </ul>
                     </div>
-                    ${stageTheory ? `
-                    <div class="stage-theory-drawer" id="stage-theory-${stageIndex}">
-                        <div class="stage-theory-content">
-                            <h4>📖 ${stageTheory.title}</h4>
-                            <p>${stageTheory.summary}</p>
-                            <div class="stage-theory-highlight">
-                                <strong>💡 Điểm cốt lõi cần nhớ:</strong>
-                                <ul style="margin-left: 18px; margin-top: 4px;">
-                                    ${stageTheory.highlights.map(h => `<li>${h}</li>`).join('')}
-                                </ul>
-                            </div>
-                            ${stageTheory.codeSnippet ? `<pre class="stage-theory-code"><code>${escapeHtml(stageTheory.codeSnippet)}</code></pre>` : ''}
-                            <div class="stage-theory-actions">
-                                <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
-                                    📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗
-                                </button>
-                                <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 4px 10px;" onclick="askAiAboutStage(${stageIndex})">
-                                    🤖 Nhờ Gemini Giải Thích Sâu Thêm ↗
-                                </button>
-                            </div>
-                        </div>
+                    ${stageTheory.codeSnippet ? `<pre class="stage-theory-code"><code>${escapeHtml(stageTheory.codeSnippet)}</code></pre>` : ''}
+                    <div class="stage-theory-actions">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
+                            📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗
+                        </button>
+                        <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 4px 10px;" onclick="askAiAboutStage(${stageIndex})">
+                            🤖 Nhờ Gemini Giải Thích Sâu Thêm ↗
+                        </button>
                     </div>
+                </div>
+            </div>
+            ` : ''}
+        `;
+
+        stage.tasks.forEach((task, taskIndex) => {
+            const linkedProbIdx = (typeof practiceExercises !== 'undefined') 
+                ? practiceExercises.findIndex(p => p.linkedSkill === task.skill)
+                : -1;
+
+            const label = document.createElement("label");
+            label.className = "task-item";
+            label.innerHTML = `
+                <input type="checkbox" ${task.done ? 'checked' : ''} data-stage="${stageIndex}" data-task="${taskIndex}">
+                <span class="task-text">${task.title}</span>
+                <span class="task-skill-tag">${task.skill}</span>
+                <div class="task-actions-row">
+                    <button type="button" class="btn-task-theory" onclick="event.preventDefault(); showTaskTheoryModal(${stageIndex}, ${taskIndex})" title="Xem lý thuyết chi tiết của bài này">
+                        📖 Lý thuyết
+                    </button>
+                    ${linkedProbIdx !== -1 ? `
+                    <button type="button" class="btn-task-code" onclick="event.preventDefault(); openPracticeProblem(${linkedProbIdx})" title="Làm bài tập thực hành tương ứng (+XP)">
+                        💻 Thực hành
+                    </button>
                     ` : ''}
-                `;
+                    <button type="button" class="btn-task-ai" onclick="event.preventDefault(); askAiAboutTask(${stageIndex}, ${taskIndex})" title="Hỏi Gemini AI về bài này">
+                        🤖 Hỏi AI
+                    </button>
+                </div>
+            `;
+            stageEl.appendChild(label);
+        });
 
-                stage.tasks.forEach((task, taskIndex) => {
-                    const linkedProbIdx = (typeof practiceExercises !== 'undefined') 
-                        ? practiceExercises.findIndex(p => p.linkedSkill === task.skill)
-                        : -1;
+        container.appendChild(stageEl);
+    });
 
-                    const label = document.createElement("label");
-                    label.className = "task-item";
-                    label.innerHTML = `
-                        <input type="checkbox" ${task.done ? 'checked' : ''} data-stage="${stageIndex}" data-task="${taskIndex}">
-                        <span class="task-text">${task.title}</span>
-                        <span class="task-skill-tag">${task.skill}</span>
-                        <div class="task-actions-row">
-                            <button type="button" class="btn-task-theory" onclick="event.preventDefault(); showTaskTheoryModal(${stageIndex}, ${taskIndex})" title="Xem lý thuyết chi tiết của bài này">
-                                📖 Lý thuyết
-                            </button>
-                            ${linkedProbIdx !== -1 ? `
-                            <button type="button" class="btn-task-code" onclick="event.preventDefault(); openPracticeProblem(${linkedProbIdx})" title="Làm bài tập thực hành tương ứng (+XP)">
-                                💻 Thực hành
-                            </button>
-                            ` : ''}
-                            <button type="button" class="btn-task-ai" onclick="event.preventDefault(); askAiAboutTask(${stageIndex}, ${taskIndex})" title="Hỏi Gemini AI về bài này">
-                                🤖 Hỏi AI
-                            </button>
-                        </div>
-                    `;
-                    stageEl.appendChild(label);
-                });
+    // Cập nhật thanh tiến độ tổng quan
+    const progressFill = document.getElementById("progress-fill");
+    if (progressFill) progressFill.style.width = stats.percent + "%";
+    
+    const progressPercent = document.getElementById("progress-percent");
+    if (progressPercent) progressPercent.innerText = stats.percent + "% (" + stats.completedTasks + "/" + stats.totalTasks + ")";
+    
+    const tabLearningCount = document.getElementById("tab-learning-count");
+    if (tabLearningCount) tabLearningCount.innerText = stats.completedTasks + "/" + stats.totalTasks;
+    
+    const tabProfilePercent = document.getElementById("tab-profile-percent");
+    if (tabProfilePercent) tabProfilePercent.innerText = stats.percent + "%";
+    
+    const headerLevelBadge = document.getElementById("header-level-badge");
+    if (headerLevelBadge) headerLevelBadge.innerText = stats.rank.title;
+    
+    const headerXpBadge = document.getElementById("header-xp-badge");
+    if (headerXpBadge) headerXpBadge.innerText = "⭐ " + profile.xp + " XP";
+    
+    const practiceXpTag = document.getElementById("practice-xp-tag");
+    if (practiceXpTag) practiceXpTag.innerText = "⭐ " + profile.xp + " XP";
 
-                container.appendChild(stageEl);
-            });
+    const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
+    const tabPracticeCount = document.getElementById("tab-practice-count");
+    if (tabPracticeCount) tabPracticeCount.innerText = `${solvedCount}/${practiceExercises.length} Bài`;
 
-            // Cập nhật thanh tiến độ tổng quan
-            const progressFill = document.getElementById("progress-fill");
-            if (progressFill) progressFill.style.width = stats.percent + "%";
-            
-            const progressPercent = document.getElementById("progress-percent");
-            if (progressPercent) progressPercent.innerText = stats.percent + "% (" + stats.completedTasks + "/" + stats.totalTasks + ")";
-            
-            const tabLearningCount = document.getElementById("tab-learning-count");
-            if (tabLearningCount) tabLearningCount.innerText = stats.completedTasks + "/" + stats.totalTasks;
-            
-            const tabProfilePercent = document.getElementById("tab-profile-percent");
-            if (tabProfilePercent) tabProfilePercent.innerText = stats.percent + "%";
-            
-            const headerLevelBadge = document.getElementById("header-level-badge");
-            if (headerLevelBadge) headerLevelBadge.innerText = stats.rank.title;
-            
-            const headerXpBadge = document.getElementById("header-xp-badge");
-            if (headerXpBadge) headerXpBadge.innerText = "⭐ " + profile.xp + " XP";
-            
-            const practiceXpTag = document.getElementById("practice-xp-tag");
-            if (practiceXpTag) practiceXpTag.innerText = "⭐ " + profile.xp + " XP";
-
-            const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
-            const tabPracticeCount = document.getElementById("tab-practice-count");
-            if (tabPracticeCount) tabPracticeCount.innerText = `${solvedCount}/${practiceExercises.length} Bài`;
-
-            // Xác định stage hiện tại
-            let currentStageText = "Bước 1: C & Quản Lý Bộ Nhớ";
-            if (stats.completedTasks >= 20) currentStageText = "Bước 6: Mô Hình AI Trên Edge (TinyML)";
-            else if (stats.completedTasks >= 16) currentStageText = "Bước 5: Network & Nâng Cấp OTA";
-            else if (stats.completedTasks >= 12) currentStageText = "Bước 4: Multiple Task (FreeRTOS)";
-            else if (stats.completedTasks >= 8) currentStageText = "Bước 3: Cảm Biến & Thu Thập Dữ Liệu";
-            else if (stats.completedTasks >= 4) currentStageText = "Bước 2: Timer & Xử Lý Ngắt";
-            
-            const roadmapStatusText = document.getElementById("roadmap-status-text");
-            if (roadmapStatusText) roadmapStatusText.innerText = currentStageText;
-
-            localStorage.setItem(STORAGE_ROADMAP, JSON.stringify(roadmap));
-            localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
-
-            renderProfileView();
-            updatePortalStats();
+    // Xác định stage hiện tại (giai đoạn đầu tiên còn task chưa hoàn thành)
+    let currentStageText = "Hoàn Thành Toàn Bộ Lộ Trình Kỹ Sư! 🏆";
+    for (let i = 0; i < roadmap.length; i++) {
+        if (roadmap[i].tasks.some(t => !t.done)) {
+            currentStageText = `${roadmap[i].icon} ${roadmap[i].stage}`;
+            break;
         }
+    }
+    
+    const roadmapStatusText = document.getElementById("roadmap-status-text");
+    if (roadmapStatusText) roadmapStatusText.innerText = currentStageText;
 
-        // ==========================================
+    localStorage.setItem(STORAGE_ROADMAP, JSON.stringify(roadmap));
+    localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
+
+    if (typeof renderProfileView === "function") renderProfileView();
+    updatePortalStats();
+}
+
+// ==========================================
         // XỬ LÝ CHECKBOX ROADMAP
         // ==========================================
         document.getElementById("roadmap-list").addEventListener("change", (e) => {

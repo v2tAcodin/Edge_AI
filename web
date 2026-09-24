@@ -1031,12 +1031,12 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
             </section>
 
             <div class="main-grid">
-                <!-- Cột trái: Lộ trình 6 Giai Đoạn & Checkbox -->
+                <!-- Cột trái: Lộ trình 14 Giai Đoạn & 4 Chặng Nghề Nghiệp -->
                 <div>
                     <div class="card">
                         <div class="card-title">
-                            <span class="card-title-text">📌 Lộ Trình Edge AI Chuẩn (6 Bước từ Cột lõi đến Mô hình AI)</span>
-                            <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Tick để mở khóa năng lực</span>
+                            <span class="card-title-text">📌 Lộ Trình Kỹ Sư Nhúng &amp; Edge AI (14 Bước • 4 Chặng Nghề Nghiệp)</span>
+                            <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Lọc theo từng chặng • Tick để tích lũy năng lực</span>
                         </div>
                         <div id="roadmap-list"></div>
                     </div>
