@@ -32,9 +32,74 @@
     <link rel="stylesheet" href="css/notebook.css">
     <link rel="stylesheet" href="css/projects.css">
     <link rel="stylesheet" href="css/hexmem.css">
+    <link rel="stylesheet" href="css/auth.css">
 </head>
 
 <body>
+    <!-- Edge AI Cyber Terminal Auth Gate (Login Overlay) -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-badge">
+                    <span class="auth-status-dot"></span>
+                    <span>ACCESS CONTROL // LOCKED</span>
+                </div>
+                <h1 class="auth-title">
+                    <span class="logo-glyph">⚡</span> EDGE AI // HUB
+                </h1>
+                <p class="auth-subtitle">ESP32-S3 CORE • SECURE AUTHENTICATION</p>
+            </div>
+
+            <form class="auth-form" id="auth-form" onsubmit="return handleAuthSubmit(event)">
+                <div class="auth-field-group">
+                    <label class="auth-label" for="auth-username">
+                        <span>KÝ DANH KỸ SƯ (CALL SIGN)</span>
+                        <span class="auth-label-tag">CALLSIGN</span>
+                    </label>
+                    <div class="auth-input-wrapper">
+                        <span class="auth-input-icon">👤</span>
+                        <input type="text" id="auth-username" class="auth-input" placeholder="Ví dụ: Mr. Thai" autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="auth-field-group">
+                    <label class="auth-label" for="auth-passcode">
+                        <span>MÃ BẢO MẬT TRUY CẬP (PASSCODE)</span>
+                        <span class="auth-label-tag">PIN/KEY</span>
+                    </label>
+                    <div class="auth-input-wrapper">
+                        <span class="auth-input-icon">🔑</span>
+                        <input type="password" id="auth-passcode" class="auth-input" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
+                        <button type="button" class="auth-toggle-pwd" id="auth-toggle-pwd-btn" onclick="toggleAuthPasswordVisibility()" title="Ẩn/hiện mật khẩu">👁️</button>
+                    </div>
+                </div>
+
+                <div class="auth-options">
+                    <label class="auth-remember">
+                        <input type="checkbox" id="auth-remember" checked>
+                        <span>Ghi nhớ phiên đăng nhập</span>
+                    </label>
+                    <button type="button" class="auth-btn-link" onclick="promptChangePasscode()">Đổi mật khẩu</button>
+                </div>
+
+                <div class="auth-alert" id="auth-alert"></div>
+
+                <button type="submit" class="auth-btn-submit" id="auth-btn-submit">
+                    <span>⚡ XÁC THỰC &amp; MỞ KHÓA // UNLOCK</span>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <div class="auth-hint">
+                    Mật khẩu mặc định: <kbd>123456</kbd>
+                </div>
+                <div class="auth-telemetry">
+                    FIRMWARE SECURE BOOT • V8 RENDERING • ENCRYPTED STORAGE
+                </div>
+            </div>
+        </div>
+    </div>
+
 <div class="container">
         <!-- Main App Header -->
         <header>
@@ -86,6 +151,11 @@
                 <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="btn btn-english" title="Mở trang Tiếng Anh Ra Trường">
                     🇬🇧 Tiếng Anh ↗
                 </a>
+
+                <!-- Lock / Logout Button -->
+                <button type="button" class="btn btn-secondary btn-logout" onclick="handleLogout()" title="Khóa hệ thống / Đăng xuất">
+                    🔒 Khóa
+                </button>
             </div>
         </header>
 
@@ -1860,6 +1930,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     </div>
 
     <!-- Modular JavaScript Scripts -->
+    <script src="js/auth.js"></script>
     <script src="js/state.js"></script>
     <script src="js/quotes.js"></script>
     <script src="js/practice.js"></script>
