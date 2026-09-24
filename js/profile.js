@@ -76,29 +76,29 @@
                 : "  • Đang trong quá trình rèn luyện các bước nền tảng C, Ngắt và Cảm biến.";
 
             const generatedText = 
-`# THÔNG TIN ỨNG VIÊN / EDGE AI DEVELOPER PROFILE
+`# THÔNG TIN ỨNG VIÊN / EMBEDDED & EDGE AI ENGINEER PROFILE
 - Họ và tên: ${profile.name}
 - Định hướng: ${profile.role}
-- Trạng thái hiện tại: ${stats.rank.title} (Hoàn thành ${stats.percent}% Lộ trình Edge AI 6 bước | ${profile.xp} XP)
-- Thành tích Thuật toán & AI: Đã giải đúng ${solvedCount}/${practiceExercises.length} bài tập CodeLearn & TinyML
+- Trạng thái hiện tại: ${stats.rank.title} (Hoàn thành ${stats.percent}% Lộ trình Kỹ Sư 14 bước • 4 Chặng Nghề Nghiệp | ${profile.xp} XP)
+- Thành tích Thuật toán & Code C: Đã giải đúng ${solvedCount}/${practiceExercises.length} bài tập Code C & TinyML
+- Đấu trường Phỏng Vấn: Đã vượt qua các câu hỏi trắc nghiệm bẫy C & Firmware từ Bosch, Renesas, Viettel, FPT
 - Chuẩn ngoại ngữ: Đang duy trì rèn luyện thường xuyên trên tienganhratruong.com
-- Liên hệ / Portfolio: ${profile.contact || 'Chưa cập nhật'}
+- Liên hệ / Portfolio Online: ${profile.contact || 'https://v2tacodin.github.io/Edge_AI/#profile'}
 
 ## TÓM TẮT NĂNG LỰC THỰC CHIẾN
 ${profile.bio}
 
-## KỸ NĂNG ĐÃ KIỂM CHỨNG & TÍCH LŨY (${stats.completedTasks}/${stats.totalTasks} kỹ năng):
+## KỸ NĂNG ĐÃ KIỂM CHỨNG & TÍCH LŨY (${stats.completedTasks}/${stats.totalTasks} kỹ năng chuẩn công nghiệp):
 ${skillsString}
 
-## CƠ SỞ KỸ THUẬT & DỰ ÁN ĐÃ THỰC HÀNH:
-- Đã giải quyết ${solvedCount} thử thách lập trình C phần cứng và lượng tử hóa mô hình AI.
-- Đã hoàn thiện và ghi chép ${notes.length} chuyên đề kỹ thuật chuyên sâu qua 6 bước (C & Bộ nhớ, Timer & Interrupt, Cảm biến, FreeRTOS, Network/OTA, TFLite Micro).
-- Tích hợp thành công mô hình học sâu suy luận độc lập trên chip ESP32 mà không phụ thuộc vào Cloud.`;
+## CƠ SỞ KỸ THUẬT & DỰ ÁN ĐÃ THỰC HÀNH (4 CHẶNG NGHỀ NGHIỆP):
+1. 🎓 Nền tảng Sinh viên: Con trỏ C nâng cao, Quản lý bộ nhớ SRAM/PSRAM, Timer định thời chính xác, Xử lý ngắt ISR và Lọc số FFT.
+2. 🏆 Đồ án Tốt nghiệp Edge AI (A+): Kiến trúc FreeRTOS 2 nhân, Lượng tử hóa INT8 TFLite Micro, Nguồn ULP Deep Sleep và Benchmarking khoa học.
+3. 💼 Phỏng vấn Intern: Làm chủ các bẫy C kinh điển (volatile, struct padding, callback), Thanh ghi trần Bare-metal, Đo kiểm với Logic Analyzer và JTAG.
+4. 🚀 Kỹ sư Fresher: Tiêu chuẩn an toàn ô tô MISRA C:2012, Mạng truyền thông công nghiệp CAN Bus / Modbus, Unit Test tự động Unity/CMock & CI/CD.`;
 
             autoCvContainer.innerText = generatedText;
         }
-
-        
 
 // QUẢN LÝ CHỈNH SỬA PROFILE
         // ==========================================
@@ -137,5 +137,15 @@ ${skillsString}
                 alert("Không thể sao chép tự động, vui lòng chọn văn bản và copy thủ công.");
             });
         }
+
+        function copyPortfolioLink() {
+            const url = window.location.origin + window.location.pathname + "#profile";
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("🔗 Đã sao chép link Portfolio Online để gửi HR / Nhà tuyển dụng!");
+            }).catch(() => {
+                prompt("Copy link Portfolio bên dưới:", url);
+            });
+        }
+
 
         
