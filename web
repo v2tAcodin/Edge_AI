@@ -169,7 +169,7 @@
             </button>
             <button class="tab-btn" id="tab-learning" onclick="switchTab('learning')">
                 <span>🗺️ Lộ Trình</span>
-                <span class="tab-badge" id="tab-learning-count">0/24</span>
+                <span class="tab-badge" id="tab-learning-count">0/56</span>
             </button>
             <button class="tab-btn" id="tab-practice" onclick="switchTab('practice')">
                 <span>💻 Code C</span>
@@ -181,7 +181,7 @@
             </button>
             <button class="tab-btn" id="tab-interview" onclick="switchTab('interview')">
                 <span>🎯 Phỏng Vấn</span>
-                <span class="tab-badge tab-badge-gold" id="quiz-score-badge">0/8</span>
+                <span class="tab-badge tab-badge-gold" id="quiz-score-badge">0/24</span>
             </button>
             <button class="tab-btn" id="tab-notebook" onclick="switchTab('notebook')">
                 <span>📚 Sổ Tay AI</span>
@@ -1328,11 +1328,14 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
 
                 <!-- Filter Category Buttons -->
                 <div class="quiz-filter-bar">
-                    <button class="quiz-filter-btn active" id="quiz-filter-all" onclick="setQuizFilter('all')">Tất Cả Câu Hỏi</button>
-                    <button class="quiz-filter-btn" id="quiz-filter-c_memory" onclick="setQuizFilter('c_memory')">🧠 C & Quản Lý Bộ Nhớ</button>
-                    <button class="quiz-filter-btn" id="quiz-filter-freertos" onclick="setQuizFilter('freertos')">⚡ FreeRTOS & Concurrency</button>
-                    <button class="quiz-filter-btn" id="quiz-filter-peripherals" onclick="setQuizFilter('peripherals')">📡 Ngoại Vi & Lấy Mẫu</button>
-                    <button class="quiz-filter-btn" id="quiz-filter-tinyml" onclick="setQuizFilter('tinyml')">🤖 TinyML & Quantization</button>
+                    <button class="quiz-filter-btn active" id="quiz-filter-all" onclick="setQuizFilter('all')">Tất Cả (24 Câu)</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-c_traps" onclick="setQuizFilter('c_traps')">💡 Bẫy C &amp; Con Trỏ</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-c_memory" onclick="setQuizFilter('c_memory')">🧠 Quản Lý Bộ Nhớ</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-mcu_arch" onclick="setQuizFilter('mcu_arch')">⚙️ Kiến Trúc MCU</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-freertos" onclick="setQuizFilter('freertos')">⚡ FreeRTOS Đa Nhiệm</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-tinyml" onclick="setQuizFilter('tinyml')">🤖 TinyML &amp; AI</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-automotive_can" onclick="setQuizFilter('automotive_can')">🚗 CAN Bus &amp; MISRA C</button>
+                    <button class="quiz-filter-btn" id="quiz-filter-debug_testing" onclick="setQuizFilter('debug_testing')">🔍 Debug &amp; Unit Test</button>
                 </div>
 
                 <!-- Questions Container -->
