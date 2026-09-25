@@ -631,3 +631,495 @@ header::before {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ================================================= */
+/* PHASE 2: VIEW TRANSITION ANIMATION                 */
+/* ================================================= */
+@keyframes viewEnter {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.view-enter {
+    animation: viewEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ================================================= */
+/* PHASE 2: SKELETON LOADING SHIMMER                  */
+/* ================================================= */
+@keyframes skeletonShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--surface) 25%,
+        var(--surface-hover) 50%,
+        var(--surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+    color: transparent !important;
+    pointer-events: none;
+    user-select: none;
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.skeleton-title {
+    height: 20px;
+    width: 60%;
+    margin-bottom: 12px;
+    border-radius: 6px;
+}
+
+.skeleton-card {
+    height: 120px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+}
+
+.skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+/* ================================================= */
+/* PHASE 2: DARK/LIGHT MODE TOGGLE BUTTON             */
+/* ================================================= */
+.btn-theme-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-theme-toggle:hover {
+    transform: rotate(15deg) scale(1.08);
+    border-color: var(--cyan);
+    box-shadow: 0 0 14px var(--cyan-dim);
+}
+
+/* Smooth color transitions for theme switch */
+body, header, .tab-nav, .card, .toast, .btn,
+.pomodoro-box, .search-modal, .quote-card,
+.portal-card, .auth-card, .form-group input,
+.form-group textarea, .form-group select {
+    transition:
+        background-color 0.35s ease,
+        border-color 0.35s ease,
+        color 0.25s ease,
+        box-shadow 0.35s ease;
+}
+
+/* ================================================= */
+/* PHASE 2: LIGHT THEME (data-theme="light")          */
+/* ================================================= */
+[data-theme="light"] {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --surface-hover: #f5f7fa;
+    --surface-glass: rgba(255, 255, 255, 0.88);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(8, 145, 178, 0.3);
+    --border-active: rgba(8, 145, 178, 0.5);
+    --card-border: var(--border);
+    --card-border-hover: var(--border-hover);
+
+    --text: #1a202c;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+
+    --cyan: #0891b2;
+    --cyan-dim: rgba(8, 145, 178, 0.1);
+    --cyan-glow: rgba(8, 145, 178, 0.2);
+
+    --green: #059669;
+    --green-dim: rgba(5, 150, 105, 0.1);
+    --green-glow: rgba(5, 150, 105, 0.2);
+
+    --purple: #7c3aed;
+    --purple-dim: rgba(124, 58, 237, 0.1);
+
+    --amber: #d97706;
+    --amber-dim: rgba(217, 119, 6, 0.1);
+
+    --red: #dc2626;
+    --red-dim: rgba(220, 38, 38, 0.1);
+}
+
+/* Body background */
+[data-theme="light"] body {
+    background-color: var(--bg);
+    background-image:
+        radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        radial-gradient(circle at 50% 0%, rgba(8, 145, 178, 0.04) 0%, transparent 60%);
+}
+
+/* Header */
+[data-theme="light"] header {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] header::before {
+    background: linear-gradient(90deg, var(--cyan), transparent);
+}
+
+[data-theme="light"] .brand-name {
+    color: #1a202c;
+}
+
+[data-theme="light"] .hud-logo {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.12), rgba(5, 150, 105, 0.06));
+    border-color: rgba(8, 145, 178, 0.3);
+    box-shadow: 0 0 12px rgba(8, 145, 178, 0.1);
+}
+
+/* Tab Navigation */
+[data-theme="light"] .tab-nav {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .tab-btn:hover {
+    color: #1a202c;
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .tab-btn.active {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(5, 150, 105, 0.04));
+    color: var(--cyan);
+    border-color: rgba(8, 145, 178, 0.3);
+    box-shadow: 0 0 12px rgba(8, 145, 178, 0.08);
+}
+
+/* Cards */
+[data-theme="light"] .card {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .card:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .card-title {
+    color: #1a202c;
+}
+
+/* Buttons */
+[data-theme="light"] .btn {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+}
+
+[data-theme="light"] .btn:hover {
+    color: #1a202c;
+    border-color: rgba(0, 0, 0, 0.18);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .btn-primary {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.12), rgba(8, 145, 178, 0.06));
+    color: var(--cyan);
+    border-color: rgba(8, 145, 178, 0.3);
+}
+
+[data-theme="light"] .btn-accent {
+    background: linear-gradient(135deg, rgba(5, 150, 105, 0.12), rgba(5, 150, 105, 0.06));
+    color: var(--green);
+    border-color: rgba(5, 150, 105, 0.3);
+}
+
+/* Badges */
+[data-theme="light"] .badge {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Pomodoro Capsule */
+[data-theme="light"] .pomodoro-box {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .pomo-btn-icon:hover {
+    color: #1a202c;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* Welcome Title */
+[data-theme="light"] .welcome-title {
+    color: #1a202c;
+}
+
+[data-theme="light"] .gradient-thai {
+    background: linear-gradient(135deg, #0891b2 0%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+/* Quote Card */
+[data-theme="light"] .quote-card {
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .quote-text {
+    color: #334155;
+}
+
+/* Portal Cards */
+[data-theme="light"] .portal-card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 242, 247, 0.8));
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .portal-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    border-color: rgba(8, 145, 178, 0.3);
+}
+
+/* Forms */
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group textarea,
+[data-theme="light"] .form-group select {
+    background: #f5f7fa;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1a202c;
+}
+
+[data-theme="light"] .form-group input:focus,
+[data-theme="light"] .form-group textarea:focus,
+[data-theme="light"] .form-group select:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 8px rgba(8, 145, 178, 0.15);
+}
+
+/* Toast */
+[data-theme="light"] .toast {
+    background: #ffffff;
+    color: #1a202c;
+    border-color: var(--cyan);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Scrollbars */
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: #f0f2f7;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--cyan);
+}
+
+/* Code & Pre blocks */
+[data-theme="light"] code {
+    background: rgba(0, 0, 0, 0.05);
+    color: #0891b2;
+}
+
+[data-theme="light"] pre {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+/* Simulator specific overrides */
+[data-theme="light"] .sim-cockpit-banner {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 242, 247, 0.8));
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sim-subnav-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sim-subnav-btn.active {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.08), rgba(5, 150, 105, 0.04));
+    border-color: rgba(8, 145, 178, 0.3);
+}
+
+/* Auth overlay light theme */
+[data-theme="light"] .auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .auth-input {
+    background: #f5f7fa;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1a202c;
+}
+
+/* Chip selector in simulator */
+[data-theme="light"] .chip-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .chip-card.selected {
+    border-color: rgba(8, 145, 178, 0.4);
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.06), rgba(8, 145, 178, 0.02));
+}
+
+/* Decision Card */
+[data-theme="light"] .decision-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .mode-btn {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+}
+
+[data-theme="light"] .mode-btn.active {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(5, 150, 105, 0.05));
+    color: var(--cyan);
+    border-color: rgba(8, 145, 178, 0.3);
+}
+
+/* Notebook modal backdrop */
+[data-theme="light"] .nb-modal-backdrop {
+    background: rgba(240, 242, 247, 0.8);
+}
+
+[data-theme="light"] .nb-modal-box {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.12);
+}
+
+/* ================================================= */
+/* PHASE 2: RESPONSIVE IMPROVEMENTS                   */
+/* ================================================= */
+
+/* Sticky tab nav on mobile */
+@media (max-width: 768px) {
+    .tab-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-radius: 0 0 14px 14px;
+        margin-left: -16px;
+        margin-right: -16px;
+        padding: 6px 8px;
+    }
+
+    .tab-btn {
+        min-width: 90px;
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    header {
+        padding: 10px 14px;
+        gap: 8px;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
+    .brand-name {
+        font-size: 13px;
+    }
+
+    .hud-logo {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .portal-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .welcome-title {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+
+    .tab-btn {
+        min-width: 70px;
+        padding: 7px 8px;
+        font-size: 10px;
+        gap: 4px;
+    }
+
+    .tab-badge {
+        display: none;
+    }
+
+    .pomodoro-box {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .pomo-time-text {
+        font-size: 12px;
+    }
+
+    .pomo-mode-badge {
+        font-size: 8px;
+        padding: 1px 5px;
+    }
+}
+
+/* Scroll progress indicator */
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--green));
+    z-index: 10002;
+    transition: width 0.1s ease-out;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px var(--cyan-glow);
+}
+

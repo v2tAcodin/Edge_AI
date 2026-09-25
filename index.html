@@ -33,9 +33,35 @@
     <link rel="stylesheet" href="css/projects.css">
     <link rel="stylesheet" href="css/hexmem.css">
     <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/search.css">
 </head>
 
 <body>
+    <!-- Scroll Progress Bar (Phase 2) -->
+    <div class="scroll-progress" id="scroll-progress-bar" style="width: 0%;"></div>
+
+    <!-- Global Search Overlay (Ctrl+K) — Phase 2 -->
+    <div class="search-overlay" id="search-overlay">
+        <div class="search-modal">
+            <div class="search-header">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" class="search-input" placeholder="Tìm kiếm bài học, code, phỏng vấn..." autocomplete="off">
+                <kbd class="search-kbd">ESC</kbd>
+            </div>
+            <div class="search-results" id="search-results">
+                <div class="search-empty" id="search-empty">
+                    <div class="search-empty-icon">⌨️</div>
+                    <div>Gõ để tìm kiếm trong tất cả nội dung...</div>
+                    <div class="search-shortcuts-hint">
+                        <span><kbd>1</kbd>-<kbd>8</kbd> Chuyển tab</span>
+                        <span><kbd>Ctrl+S</kbd> Lưu backup</span>
+                        <span><kbd>T</kbd> Đổi theme</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Edge AI Cyber Terminal Auth Gate (Login Overlay) -->
     <div class="auth-overlay" id="auth-overlay">
         <div class="auth-card">
@@ -50,7 +76,7 @@
                 <p class="auth-subtitle">ESP32-S3 CORE • SECURE AUTHENTICATION</p>
             </div>
 
-            <form class="auth-form" id="auth-form" onsubmit="return handleAuthSubmit(event)">
+            <form class="auth-form" id="auth-form" onsubmit="handleAuthSubmit(event)">
                 <div class="auth-field-group">
                     <label class="auth-label" for="auth-username">
                         <span>KÝ DANH KỸ SƯ (CALL SIGN)</span>
@@ -90,7 +116,7 @@
             </form>
 
             <div class="auth-footer">
-                <div class="auth-hint">
+                <div class="auth-hint" id="auth-default-hint">
                     Mật khẩu mặc định: <kbd>123456</kbd>
                 </div>
                 <div class="auth-telemetry">
@@ -151,6 +177,16 @@
                 <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="btn btn-english" title="Mở trang Tiếng Anh Ra Trường">
                     🇬🇧 Tiếng Anh ↗
                 </a>
+
+                <!-- Search Button (Phase 2) -->
+                <button class="btn btn-secondary" onclick="openGlobalSearch()" title="Tìm kiếm toàn cục (Ctrl+K)">
+                    🔍 Tìm
+                </button>
+
+                <!-- Dark/Light Theme Toggle (Phase 2) -->
+                <button class="btn btn-secondary btn-theme-toggle" id="btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
+                    🌙
+                </button>
 
                 <!-- Lock / Logout Button -->
                 <button type="button" class="btn btn-secondary btn-logout" onclick="handleLogout()" title="Khóa hệ thống / Đăng xuất">
@@ -1939,23 +1975,24 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     </div>
 
     <!-- Modular JavaScript Scripts -->
-    <script src="js/auth.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/quotes.js"></script>
-    <script src="js/practice.js"></script>
-    <script src="js/decision.js"></script>
-    <script src="js/roadmap.js"></script>
-    <script src="js/simulator.js"></script>
-    <script src="js/serial-monitor.js"></script>
-    <script src="js/profile.js"></script>
-    <script src="js/pomodoro.js"></script>
-    <script src="js/backup.js"></script>
-    <script src="js/cheatsheet.js"></script>
-    <script src="js/interview.js"></script>
-    <script src="js/notebook.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/hexmem.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/state.js" defer></script>
+    <script src="js/quotes.js" defer></script>
+    <script src="js/practice.js" defer></script>
+    <script src="js/decision.js" defer></script>
+    <script src="js/roadmap.js" defer></script>
+    <script src="js/simulator.js" defer></script>
+    <script src="js/serial-monitor.js" defer></script>
+    <script src="js/profile.js" defer></script>
+    <script src="js/pomodoro.js" defer></script>
+    <script src="js/backup.js" defer></script>
+    <script src="js/cheatsheet.js" defer></script>
+    <script src="js/interview.js" defer></script>
+    <script src="js/notebook.js" defer></script>
+    <script src="js/projects.js" defer></script>
+    <script src="js/hexmem.js" defer></script>
+    <script src="js/search.js" defer></script>
+    <script src="js/app.js" defer></script>
 </body>
 
 </html>
