@@ -1931,11 +1931,15 @@ function executeTests(isSubmit) {
             if (typeof renderRoadmap === 'function') renderRoadmap();
             renderPracticeView();
             showToast(`🎉 ACCEPTED! Nhận thành công +${prob.xp} XP!`);
+            // Play XP gain + success SFX
+            if (typeof AudioEngine !== 'undefined') { AudioEngine.playSFX('xp'); setTimeout(() => AudioEngine.playSFX('success'), 200); }
         } else {
             showToast("✓ Chạy thử nghiệm thành công! Hãy nhấn 'Nộp bài' để chấm điểm toàn bộ.");
         }
     } else {
         showToast("✕ Còn Test Case chưa chính xác. Vui lòng kiểm tra lại logic!");
+        // Play error SFX
+        if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('error');
     }
 }
 

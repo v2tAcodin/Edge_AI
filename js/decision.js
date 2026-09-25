@@ -203,4 +203,6 @@ function completeDailyGoals() {
         }
     }
     showToast("🎉 Xuất sắc! Mr. Thai đã hoàn thành toàn bộ mục tiêu hôm nay!");
+    // Play achievement complete SFX
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('complete');
 }

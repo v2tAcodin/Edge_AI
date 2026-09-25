@@ -602,6 +602,8 @@ function verifyProjectAchievement(projId) {
         renderProjectsView();
         showProjectCertificate(projId);
         showToast(`🎉 XÁC THỰC THÀNH TỰU! Nhận thành công ${proj.badgeName} và +${proj.xp} XP!`);
+        // Play triumphant level-up fanfare for major achievement
+        if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('levelup');
     } else {
         showProjectCertificate(projId);
     }

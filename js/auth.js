@@ -199,6 +199,8 @@ async function handleAuthSubmit(event) {
         }
 
         showAuthAlert(`✅ ACCESS GRANTED // Chào mừng Kỹ sư ${username}!`, "success");
+        // Play system boot SFX on successful auth
+        if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('boot');
 
         // Cập nhật brand telemetry
         const telemetry = document.querySelector(".brand-telemetry");

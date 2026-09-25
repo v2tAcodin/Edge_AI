@@ -46,6 +46,7 @@
                             pomoIsRunning = false;
                             btn.innerText = "▶";
                             playSynthesizedChime();
+                            if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('complete');
                             if (pomoMode === "work") {
                                 pomoSessionsDone++;
                                 localStorage.setItem(STORAGE_POMO_SESSIONS, pomoSessionsDone.toString());

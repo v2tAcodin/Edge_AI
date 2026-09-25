@@ -59,6 +59,8 @@ function switchTab(tabId) {
         renderProfileView();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Play tab switch SFX
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('tab');
 }
 
 function openTiengAnhRaTruong() {
@@ -85,6 +87,8 @@ function showToast(message) {
     if (!toast) return;
     toast.innerText = "✓ " + message;
     toast.classList.add("show");
+    // Play toast notification SFX
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('toast');
     setTimeout(() => {
         toast.classList.remove("show");
     }, 3000);
@@ -131,6 +135,8 @@ function toggleTheme() {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const next = current === "dark" ? "light" : "dark";
     applyTheme(next);
+    // Play whoosh SFX for theme transition
+    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('whoosh');
     showToast(next === "light" ? "☀️ Chế độ sáng" : "🌙 Chế độ tối");
 }
 
