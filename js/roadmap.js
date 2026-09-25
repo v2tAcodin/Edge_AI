@@ -269,8 +269,15 @@ function renderRoadmap() {
             if (e.target.matches("input[type='checkbox']")) {
                 const sIdx = e.target.getAttribute("data-stage");
                 const tIdx = e.target.getAttribute("data-task");
-                roadmap[sIdx].tasks[tIdx].done = e.target.checked;
+                const task = roadmap[sIdx].tasks[tIdx];
+                task.done = e.target.checked;
                 renderRoadmap();
+
+                if (typeof logStudyActivity === 'function') {
+                    if (e.target.checked) {
+                        logStudyActivity('roadmap', 1, `Lộ trình: ${task.skill || task.title}`);
+                    }
+                }
             }
         });
 

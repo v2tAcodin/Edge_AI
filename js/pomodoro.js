@@ -8,7 +8,8 @@
         let pomoIsRunning = false;
         let pomoInterval = null;
         let pomoMode = "work"; // "work" or "break"
-        let pomoSessionsDone = 0;
+        const STORAGE_POMO_SESSIONS = "mr_thai_pomo_sessions_v1";
+        let pomoSessionsDone = parseInt(localStorage.getItem(STORAGE_POMO_SESSIONS) || "0", 10);
 
         function playSynthesizedChime() {
             try {
@@ -47,6 +48,10 @@
                             playSynthesizedChime();
                             if (pomoMode === "work") {
                                 pomoSessionsDone++;
+                                localStorage.setItem(STORAGE_POMO_SESSIONS, pomoSessionsDone.toString());
+                                if (typeof logStudyActivity === 'function') {
+                                    logStudyActivity('pomo', 3, `Phiên Focus 25 phút (#${pomoSessionsDone})`);
+                                }
                                 showToast(`🎉 Hoàn thành phiên tập trung #${pomoSessionsDone}! Hãy nghỉ ngơi 5 phút.`);
                                 pomoMode = "break";
                                 pomoMinutes = 5;

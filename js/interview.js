@@ -436,6 +436,9 @@ function answerQuizQuestion(qid, selectedOpt) {
     if (isCorrect) {
         profile.xp = (profile.xp || 0) + 25;
         localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
+        if (typeof logStudyActivity === 'function') {
+            logStudyActivity('interview', 1, `Phỏng vấn: Câu #${q.id.replace('q', '')}`);
+        }
         showToast("🎉 CHÍNH XÁC! Bạn nhận được +25 XP Kỹ Sư Nhúng!");
     } else {
         showToast("✕ Chưa chính xác! Hãy đọc kỹ giải thích kiến trúc bên dưới.");

@@ -1925,6 +1925,9 @@ function executeTests(isSubmit) {
             }
 
             if (typeof saveState === 'function') saveState();
+            if (typeof logStudyActivity === 'function') {
+                logStudyActivity('practice', 2, `Code C: ${prob.title}`);
+            }
             if (typeof renderRoadmap === 'function') renderRoadmap();
             renderPracticeView();
             showToast(`🎉 ACCEPTED! Nhận thành công +${prob.xp} XP!`);
