@@ -42,6 +42,7 @@ function switchTab(tabId) {
         document.getElementById("tab-simulator").classList.add("active");
         showView("view-simulator");
         updateSramSimulation();
+        if (typeof initHexMemoryModule === 'function') initHexMemoryModule();
     } else if (tabId === 'interview') {
         const tabEl = document.getElementById("tab-interview");
         if (tabEl) tabEl.classList.add("active");
@@ -172,6 +173,21 @@ function installPwaApp() {
 }
 
 // ==========================================
+// PWA SERVICE WORKER REGISTRATION (Phase 3)
+// ==========================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((reg) => {
+                console.log('[PWA] Service Worker registered with scope:', reg.scope);
+            })
+            .catch((err) => {
+                console.warn('[PWA] Service Worker registration failed:', err);
+            });
+    });
+}
+
+// ==========================================
 // KHỞI CHẠY LẦN ĐẦU KHI DOM SẴN SÀNG
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
@@ -188,12 +204,6 @@ document.addEventListener("DOMContentLoaded", () => {
     generateDailyDecision(false);
     updatePortalStats();
     updatePomoDisplay();
-    updateSramSimulation();
-    if (typeof renderCheatSheet === 'function') renderCheatSheet();
-    if (typeof renderInterviewArena === 'function') renderInterviewArena();
-    if (typeof renderNotebookView === 'function') renderNotebookView();
-    if (typeof renderProjectsView === 'function') renderProjectsView();
-    if (typeof initHexMemoryModule === 'function') initHexMemoryModule();
 });
 
 // Listen for system theme changes

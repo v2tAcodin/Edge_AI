@@ -1,0 +1,50 @@
+{
+  "name": "Edge AI & Embedded Hub - Mr. Thai",
+  "short_name": "EdgeAIHub",
+  "description": "Nền tảng đào tạo kỹ sư nhúng chuyên sâu & kiến trúc sư giải pháp TinyML / Edge AI ESP32-S3",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06080e",
+  "theme_color": "#00f0ff",
+  "categories": ["education", "developer", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Phòng Lab & Sim",
+      "short_name": "Lab",
+      "description": "Mô phỏng phần cứng ESP32-S3 & thanh ghi",
+      "url": "./index.html#simulator",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Lộ Trình Học",
+      "short_name": "Lộ Trình",
+      "description": "Lộ trình 14 giai đoạn kỹ sư TinyML",
+      "url": "./index.html#learning",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Đấu Trường Code C",
+      "short_name": "Code C",
+      "description": "72 bài toán thuật toán nhúng & DSP",
+      "url": "./index.html#practice",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Phỏng Vấn Tuyển Dụng",
+      "short_name": "Phỏng Vấn",
+      "description": "25+ câu hỏi phỏng vấn kỹ sư nhúng",
+      "url": "./index.html#interview",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "96x96" }]
+    }
+  ]
+}

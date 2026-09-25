@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#070b14">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Edge%20AI%20%26%20Embedded%20Hub%22%2C%22short_name%22%3A%22EdgeAIHub%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070b14%22%2C%22theme_color%22%3A%22%23070b14%22%7D">
+    <link rel="manifest" href="manifest.json">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="css/hexmem.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="css/analytics.css">
 </head>
 
 <body>
@@ -163,8 +164,11 @@
                     📖 CheatSheet
                 </button>
 
-                <!-- Backup & Restore Buttons -->
+                <!-- Backup & Restore Buttons (Phase 3: + Lịch sử) -->
                 <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-secondary" onclick="openBackupHistoryModal()" title="Lịch sử sao lưu & phục hồi (5 phiên bản)">
+                        🕒 Lịch Sử
+                    </button>
                     <button class="btn btn-secondary" onclick="exportBackupData()" title="Tải xuống file JSON sao lưu">
                         📥 Lưu
                     </button>
@@ -436,6 +440,88 @@
                             </div>
                         </div>
 
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- LEARNING ANALYTICS & ACTIVITY HEATMAP (PHASE 3) -->
+                    <!-- ============================================== -->
+                    <div class="analytics-section">
+                        <div class="analytics-card">
+                            <div class="analytics-header">
+                                <div class="analytics-title-group">
+                                    <div class="analytics-title-icon">📊</div>
+                                    <div class="analytics-title-text">
+                                        <h3>HOẠT ĐỘNG HỌC TẬP &amp; HEATMAP TIẾN ĐỘ</h3>
+                                        <p>ESP32-S3 REAL-TIME TELEMETRY • GITHUB-STYLE CONTRIBUTION MATRIX</p>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-secondary" onclick="openBackupHistoryModal()" title="Xem lịch sử 5 bản sao lưu gần nhất">
+                                        🕒 Lịch Sử Lưu
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportNotesMarkdown()" title="Xuất ghi chú ra file Markdown">
+                                        📝 Xuất .MD
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Analytics Stats Grid -->
+                            <div class="analytics-stats-grid">
+                                <div class="stat-pill">
+                                    <div class="stat-pill-label">🔥 Chuỗi Ngày Liên Tục</div>
+                                    <div class="stat-pill-val color-amber" id="analytics-stat-streak">-- ngày</div>
+                                </div>
+                                <div class="stat-pill">
+                                    <div class="stat-pill-label">📅 Tổng Ngày Học</div>
+                                    <div class="stat-pill-val color-cyan" id="analytics-stat-days">-- ngày</div>
+                                </div>
+                                <div class="stat-pill">
+                                    <div class="stat-pill-label">⏱️ Giờ Focus Pomodoro</div>
+                                    <div class="stat-pill-val color-green" id="analytics-stat-focus">--h</div>
+                                </div>
+                                <div class="stat-pill">
+                                    <div class="stat-pill-label">💻 Bài Toán Đã Nạp</div>
+                                    <div class="stat-pill-val color-purple" id="analytics-stat-exercises">-- bài</div>
+                                </div>
+                            </div>
+
+                            <!-- Heatmap Visualization -->
+                            <div class="heatmap-container">
+                                <div class="heatmap-scroll-wrap">
+                                    <div class="heatmap-month-labels">
+                                        <span></span>
+                                        <span>T4</span>
+                                        <span>T5</span>
+                                        <span>T6</span>
+                                        <span>T7</span>
+                                        <span>T8</span>
+                                        <span>T9</span>
+                                        <span>T10</span>
+                                    </div>
+                                    <div class="heatmap-body">
+                                        <div class="heatmap-day-labels">
+                                            <span>T2</span>
+                                            <span>T4</span>
+                                            <span>T6</span>
+                                            <span>CN</span>
+                                        </div>
+                                        <div class="heatmap-grid" id="analytics-heatmap-grid"></div>
+                                    </div>
+                                    <div class="heatmap-footer">
+                                        <span>💡 Rê chuột lên từng ô để xem chi tiết hoạt động theo ngày</span>
+                                        <div class="heatmap-legend">
+                                            <span>Ít</span>
+                                            <div class="heatmap-cell level-0 heatmap-legend-cell"></div>
+                                            <div class="heatmap-cell level-1 heatmap-legend-cell"></div>
+                                            <div class="heatmap-cell level-2 heatmap-legend-cell"></div>
+                                            <div class="heatmap-cell level-3 heatmap-legend-cell"></div>
+                                            <div class="heatmap-cell level-4 heatmap-legend-cell"></div>
+                                            <span>Nhiều</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -1997,6 +2083,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/projects.js" defer></script>
     <script src="js/hexmem.js" defer></script>
     <script src="js/search.js" defer></script>
+    <script src="js/analytics.js" defer></script>
     <script src="js/app.js" defer></script>
 </body>
 
