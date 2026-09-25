@@ -3,7 +3,7 @@
 // Version: 3.0.0
 // ==========================================
 
-const CACHE_NAME = 'edge-ai-hub-v3.0.0';
+const CACHE_NAME = 'edge-ai-hub-v3.1.0';
 
 const PRECACHE_ASSETS = [
     './',
@@ -25,6 +25,7 @@ const PRECACHE_ASSETS = [
     './css/auth.css',
     './css/search.css',
     './css/analytics.css',
+    './css/audio.css',
     // JS Modular Files
     './js/auth.js',
     './js/state.js',
@@ -44,6 +45,7 @@ const PRECACHE_ASSETS = [
     './js/hexmem.js',
     './js/search.js',
     './js/analytics.js',
+    './js/audio.js',
     './js/app.js'
 ];
 

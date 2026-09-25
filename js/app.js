@@ -87,8 +87,6 @@ function showToast(message) {
     if (!toast) return;
     toast.innerText = "✓ " + message;
     toast.classList.add("show");
-    // Play toast notification SFX
-    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('toast');
     setTimeout(() => {
         toast.classList.remove("show");
     }, 3000);
