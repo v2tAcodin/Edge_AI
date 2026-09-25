@@ -66,9 +66,14 @@
     <div class="auth-overlay" id="auth-overlay">
         <div class="auth-card">
             <div class="auth-header">
-                <div class="auth-badge">
-                    <span class="auth-status-dot"></span>
-                    <span>ACCESS CONTROL // LOCKED</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="auth-badge">
+                        <span class="auth-status-dot"></span>
+                        <span>ACCESS CONTROL // LOCKED</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối" style="padding: 4px 10px; font-size: 13px; border-radius: 8px;">
+                        🌙
+                    </button>
                 </div>
                 <h1 class="auth-title">
                     <span class="logo-glyph">⚡</span> EDGE AI // HUB

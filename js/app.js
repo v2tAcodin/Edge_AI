@@ -114,11 +114,10 @@ function applyTheme(theme) {
     localStorage.setItem(STORAGE_THEME, theme);
 
     // Update toggle button icon
-    const btn = document.getElementById("btn-theme-toggle");
-    if (btn) {
+    document.querySelectorAll(".btn-theme-toggle").forEach(btn => {
         btn.innerHTML = theme === "light" ? "☀️" : "🌙";
         btn.title = theme === "light" ? "Chuyển sang chế độ tối" : "Chuyển sang chế độ sáng";
-    }
+    });
 
     // Update meta theme-color for mobile browsers
     const meta = document.querySelector('meta[name="theme-color"]');
