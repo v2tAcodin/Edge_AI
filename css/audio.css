@@ -512,3 +512,39 @@
         font-size: 9px;
     }
 }
+
+/* ══════════════════════════════════════════ */
+/* 🎧 HEADER & AUTH BUTTON STYLES             */
+/* ══════════════════════════════════════════ */
+.btn-audio-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.btn-audio-header.playing {
+    border-color: var(--green) !important;
+    color: var(--green) !important;
+    background: rgba(0, 255, 157, 0.12) !important;
+    box-shadow: 0 0 14px rgba(0, 255, 157, 0.35) !important;
+    animation: audio-header-pulse 2s ease-in-out infinite;
+}
+
+@keyframes audio-header-pulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(0, 255, 157, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(0, 255, 157, 0.65);
+    }
+}
+
+.btn-audio-auth.active {
+    border-color: var(--green) !important;
+    color: var(--green) !important;
+    background: rgba(0, 255, 157, 0.15) !important;
+    box-shadow: 0 0 12px rgba(0, 255, 157, 0.4) !important;
+}
+

@@ -73,9 +73,14 @@
                         <span class="auth-status-dot"></span>
                         <span>ACCESS CONTROL // LOCKED</span>
                     </div>
-                    <button type="button" class="btn btn-secondary btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối" style="padding: 4px 10px; font-size: 13px; border-radius: 8px;">
-                        🌙
-                    </button>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn btn-secondary btn-audio-auth" id="btn-audio-auth" onclick="AudioEngine.toggleMusic()" title="Bật/Tắt Nhạc Nền Lo-Fi" style="padding: 4px 10px; font-size: 13px; border-radius: 8px;">
+                            🎵
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối" style="padding: 4px 10px; font-size: 13px; border-radius: 8px;">
+                            🌙
+                        </button>
+                    </div>
                 </div>
                 <h1 class="auth-title">
                     <span class="logo-glyph">⚡</span> EDGE AI // HUB
@@ -196,6 +201,11 @@
                 <!-- Dark/Light Theme Toggle (Phase 2) -->
                 <button class="btn btn-secondary btn-theme-toggle" id="btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
                     🌙
+                </button>
+
+                <!-- Audio Engine Header Toggle -->
+                <button type="button" class="btn btn-secondary btn-audio-header" id="btn-audio-header" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh & Nhạc nền Lo-Fi (Web Audio API)">
+                    <span id="header-audio-icon">🎵</span> <span id="header-audio-label">Nhạc</span>
                 </button>
 
                 <!-- Lock / Logout Button -->

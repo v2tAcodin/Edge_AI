@@ -1,11 +1,11 @@
 // ==========================================
 // 🎵 EDGE AI HUB — AUDIO ENGINE
 // Web Audio API: Lo-Fi Music + SFX System
-// Fully synthesized, no external files needed
+// Fully synthesized, zero dependencies, offline ready
 // ==========================================
 
 const AudioEngine = (() => {
-    // ── State ──
+    // ── Internal State ──
     let audioCtx = null;
     let masterGain = null;
     let musicGain = null;
@@ -13,16 +13,16 @@ const AudioEngine = (() => {
     let isPlaying = false;
     let musicEnabled = true;
     let sfxEnabled = true;
-    let musicVolume = 0.35;
-    let sfxVolume = 0.55;
+    let musicVolume = 0.55;
+    let sfxVolume = 0.75;
     let currentBPM = 72;
     let loopTimers = [];
     let activeOscillators = [];
     let panelOpen = false;
 
-    const STORAGE_KEY = 'edge_ai_audio_prefs_v1';
+    const STORAGE_KEY = 'edge_ai_audio_prefs_v2';
 
-    // ── Lo-Fi Chord Progressions (Jazz/Chill) ──
+    // ── Lo-Fi Chord Progressions (Jazz / Chillhop) ──
     const chordProgressions = [
         // Progression 1: Cmaj7 → Am7 → Dm7 → G7
         [
@@ -45,7 +45,7 @@ const AudioEngine = (() => {
             [196.00, 246.94, 293.66, 369.99], // Gmaj7
             [261.63, 329.63, 392.00, 493.88], // Cmaj7
         ],
-        // Progression 4: Dm9 → G13 → Cmaj9 → Am11 (jazzy)
+        // Progression 4: Dm9 → G13 → Cmaj9 → Am11 (Jazzy)
         [
             [146.83, 174.61, 220.00, 329.63], // Dm9
             [196.00, 246.94, 349.23, 440.00], // G13
@@ -60,27 +60,53 @@ const AudioEngine = (() => {
     // ── Initialize AudioContext ──
     function init() {
         if (audioCtx) return;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+            console.warn('[AudioEngine] Web Audio API is not supported in this environment.');
+            return;
+        }
 
-        // Master chain
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.8;
-        masterGain.connect(audioCtx.destination);
+        try {
+            audioCtx = new AudioContextClass();
 
-        // Music bus
-        musicGain = audioCtx.createGain();
-        musicGain.gain.value = musicVolume;
-        musicGain.connect(masterGain);
+            // Master Bus
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 1.0;
+            masterGain.connect(audioCtx.destination);
 
-        // SFX bus
-        sfxGain = audioCtx.createGain();
-        sfxGain.gain.value = sfxVolume;
-        sfxGain.connect(masterGain);
+            // Music Bus
+            musicGain = audioCtx.createGain();
+            musicGain.gain.value = musicVolume;
+            musicGain.connect(masterGain);
 
-        loadPrefs();
+            // SFX Bus
+            sfxGain = audioCtx.createGain();
+            sfxGain.gain.value = sfxVolume;
+            sfxGain.connect(masterGain);
+
+            loadPrefs();
+        } catch (e) {
+            console.warn('[AudioEngine] Init error:', e);
+        }
     }
 
-    // ── Persistence ──
+    // ── Unlock Audio on First User Gesture (Autoplay Policy) ──
+    function setupAutoplayUnlock() {
+        const unlock = () => {
+            init();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            window.removeEventListener('pointerdown', unlock, true);
+            window.removeEventListener('keydown', unlock, true);
+            window.removeEventListener('touchstart', unlock, true);
+        };
+        window.addEventListener('pointerdown', unlock, { capture: true, once: true });
+        window.addEventListener('keydown', unlock, { capture: true, once: true });
+        window.addEventListener('touchstart', unlock, { capture: true, once: true });
+    }
+
+    // ── Preferences Persistence ──
     function savePrefs() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -96,8 +122,8 @@ const AudioEngine = (() => {
                 const p = JSON.parse(saved);
                 musicEnabled = p.musicEnabled !== undefined ? p.musicEnabled : true;
                 sfxEnabled = p.sfxEnabled !== undefined ? p.sfxEnabled : true;
-                musicVolume = p.musicVolume !== undefined ? p.musicVolume : 0.35;
-                sfxVolume = p.sfxVolume !== undefined ? p.sfxVolume : 0.55;
+                musicVolume = p.musicVolume !== undefined ? Math.max(0.35, p.musicVolume) : 0.55;
+                sfxVolume = p.sfxVolume !== undefined ? Math.max(0.50, p.sfxVolume) : 0.75;
                 currentBPM = p.currentBPM || 72;
                 if (musicGain) musicGain.gain.value = musicVolume;
                 if (sfxGain) sfxGain.gain.value = sfxVolume;
@@ -106,30 +132,29 @@ const AudioEngine = (() => {
     }
 
     // ══════════════════════════════════════════
-    // 🎶 LO-FI MUSIC GENERATOR
+    // 🎶 LO-FI MUSIC GENERATOR (Synthesized)
     // ══════════════════════════════════════════
 
-    // Create a warm, vinyl-crackle noise
+    // Subtle vinyl crackle
     function createVinylCrackle() {
+        if (!audioCtx) return null;
         const bufferSize = audioCtx.sampleRate * 4;
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-            // Sparse crackle: mostly silence with rare pops
-            data[i] = Math.random() < 0.002 ? (Math.random() - 0.5) * 0.3 : 0;
+            data[i] = Math.random() < 0.0018 ? (Math.random() - 0.5) * 0.25 : 0;
         }
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
 
-        // Bandpass to make it sound like vinyl
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 3000;
-        filter.Q.value = 0.5;
+        filter.frequency.value = 2800;
+        filter.Q.value = 0.6;
 
         const crackleGain = audioCtx.createGain();
-        crackleGain.gain.value = 0.08;
+        crackleGain.gain.value = 0.035;
 
         source.connect(filter);
         filter.connect(crackleGain);
@@ -139,16 +164,16 @@ const AudioEngine = (() => {
         return source;
     }
 
-    // Create ambient rain/white noise
+    // Warm ambient rain texture
     function createRainAmbience() {
-        const bufferSize = audioCtx.sampleRate * 6;
+        if (!audioCtx) return null;
+        const bufferSize = audioCtx.sampleRate * 5;
         const buffer = audioCtx.createBuffer(2, bufferSize, audioCtx.sampleRate);
         for (let ch = 0; ch < 2; ch++) {
             const data = buffer.getChannelData(ch);
             for (let i = 0; i < bufferSize; i++) {
-                // Brown noise approximation (smoother)
                 const white = Math.random() * 2 - 1;
-                data[i] = (i > 0 ? data[i - 1] * 0.998 : 0) + white * 0.02;
+                data[i] = (i > 0 ? data[i - 1] * 0.997 : 0) + white * 0.02;
             }
         }
         const source = audioCtx.createBufferSource();
@@ -157,10 +182,10 @@ const AudioEngine = (() => {
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 800;
+        filter.frequency.value = 900;
 
         const rainGain = audioCtx.createGain();
-        rainGain.gain.value = 0.06;
+        rainGain.gain.value = 0.045;
 
         source.connect(filter);
         filter.connect(rainGain);
@@ -170,29 +195,29 @@ const AudioEngine = (() => {
         return source;
     }
 
-    // Play a single warm chord voicing
+    // Warm chord voicing
     function playChord(frequencies, startTime, duration) {
+        if (!audioCtx) return;
         frequencies.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
-            // Alternate between sine and triangle for warmth
             osc.type = i % 2 === 0 ? 'sine' : 'triangle';
-            // Subtle detune for Lo-Fi warmth
-            osc.frequency.value = freq * (1 + (Math.random() - 0.5) * 0.004);
+            // Subtle Lo-Fi detuning for natural chorus
+            osc.frequency.value = freq * (1 + (Math.random() - 0.5) * 0.005);
 
             const gain = audioCtx.createGain();
-            const attackTime = 0.15 + Math.random() * 0.1;
-            const vol = 0.06 + Math.random() * 0.02;
+            const attackTime = 0.12 + Math.random() * 0.08;
+            const vol = 0.16 + Math.random() * 0.04;
 
             gain.gain.setValueAtTime(0, startTime);
             gain.gain.linearRampToValueAtTime(vol, startTime + attackTime);
-            gain.gain.setValueAtTime(vol, startTime + duration - 0.5);
+            gain.gain.setValueAtTime(vol, startTime + duration - 0.4);
             gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
-            // Lo-Fi filter — slight wobble
+            // Lo-Fi tone filter
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.value = 1200 + Math.random() * 600;
-            filter.Q.value = 0.7;
+            filter.frequency.value = 1400 + Math.random() * 500;
+            filter.Q.value = 0.8;
 
             osc.connect(filter);
             filter.connect(gain);
@@ -204,20 +229,21 @@ const AudioEngine = (() => {
         });
     }
 
-    // Soft kick drum (Lo-Fi style)
+    // Punchy Lo-Fi kick drum
     function playKick(time) {
+        if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(150, time);
-        osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+        osc.frequency.setValueAtTime(160, time);
+        osc.frequency.exponentialRampToValueAtTime(42, time + 0.14);
 
         const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.18, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+        gain.gain.setValueAtTime(0.40, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 200;
+        filter.frequency.value = 240;
 
         osc.connect(filter);
         filter.connect(gain);
@@ -227,9 +253,10 @@ const AudioEngine = (() => {
         activeOscillators.push(osc);
     }
 
-    // Soft hi-hat (noise-based)
+    // Crisp Lo-Fi hi-hat
     function playHiHat(time, open = false) {
-        const bufLen = audioCtx.sampleRate * (open ? 0.15 : 0.06);
+        if (!audioCtx) return;
+        const bufLen = audioCtx.sampleRate * (open ? 0.14 : 0.05);
         const buffer = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufLen; i++) {
@@ -241,11 +268,11 @@ const AudioEngine = (() => {
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'highpass';
-        filter.frequency.value = 7000;
+        filter.frequency.value = 6500;
 
         const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(open ? 0.04 : 0.03, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + (open ? 0.15 : 0.06));
+        gain.gain.setValueAtTime(open ? 0.12 : 0.08, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + (open ? 0.14 : 0.05));
 
         source.connect(filter);
         filter.connect(gain);
@@ -254,21 +281,22 @@ const AudioEngine = (() => {
         activeOscillators.push(source);
     }
 
-    // Sub bass line
+    // Warm deep bassline
     function playBass(freq, time, duration) {
+        if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.value = freq / 2; // One octave down
+        osc.frequency.value = freq / 2; // Octave lower
 
         const gain = audioCtx.createGain();
         gain.gain.setValueAtTime(0, time);
-        gain.gain.linearRampToValueAtTime(0.10, time + 0.08);
-        gain.gain.setValueAtTime(0.10, time + duration - 0.2);
+        gain.gain.linearRampToValueAtTime(0.28, time + 0.08);
+        gain.gain.setValueAtTime(0.28, time + duration - 0.2);
         gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 250;
+        filter.frequency.value = 280;
 
         osc.connect(filter);
         filter.connect(gain);
@@ -278,89 +306,95 @@ const AudioEngine = (() => {
         activeOscillators.push(osc);
     }
 
-    // ── Main Music Loop Scheduler ──
+    // Main music scheduler loop
     function scheduleMusicLoop() {
-        if (!isPlaying || !musicEnabled) return;
+        if (!isPlaying || !musicEnabled || !audioCtx) return;
 
         const beatDuration = 60 / currentBPM;
         const barDuration = beatDuration * 4;
         const now = audioCtx.currentTime;
         const prog = chordProgressions[currentProgIdx];
 
-        // Schedule 4 bars (one full progression cycle)
+        // Schedule 4 bars ahead
         for (let bar = 0; bar < 4; bar++) {
             const barStart = now + bar * barDuration;
             const chord = prog[(currentChordIdx + bar) % prog.length];
 
-            // Chord pad
+            // Chords
             playChord(chord, barStart, barDuration - 0.05);
 
             // Bass root
-            playBass(chord[0], barStart, barDuration * 0.8);
+            playBass(chord[0], barStart, barDuration * 0.85);
 
-            // Drum pattern per bar
+            // Drum pattern
             for (let beat = 0; beat < 4; beat++) {
                 const beatTime = barStart + beat * beatDuration;
 
-                // Kick on beats 1 and 3 (sometimes skip for variation)
-                if ((beat === 0 || beat === 2) && Math.random() > 0.15) {
+                // Kick on 1 and 3
+                if (beat === 0 || beat === 2) {
                     playKick(beatTime);
                 }
 
-                // Hi-hat on every beat, open on beat 2 sometimes
-                if (Math.random() > 0.1) {
-                    playHiHat(beatTime, beat === 1 && Math.random() > 0.5);
-                }
+                // Hi-hat on beats
+                playHiHat(beatTime, beat === 1 && Math.random() > 0.6);
 
-                // Offbeat hi-hat for swing feel
-                if (Math.random() > 0.4) {
+                // Swing eighth-note hi-hat
+                if (Math.random() > 0.35) {
                     playHiHat(beatTime + beatDuration * 0.66, false);
                 }
             }
         }
 
-        // Advance chord index
         currentChordIdx = (currentChordIdx + 4) % prog.length;
 
-        // Occasionally switch progression for variety
+        // Subtle progression variation
         if (Math.random() < 0.2) {
             currentProgIdx = Math.floor(Math.random() * chordProgressions.length);
         }
 
-        // Schedule next loop
-        const timer = setTimeout(() => scheduleMusicLoop(), barDuration * 4 * 1000 - 100);
+        const timer = setTimeout(() => scheduleMusicLoop(), barDuration * 4 * 1000 - 120);
         loopTimers.push(timer);
     }
 
     // ── Start / Stop Music ──
     function startMusic() {
         init();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioCtx) return;
         if (isPlaying) return;
+
+        const runMusic = () => {
+            if (!isPlaying) return;
+            stopActiveMusicNodes();
+            createVinylCrackle();
+            createRainAmbience();
+            scheduleMusicLoop();
+            updateUI();
+        };
+
         isPlaying = true;
-
-        // Start ambient layers
-        createVinylCrackle();
-        createRainAmbience();
-
-        // Start chord + drum loop
-        scheduleMusicLoop();
         updateUI();
+
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(runMusic).catch(e => {
+                console.warn('[AudioEngine] Resume failed:', e);
+            });
+        } else {
+            runMusic();
+        }
     }
 
-    function stopMusic() {
-        isPlaying = false;
-
-        // Clear scheduled loops
+    function stopActiveMusicNodes() {
         loopTimers.forEach(t => clearTimeout(t));
         loopTimers = [];
-
-        // Stop all oscillators
         activeOscillators.forEach(osc => {
             try { osc.stop(); } catch (e) { }
         });
         activeOscillators = [];
+    }
 
+    function stopMusic() {
+        isPlaying = false;
+        stopActiveMusicNodes();
         updateUI();
     }
 
@@ -374,82 +408,68 @@ const AudioEngine = (() => {
 
     // ══════════════════════════════════════════
     // 🔊 SFX (Sound Effects) LIBRARY
+    // Crisp, punchy, perfectly audible
     // ══════════════════════════════════════════
 
     function playSFX(type) {
         if (!sfxEnabled) return;
         init();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!audioCtx) return;
 
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                _triggerSFX(type);
+            }).catch(() => {});
+            return;
+        }
+
+        _triggerSFX(type);
+    }
+
+    function _triggerSFX(type) {
+        if (!audioCtx || !sfxGain) return;
         const now = audioCtx.currentTime;
 
         switch (type) {
-            case 'click':
-                _sfxClick(now);
-                break;
-            case 'hover':
-                _sfxHover(now);
-                break;
-            case 'success':
-                _sfxSuccess(now);
-                break;
-            case 'error':
-                _sfxError(now);
-                break;
-            case 'tab':
-                _sfxTab(now);
-                break;
-            case 'toast':
-                _sfxToast(now);
-                break;
-            case 'xp':
-                _sfxXP(now);
-                break;
-            case 'levelup':
-                _sfxLevelUp(now);
-                break;
-            case 'complete':
-                _sfxComplete(now);
-                break;
-            case 'notify':
-                _sfxNotify(now);
-                break;
-            case 'typing':
-                _sfxTyping(now);
-                break;
-            case 'whoosh':
-                _sfxWhoosh(now);
-                break;
-            case 'boot':
-                _sfxBoot(now);
-                break;
-            default:
-                _sfxClick(now);
+            case 'click': _sfxClick(now); break;
+            case 'hover': _sfxHover(now); break;
+            case 'success': _sfxSuccess(now); break;
+            case 'error': _sfxError(now); break;
+            case 'tab': _sfxTab(now); break;
+            case 'toast': _sfxToast(now); break;
+            case 'xp': _sfxXP(now); break;
+            case 'levelup': _sfxLevelUp(now); break;
+            case 'complete': _sfxComplete(now); break;
+            case 'notify': _sfxNotify(now); break;
+            case 'typing': _sfxTyping(now); break;
+            case 'whoosh': _sfxWhoosh(now); break;
+            case 'boot': _sfxBoot(now); break;
+            default: _sfxClick(now);
         }
     }
 
-    // Click — short digital blip
+    // Click — crisp digital blip
     function _sfxClick(t) {
         const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, t);
-        osc.frequency.exponentialRampToValueAtTime(600, t + 0.06);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(950, t);
+        osc.frequency.exponentialRampToValueAtTime(450, t + 0.05);
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.15, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        g.gain.setValueAtTime(0.30, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
         osc.connect(g);
         g.connect(sfxGain);
         osc.start(t);
-        osc.stop(t + 0.1);
+        osc.stop(t + 0.08);
     }
 
-    // Hover — very subtle high tick
+    // Hover — subtle tick
     function _sfxHover(t) {
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.value = 1200;
+        osc.frequency.value = 1400;
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.04, t);
+        g.gain.setValueAtTime(0.12, t);
         g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
         osc.connect(g);
         g.connect(sfxGain);
@@ -464,9 +484,9 @@ const AudioEngine = (() => {
             osc.type = 'sine';
             osc.frequency.value = freq;
             const g = audioCtx.createGain();
-            const start = t + i * 0.1;
+            const start = t + i * 0.09;
             g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(0.18, start + 0.04);
+            g.gain.linearRampToValueAtTime(0.35, start + 0.03);
             g.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
             osc.connect(g);
             g.connect(sfxGain);
@@ -475,82 +495,68 @@ const AudioEngine = (() => {
         });
     }
 
-    // Error — descending buzz (E4 → C4)
+    // Error — low descending buzz
     function _sfxError(t) {
         const osc = audioCtx.createOscillator();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(329.63, t);
-        osc.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+        osc.frequency.setValueAtTime(220, t);
+        osc.frequency.linearRampToValueAtTime(130, t + 0.22);
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.08, t);
+        g.gain.setValueAtTime(0.28, t);
         g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 1500;
+        filter.frequency.value = 650;
         osc.connect(filter);
         filter.connect(g);
         g.connect(sfxGain);
         osc.start(t);
-        osc.stop(t + 0.3);
-
-        // Second tone
-        const osc2 = audioCtx.createOscillator();
-        osc2.type = 'sawtooth';
-        osc2.frequency.setValueAtTime(261.63, t + 0.12);
-        osc2.frequency.exponentialRampToValueAtTime(150, t + 0.35);
-        const g2 = audioCtx.createGain();
-        g2.gain.setValueAtTime(0.06, t + 0.12);
-        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-        osc2.connect(filter);
-        filter.connect(g2);
-        g2.connect(sfxGain);
-        osc2.start(t + 0.12);
-        osc2.stop(t + 0.45);
+        osc.stop(t + 0.26);
     }
 
-    // Tab switch — quick sweep
+    // Tab switch — smooth sweep
     function _sfxTab(t) {
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, t);
-        osc.frequency.exponentialRampToValueAtTime(900, t + 0.07);
-        osc.frequency.exponentialRampToValueAtTime(700, t + 0.12);
+        osc.frequency.setValueAtTime(450, t);
+        osc.frequency.exponentialRampToValueAtTime(950, t + 0.06);
+        osc.frequency.exponentialRampToValueAtTime(680, t + 0.12);
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.10, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        g.gain.setValueAtTime(0.28, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
         osc.connect(g);
         g.connect(sfxGain);
         osc.start(t);
-        osc.stop(t + 0.18);
+        osc.stop(t + 0.16);
     }
 
-    // Toast notification — soft bell
+    // Toast notification — bright bell chime
     function _sfxToast(t) {
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
         osc.frequency.value = 880;
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.12, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        g.gain.setValueAtTime(0.28, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
         osc.connect(g);
         g.connect(sfxGain);
         osc.start(t);
-        osc.stop(t + 0.45);
+        osc.stop(t + 0.4);
 
-        // Harmonic overtone
+        // Harmonic
         const osc2 = audioCtx.createOscillator();
         osc2.type = 'sine';
         osc2.frequency.value = 1318.51; // E6
         const g2 = audioCtx.createGain();
-        g2.gain.setValueAtTime(0.06, t);
-        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        g2.gain.setValueAtTime(0.18, t);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
         osc2.connect(g2);
         g2.connect(sfxGain);
         osc2.start(t);
-        osc2.stop(t + 0.35);
+        osc2.stop(t + 0.3);
     }
 
-    // XP gain — coin-like sparkle
+    // XP gain — bright sparkle
     function _sfxXP(t) {
         [1046.50, 1318.51, 1567.98].forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
@@ -558,7 +564,7 @@ const AudioEngine = (() => {
             osc.frequency.value = freq;
             const g = audioCtx.createGain();
             const start = t + i * 0.06;
-            g.gain.setValueAtTime(0.14, start);
+            g.gain.setValueAtTime(0.32, start);
             g.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
             osc.connect(g);
             g.connect(sfxGain);
@@ -577,7 +583,7 @@ const AudioEngine = (() => {
             const g = audioCtx.createGain();
             const start = t + i * 0.12;
             g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(0.16, start + 0.05);
+            g.gain.linearRampToValueAtTime(0.38, start + 0.04);
             g.gain.exponentialRampToValueAtTime(0.001, start + (i === 3 ? 0.6 : 0.3));
             osc.connect(g);
             g.connect(sfxGain);
@@ -588,7 +594,6 @@ const AudioEngine = (() => {
 
     // Complete — achievement jingle
     function _sfxComplete(t) {
-        // A major arpeggio + octave
         const notes = [440, 554.37, 659.25, 880];
         notes.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
@@ -596,7 +601,7 @@ const AudioEngine = (() => {
             osc.frequency.value = freq;
             const g = audioCtx.createGain();
             const start = t + i * 0.08;
-            g.gain.setValueAtTime(0.15, start);
+            g.gain.setValueAtTime(0.32, start);
             g.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
             osc.connect(g);
             g.connect(sfxGain);
@@ -612,8 +617,8 @@ const AudioEngine = (() => {
             osc.type = 'sine';
             osc.frequency.value = freq;
             const g = audioCtx.createGain();
-            const start = t + i * 0.15;
-            g.gain.setValueAtTime(0.12, start);
+            const start = t + i * 0.14;
+            g.gain.setValueAtTime(0.30, start);
             g.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
             osc.connect(g);
             g.connect(sfxGain);
@@ -622,28 +627,24 @@ const AudioEngine = (() => {
         });
     }
 
-    // Typing — subtle keyboard click
+    // Typing — subtle mechanical keyboard tick
     function _sfxTyping(t) {
-        const freq = 1000 + Math.random() * 500;
+        const freq = 1200 + Math.random() * 400;
         const osc = audioCtx.createOscillator();
-        osc.type = 'square';
+        osc.type = 'triangle';
         osc.frequency.value = freq;
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.02, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 2000;
-        osc.connect(filter);
-        filter.connect(g);
+        g.gain.setValueAtTime(0.08, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+        osc.connect(g);
         g.connect(sfxGain);
         osc.start(t);
         osc.stop(t + 0.03);
     }
 
-    // Whoosh — sweep for transitions
+    // Whoosh — modal and screen sweep
     function _sfxWhoosh(t) {
-        const bufLen = audioCtx.sampleRate * 0.25;
+        const bufLen = audioCtx.sampleRate * 0.22;
         const buffer = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufLen; i++) {
@@ -654,15 +655,15 @@ const AudioEngine = (() => {
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(500, t);
-        filter.frequency.exponentialRampToValueAtTime(4000, t + 0.12);
-        filter.frequency.exponentialRampToValueAtTime(800, t + 0.25);
-        filter.Q.value = 2;
+        filter.frequency.setValueAtTime(600, t);
+        filter.frequency.exponentialRampToValueAtTime(3500, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(700, t + 0.22);
+        filter.Q.value = 2.2;
 
         const g = audioCtx.createGain();
         g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.08, t + 0.06);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        g.gain.linearRampToValueAtTime(0.22, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
 
         source.connect(filter);
         filter.connect(g);
@@ -672,28 +673,26 @@ const AudioEngine = (() => {
 
     // Boot — system startup sound
     function _sfxBoot(t) {
-        // Deep sweep + sparkle
         const osc = audioCtx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(80, t);
-        osc.frequency.exponentialRampToValueAtTime(440, t + 0.4);
+        osc.frequency.setValueAtTime(90, t);
+        osc.frequency.exponentialRampToValueAtTime(520, t + 0.4);
         const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.10, t);
-        g.gain.setValueAtTime(0.10, t + 0.35);
+        g.gain.setValueAtTime(0.32, t);
+        g.gain.setValueAtTime(0.32, t + 0.35);
         g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
         osc.connect(g);
         g.connect(sfxGain);
         osc.start(t);
         osc.stop(t + 0.65);
 
-        // Sparkle on top
         setTimeout(() => {
-            _sfxSuccess(audioCtx.currentTime);
-        }, 350);
+            if (audioCtx) _sfxSuccess(audioCtx.currentTime);
+        }, 320);
     }
 
     // ══════════════════════════════════════════
-    // 🎛️ UI PANEL — Floating Audio Control
+    // 🎛️ UI CONTROLS & EVENT BINDINGS
     // ══════════════════════════════════════════
 
     function togglePanel() {
@@ -705,6 +704,9 @@ const AudioEngine = (() => {
         }
         if (btn) {
             btn.classList.toggle('active', panelOpen);
+        }
+        if (panelOpen) {
+            playSFX('whoosh');
         }
     }
 
@@ -719,6 +721,12 @@ const AudioEngine = (() => {
         const fabIcon = document.getElementById('audio-fab-icon');
         const visualizer = document.getElementById('audio-visualizer');
 
+        // Header and Auth controls
+        const headerBtn = document.getElementById('btn-audio-header');
+        const headerIcon = document.getElementById('header-audio-icon');
+        const headerLabel = document.getElementById('header-audio-label');
+        const authBtn = document.getElementById('btn-audio-auth');
+
         if (playBtn) playBtn.innerHTML = isPlaying ? '⏸ Tạm Dừng' : '▶ Phát Nhạc';
         if (playBtn) playBtn.classList.toggle('playing', isPlaying);
         if (statusDot) statusDot.classList.toggle('active', isPlaying);
@@ -732,6 +740,14 @@ const AudioEngine = (() => {
         if (bpmDisplay) bpmDisplay.textContent = currentBPM + ' BPM';
         if (fabIcon) fabIcon.textContent = isPlaying ? '🎵' : '🎶';
         if (visualizer) visualizer.classList.toggle('active', isPlaying);
+
+        if (headerBtn) headerBtn.classList.toggle('playing', isPlaying);
+        if (headerIcon) headerIcon.textContent = isPlaying ? '🔊' : '🎵';
+        if (headerLabel) headerLabel.textContent = isPlaying ? 'Nhạc: BẬT' : 'Nhạc';
+        if (authBtn) {
+            authBtn.textContent = isPlaying ? '🔊' : '🎵';
+            authBtn.classList.toggle('active', isPlaying);
+        }
     }
 
     function setMusicVolume(val) {
@@ -760,26 +776,20 @@ const AudioEngine = (() => {
         savePrefs();
     }
 
-    // ══════════════════════════════════════════
-    // 🔗 AUTO-ATTACH SFX TO UI EVENTS
-    // ══════════════════════════════════════════
-
+    // ── Global SFX on User Clicks ──
     function attachGlobalSFX() {
-        // Tab buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => playSFX('tab'));
-        });
-
-        // All regular buttons (non-tab)
+        // All regular interactive buttons & cards
         document.addEventListener('click', (e) => {
             const el = e.target.closest('button, .btn, .portal-card, .mode-btn, .cs-cat-btn');
             if (!el) return;
-            if (el.classList.contains('tab-btn')) return; // already handled
-            if (el.id === 'audio-fab-btn' || el.closest('#audio-control-panel')) return;
+            // Tabs have dedicated tab SFX in switchTab()
+            if (el.classList.contains('tab-btn')) return;
+            // Skip audio panel control elements so they don't produce click artifacts
+            if (el.id === 'audio-fab-btn' || el.closest('#audio-control-panel') || el.id === 'btn-audio-header') return;
             playSFX('click');
         });
 
-        // Keyboard shortcut feedback
+        // Keyboard feedback
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 playSFX('whoosh');
@@ -787,13 +797,13 @@ const AudioEngine = (() => {
         });
     }
 
-    // ── Inject UI Panel HTML ──
+    // ── Inject Floating Panel & FAB HTML ──
     function injectPanel() {
         if (document.getElementById('audio-fab-btn')) return;
 
         const html = `
         <!-- Audio FAB (Floating Action Button) -->
-        <button class="audio-fab" id="audio-fab-btn" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh">
+        <button class="audio-fab" id="audio-fab-btn" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh (Nhạc Lo-Fi & SFX)">
             <span class="audio-fab-icon" id="audio-fab-icon">🎶</span>
             <div class="audio-fab-pulse" id="audio-visualizer"></div>
         </button>
@@ -813,13 +823,13 @@ const AudioEngine = (() => {
             <div class="audio-panel-body">
                 <!-- Music Section -->
                 <div class="audio-section">
-                    <div class="audio-section-label">🎶 Nhạc Nền Lo-Fi</div>
+                    <div class="audio-section-label">🎶 Nhạc Nền Lo-Fi (Web Audio API)</div>
                     <button class="audio-btn audio-play-btn" id="audio-music-toggle" onclick="AudioEngine.toggleMusic()">
                         ▶ Phát Nhạc
                     </button>
                     <div class="audio-slider-group">
-                        <label>🔉 Âm lượng</label>
-                        <input type="range" min="0" max="100" value="35" class="audio-slider" id="audio-music-vol"
+                        <label>🔉 Âm lượng Nhạc</label>
+                        <input type="range" min="0" max="100" value="55" class="audio-slider" id="audio-music-vol"
                             oninput="AudioEngine.setMusicVolume(this.value)">
                     </div>
                     <div class="audio-bpm-control">
@@ -831,13 +841,13 @@ const AudioEngine = (() => {
 
                 <!-- SFX Section -->
                 <div class="audio-section">
-                    <div class="audio-section-label">🔊 Hiệu Ứng Âm Thanh</div>
+                    <div class="audio-section-label">🔊 Hiệu Ứng Âm Thanh (SFX)</div>
                     <button class="audio-btn audio-sfx-btn" id="audio-sfx-toggle" onclick="AudioEngine.toggleSfx()">
                         🔊 SFX: BẬT
                     </button>
                     <div class="audio-slider-group">
                         <label>🔉 Âm lượng SFX</label>
-                        <input type="range" min="0" max="100" value="55" class="audio-slider" id="audio-sfx-vol"
+                        <input type="range" min="0" max="100" value="75" class="audio-slider" id="audio-sfx-vol"
                             oninput="AudioEngine.setSfxVolume(this.value)">
                     </div>
                 </div>
@@ -862,14 +872,14 @@ const AudioEngine = (() => {
             </div>
 
             <div class="audio-panel-footer">
-                <span>⚡ Web Audio API • Offline Ready</span>
+                <span>⚡ Web Audio API • Offline Ready • No MP3s</span>
             </div>
         </div>
         `;
 
         document.body.insertAdjacentHTML('beforeend', html);
 
-        // Fix BPM button onclick after injection (dynamic values)
+        // Dynamic BPM listeners
         document.querySelectorAll('.audio-bpm-btn').forEach((btn, idx) => {
             btn.onclick = () => {
                 AudioEngine.setBPM(currentBPM + (idx === 0 ? -5 : 5));
@@ -879,13 +889,14 @@ const AudioEngine = (() => {
 
     // ── Boot ──
     function boot() {
+        setupAutoplayUnlock();
         injectPanel();
         loadPrefs();
         attachGlobalSFX();
         updateUI();
     }
 
-    // Auto-init when DOM ready
+    // Auto-init on DOM Ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);
     } else {
@@ -894,6 +905,7 @@ const AudioEngine = (() => {
 
     // ── Public API ──
     return {
+        init,
         startMusic,
         stopMusic,
         toggleMusic,

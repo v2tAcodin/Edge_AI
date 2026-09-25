@@ -3,7 +3,7 @@
 // Version: 3.0.0
 // ==========================================
 
-const CACHE_NAME = 'edge-ai-hub-v3.1.0';
+const CACHE_NAME = 'edge-ai-hub-v3.1.1';
 
 const PRECACHE_ASSETS = [
     './',
