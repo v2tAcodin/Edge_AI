@@ -1713,7 +1713,10 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                             <span id="nb-reader-stats">1,150 từ • ~5 phút đọc</span>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 6px;">
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button type="button" class="btn btn-secondary" id="nb-reader-book-header-btn" style="font-size: 11.5px; padding: 5px 10px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="openBookshelfForCurrentReaderDoc()" title="Xem sách/tài liệu gốc của bài này trong Tủ Sách">
+                                            📚 Xem Sách Gốc ↗
+                                        </button>
                                         <button type="button" class="btn btn-secondary" style="font-size: 11.5px; padding: 5px 10px; color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="scrollToPracticeInReader()" title="Cuộn nhanh xuống danh sách bài tập C áp dụng">
                                             💻 Làm Bài Tập C Liên Quan ⬇
                                         </button>
@@ -2081,44 +2084,6 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
     </div>
 
-    <!-- Modal: Chi Tiết Lý Thuyết Nhiệm Vụ Lộ Trình -->
-    <div class="nb-modal-backdrop" id="task-theory-modal">
-        <div class="nb-modal-box" style="max-width: 820px;">
-            <div class="nb-modal-header">
-                <div class="nb-modal-title" id="task-modal-title">
-                    📖 Lý Thuyết Nhiệm Vụ
-                </div>
-                <button class="btn-close" onclick="closeTaskTheoryModal()">✕</button>
-            </div>
-            <div class="nb-modal-body" style="max-height: 70vh; overflow-y: auto;">
-                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                    <span class="nb-doc-card-badge" id="task-modal-stage">Bước 1</span>
-                    <span class="badge" style="background: rgba(0, 240, 255, 0.12); color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.3);" id="task-modal-skill">Skill</span>
-                </div>
-                <div style="font-size: 13px; line-height: 1.65; color: #cbd5e1; margin-bottom: 14px;" id="task-modal-content">
-                    Đang nạp lý thuyết...
-                </div>
-                <div style="font-weight: 700; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
-                    💻 Khung Code C Triển Khai Thực Chiến:
-                </div>
-                <pre class="stage-theory-code" style="margin: 0;"><code id="task-modal-code">// Code mẫu</code></pre>
-            </div>
-            <div class="nb-modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <button type="button" class="btn btn-secondary" onclick="closeTaskTheoryModal()">✕ Đóng</button>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary" onclick="saveTaskToMyNotes()" title="Lưu lý thuyết này vào Sổ tay">
-                        💾 Lưu Vào Sổ Tay
-                    </button>
-                    <button type="button" class="btn btn-secondary" style="color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="openPracticeFromTaskModal()" title="Làm bài tập thực hành tương ứng">
-                        💻 Thực Hành (+XP) ↗
-                    </button>
-                    <button type="button" class="btn btn-accent" onclick="askAiFromTaskModal()" title="Hỏi Gemini phân tích sâu">
-                        🤖 Hỏi Trợ Lý AI ↗
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal: Chi Tiết Đồ Án & Kiến Trúc Sản Xuất -->
     <div class="nb-modal-backdrop" id="project-details-modal">
@@ -2371,6 +2336,9 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                     <div style="display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap;">
                         <span class="badge badge-accent" id="task-modal-stage">Giai đoạn</span>
                         <span class="badge badge-gold" id="task-modal-skill">Kỹ năng</span>
+                        <button type="button" class="btn btn-secondary" id="task-modal-book-btn" style="display: none; font-size: 11px; padding: 2px 8px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="openBookFromTaskModal()" title="Mở sách/tài liệu gốc tương ứng trong Tủ Sách">
+                            📚 Xem Trong Tủ Sách ↗
+                        </button>
                     </div>
                 </div>
                 <button class="btn-close" onclick="closeTaskTheoryModal()" title="Đóng">✕</button>
@@ -2395,6 +2363,9 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
             </div>
             <div class="nb-modal-footer" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" id="task-modal-footer-book-btn" style="display: none; font-size: 11.5px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="openBookFromTaskModal()">
+                        📚 Xem Sách Gốc ↗
+                    </button>
                     <button type="button" class="btn btn-secondary" style="font-size: 11.5px;" onclick="saveTaskToMyNotes()">
                         💾 Lưu Vào Sổ Tay Của Tôi
                     </button>

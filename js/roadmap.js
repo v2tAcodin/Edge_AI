@@ -211,6 +211,30 @@ function renderRoadmap() {
                     ` : ''}
 
                     
+                    ${stageTheory.bookId && typeof technicalBooksData !== 'undefined' ? (() => {
+                        const book = technicalBooksData.find(b => b.id === stageTheory.bookId);
+                        if (!book) return '';
+                        return `
+                        <div class="stage-theory-book-ref" style="margin: 12px 0; padding: 12px 16px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(59, 130, 246, 0.08)); border: 1px solid rgba(0, 240, 255, 0.35); border-left: 4px solid var(--cyan); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 250px;">
+                                <span style="font-size: 26px;">${book.coverIcon}</span>
+                                <div>
+                                    <div style="font-size: 10px; color: var(--cyan); font-weight: 700; text-transform: uppercase;">📚 TÀI LIỆU GỐC & ĐẶC TẢ KỸ THUẬT ĐÃ KẾ THỪA</div>
+                                    <div style="font-size: 13px; color: #ffffff; font-weight: 700; margin-top: 2px;">${escapeHtml(book.title)}</div>
+                                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">✍️ ${escapeHtml(book.author)} (${book.year}) • 🎯 ${escapeHtml(stageTheory.standardRef || book.keyChapters[0])}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                                <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 4px 10px;" onclick="openBookshelfForBook('${book.id}')" title="Mở cuốn sách này trong Tủ Sách Kỹ Thuật">
+                                    <span>📚</span> Đọc Trong Tủ Sách ↗
+                                </button>
+                                <a href="${book.downloadUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" title="Tải trực tiếp file PDF gốc">
+                                    <span>📥</span> Tải PDF Gốc ↗
+                                </a>
+                            </div>
+                        </div>`;
+                    })() : ''}
+
                     ${stageTheory.references && stageTheory.references.length > 0 ? `
                     <div class="stage-theory-refs" style="margin-top: 12px; padding: 10px 14px; background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: 6px;">
                         <strong style="color: var(--cyan); font-size: 11.5px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
@@ -227,6 +251,9 @@ function renderRoadmap() {
                     ` : ''}
 
                     <div class="stage-theory-actions">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="openBookshelfForStage(${stageIndex})" title="Mở sách/tài liệu gốc của giai đoạn này trong Tủ Sách">
+                            📚 Sách Gốc Trong Tủ Sách ↗
+                        </button>
                         <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
                             📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗
                         </button>
@@ -461,3 +488,15 @@ function renderRoadmap() {
         window.setRoadmapPhase = setRoadmapPhase;
         window.renderRoadmap = renderRoadmap;
 
+
+
+// Helper mở sách trong Tủ Sách cho giai đoạn Lộ Trình
+window.openBookshelfForStage = function(stageIndex) {
+    const stageTheory = (typeof ROADMAP_STAGE_THEORY !== 'undefined') ? ROADMAP_STAGE_THEORY[stageIndex] : null;
+    const bookId = stageTheory ? stageTheory.bookId : 'book_esps3_trm';
+    if (bookId && typeof openBookshelfForBook === 'function') {
+        openBookshelfForBook(bookId);
+    } else if (typeof openBookshelfModal === 'function') {
+        openBookshelfModal();
+    }
+};
