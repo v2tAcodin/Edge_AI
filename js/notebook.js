@@ -365,13 +365,45 @@ let notebookChatHistory = JSON.parse(localStorage.getItem(STORAGE_NOTEBOOK_CHAT)
 ];
 
 // ==========================================
-// RENDER GIAO DIỆN CHÍNH
+// RENDER GIAO DIỆN CHÍNH & DUAL-MODE (READER / CHAT)
 // ==========================================
+let notebookRightMode = 'reader'; // Mặc định mở chế độ Đọc Giáo Trình
+
+function setNotebookRightMode(mode) {
+    notebookRightMode = mode;
+    const tabReader = document.getElementById("nb-tab-reader");
+    const tabChat = document.getElementById("nb-tab-chat");
+    const readerView = document.getElementById("nb-doc-reader-view");
+    const chatView = document.getElementById("nb-doc-chat-view");
+    const btnAskAi = document.getElementById("nb-btn-ask-ai-from-reader");
+    const btnClearChat = document.getElementById("nb-btn-clear-chat");
+
+    if (mode === 'reader') {
+        if (tabReader) tabReader.classList.add("active");
+        if (tabChat) tabChat.classList.remove("active");
+        if (readerView) readerView.style.display = "flex";
+        if (chatView) chatView.style.display = "none";
+        if (btnAskAi) btnAskAi.style.display = "inline-flex";
+        if (btnClearChat) btnClearChat.style.display = "none";
+        renderNotebookDocReader(selectedDocId);
+    } else {
+        if (tabReader) tabReader.classList.remove("active");
+        if (tabChat) tabChat.classList.add("active");
+        if (readerView) readerView.style.display = "none";
+        if (chatView) chatView.style.display = "flex";
+        if (btnAskAi) btnAskAi.style.display = "none";
+        if (btnClearChat) btnClearChat.style.display = "inline-flex";
+        const msgContainer = document.getElementById("nb-chat-messages-container");
+        if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+}
+
 function renderNotebookView() {
     renderNotebookDocsList();
     renderNotebookChat();
     updateGeminiKeyStatus();
     updateGeminiQuotaDisplay();
+    setNotebookRightMode(notebookRightMode);
 }
 
 function updateGeminiQuotaDisplay() {
@@ -422,12 +454,151 @@ function updateGeminiKeyStatus() {
     if (!statusPill) return;
 
     if (geminiApiKey && geminiApiKey.trim().length > 10) {
-        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 3.8 Flash Online</span>`;
-        statusPill.title = "Đã kết nối Google Gemini 3.8 Flash. Sẵn sàng xử lý tài liệu đa phương thức và PDF nguyên bản.";
+        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 2.0/2.5 Flash Online</span>`;
+        statusPill.title = "Đã kết nối Google Gemini API. Sẵn sàng xử lý tài liệu đa phương thức và PDF nguyên bản.";
     } else {
         statusPill.innerHTML = `⚡ <span style="color: var(--cyan);">Offline Knowledge AI</span>`;
         statusPill.title = "Đang chạy chế độ Động Cơ Tri Thức Nhúng Cục Bộ. Bấm ⚙️ Cấu Hình Key để kích hoạt Cloud Gemini AI.";
     }
+}
+
+// ==========================================
+// 📖 DOCUMENT READER & HANDS-ON PRACTICE RENDERING
+// ==========================================
+function renderNotebookDocReader(docId) {
+    const readerContainer = document.getElementById("nb-doc-reader-view");
+    if (!readerContainer) return;
+
+    let doc = (docId && docId !== 'all') ? notebookDocs.find(d => d.id === docId) : null;
+    if (!doc) {
+        doc = notebookDocs[0];
+    }
+    if (!doc) return;
+
+    const catEl = document.getElementById("nb-reader-category");
+    if (catEl) catEl.innerText = doc.category || "Tài Liệu Nghiên Cứu";
+
+    const titleEl = document.getElementById("nb-reader-title");
+    if (titleEl) titleEl.innerText = (doc.isNativePdf ? "📕 " : "📄 ") + doc.title;
+
+    const tagsEl = document.getElementById("nb-reader-tags");
+    if (tagsEl) {
+        tagsEl.innerHTML = (doc.tags || []).map(t => `<span class="nb-tag-chip" style="font-size: 10px; padding: 2px 6px;">${t}</span>`).join(' ');
+    }
+
+    const statsEl = document.getElementById("nb-reader-stats");
+    if (statsEl) {
+        const words = doc.words || Math.round((doc.content || '').length / 6);
+        const estMins = Math.max(1, Math.round(words / 200));
+        statsEl.innerText = `${words.toLocaleString()} từ • ~${estMins} phút đọc`;
+    }
+
+    const contentEl = document.getElementById("nb-doc-reader-content");
+    if (contentEl) {
+        contentEl.innerHTML = formatMarkdownChat(doc.content || "Nội dung tài liệu đang được cập nhật...");
+    }
+
+    // Xác định Stage Index của tài liệu này để nạp 12 bài tập C tương ứng
+    let stageIdx = 0;
+    if (doc.id === "doc_stage1_memory" || doc.id === "doc_c_pointers_deepdive") stageIdx = 0;
+    else if (doc.id === "doc_stage2_timer") stageIdx = 1;
+    else if (doc.id === "doc_stage3_sensors") stageIdx = 2;
+    else if (doc.id === "doc_stage4_freertos") stageIdx = 3;
+    else if (doc.id === "doc_stage5_network") stageIdx = 4;
+    else if (doc.id === "doc_stage6_tinyml") stageIdx = 5;
+
+    renderReaderPracticeGrid(stageIdx);
+}
+
+function renderReaderPracticeGrid(stageIdx) {
+    const grid = document.getElementById("nb-reader-practice-grid");
+    const subTitle = document.getElementById("nb-reader-practice-sub");
+    if (!grid) return;
+
+    if (typeof practiceExercises === 'undefined' || !Array.isArray(practiceExercises)) {
+        grid.innerHTML = `<div style="color: var(--text-dim); font-size: 12px;">Đang tải danh sách bài tập...</div>`;
+        return;
+    }
+
+    const moduleExercises = practiceExercises
+        .map((prob, idx) => ({ prob, idx }))
+        .filter(item => item.prob.stageIndex === stageIdx);
+
+    if (subTitle) {
+        subTitle.innerText = `Làm ngay 12 bài tập C của Module ${stageIdx + 1} để biến lý thuyết vừa học thành kỹ năng lập trình nhúng thực tế:`;
+    }
+
+    const solvedList = (typeof profile !== 'undefined' && profile.solvedProblems) ? profile.solvedProblems : [];
+
+    grid.innerHTML = "";
+    moduleExercises.forEach(({ prob, idx }) => {
+        const isSolved = solvedList.includes(prob.id);
+        const card = document.createElement("div");
+        card.className = `nb-reader-practice-card ${isSolved ? 'solved' : ''}`;
+
+        let diffClass = "diff-easy";
+        if (prob.difficulty === "Trung bình") diffClass = "diff-med";
+        else if (prob.difficulty === "Nâng cao") diffClass = "diff-hard";
+
+        const shortDesc = (prob.desc || '').replace(/<[^>]*>/g, '').substring(0, 90) + '...';
+
+        card.innerHTML = `
+            <div class="nb-reader-card-top">
+                <div class="nb-reader-card-title">${prob.title}</div>
+                <span style="font-size: 13px;" title="${isSolved ? 'Đã hoàn thành' : 'Chưa hoàn thành'}">${isSolved ? '✅' : '⚪'}</span>
+            </div>
+            <div class="nb-reader-card-meta">
+                <span class="difficulty-tag ${diffClass}" style="font-size: 9.5px; padding: 1px 5px;">${prob.difficulty}</span>
+                <span style="color: var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 11px;">+${prob.xp} XP</span>
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">
+                ${escapeHtml(shortDesc)}
+            </div>
+            <div style="margin-top: 6px; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn-reader-do-problem" onclick="openPracticeProblem(${idx})">
+                    <span>${isSolved ? '↺ Làm lại' : '💻 Làm bài này'}</span> ➔
+                </button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function askAiAboutCurrentDoc() {
+    let doc = (selectedDocId && selectedDocId !== 'all') ? notebookDocs.find(d => d.id === selectedDocId) : null;
+    if (!doc) doc = notebookDocs[0];
+    setNotebookRightMode('chat');
+    const input = document.getElementById("nb-chat-input");
+    if (input && doc) {
+        input.value = `Hãy phân tích chuyên sâu nội dung tài liệu "${doc.title}". Những bản chất phần cứng ESP32 và các bài tập lập trình C quan trọng nhất cần nắm vững là gì?`;
+        input.focus();
+    }
+    showToast(`🤖 Đã nạp yêu cầu phân tích "${doc ? doc.title : 'tài liệu'}" cho Gemini!`);
+}
+
+function scrollToPracticeInReader() {
+    const sec = document.getElementById("nb-reader-practice-section");
+    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openPracticeForCurrentDocModule() {
+    let doc = (selectedDocId && selectedDocId !== 'all') ? notebookDocs.find(d => d.id === selectedDocId) : null;
+    if (!doc) doc = notebookDocs[0];
+    let stageIdx = 0;
+    if (doc.id === "doc_stage1_memory" || doc.id === "doc_c_pointers_deepdive") stageIdx = 0;
+    else if (doc.id === "doc_stage2_timer") stageIdx = 1;
+    else if (doc.id === "doc_stage3_sensors") stageIdx = 2;
+    else if (doc.id === "doc_stage4_freertos") stageIdx = 3;
+    else if (doc.id === "doc_stage5_network") stageIdx = 4;
+    else if (doc.id === "doc_stage6_tinyml") stageIdx = 5;
+
+    if (typeof setModuleFilter === 'function') {
+        setModuleFilter(String(stageIdx));
+    }
+    if (typeof switchTab === 'function') {
+        switchTab('practice');
+    }
+    showToast(`🎯 Đã mở danh sách 12 bài tập C của Module ${stageIdx + 1}`);
 }
 
 function renderNotebookDocsList() {
@@ -515,6 +686,10 @@ function selectNotebookDoc(docId) {
     selectedDocId = docId;
     renderNotebookDocsList();
     updateChatContextLabel();
+    if (docId !== 'all') {
+        renderNotebookDocReader(docId);
+        setNotebookRightMode('reader');
+    }
 }
 
 function setDocTagFilter(tag) {
@@ -911,11 +1086,11 @@ async function handleSendNotebookQuery() {
 }
 
 // ==========================================
-// CẤU HÌNH GOOGLE GEMINI API (MODEL 3.8 FLASH & FALLBACKS)
+// CẤU HÌNH GOOGLE GEMINI API (MODEL 2.0 FLASH & FALLBACKS)
 // ==========================================
-const GEMINI_PRIMARY_MODEL = "gemini-3.8-flash";
-const GEMINI_FALLBACK_MODEL = "gemini-2.5-flash";
-const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+const GEMINI_PRIMARY_MODEL = "gemini-2.0-flash";
+const GEMINI_FALLBACK_MODEL = "gemini-1.5-flash";
+const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
 
 // Gọi Google Gemini API (Multimodal PDF + Text)
 async function queryGeminiApi(question, docs, directPdf = null) {
@@ -1545,4 +1720,9 @@ window.openGeminiKeyModal = openGeminiKeyModal;
 window.closeGeminiKeyModal = closeGeminiKeyModal;
 window.testGeminiApiConnection = testGeminiApiConnection;
 window.saveGeminiApiKey = saveGeminiApiKey;
+window.setNotebookRightMode = setNotebookRightMode;
+window.renderNotebookDocReader = renderNotebookDocReader;
+window.askAiAboutCurrentDoc = askAiAboutCurrentDoc;
+window.scrollToPracticeInReader = scrollToPracticeInReader;
+window.openPracticeForCurrentDocModule = openPracticeForCurrentDocModule;
 

@@ -1290,6 +1290,27 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                             <span style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--gold);" id="prob-xp">+50 XP</span>
                             <span style="font-size: 12px; color: var(--text-muted);" id="prob-topic">C Core / Bitwise</span>
                         </div>
+
+                        <!-- 📚 KHỐI LIÊN KẾT LÝ THUYẾT NỀN TẢNG (THEORY LINK BOX) -->
+                        <div class="problem-theory-link-box" id="prob-theory-link-box">
+                            <div class="theory-link-top">
+                                <div class="theory-link-info">
+                                    <span class="theory-link-badge" id="prob-theory-stage-badge">📖 Lý thuyết Bước 1</span>
+                                    <span class="theory-link-concept" id="prob-theory-concept">Khái niệm: Thao tác con trỏ & Zero-copy</span>
+                                </div>
+                                <div class="theory-link-buttons">
+                                    <button type="button" class="btn-theory-jump" onclick="openLinkedTheoryForCurrentProblem()" title="Mở giáo trình lý thuyết đầy đủ trong Sổ Tay AI">
+                                        <span>📖 Đọc Lý Thuyết Chi Tiết ↗</span>
+                                    </button>
+                                    <button type="button" class="btn-theory-roadmap" onclick="openRoadmapStageForCurrentProblem()" title="Xem vị trí bài học trên Lộ trình">
+                                        <span>🗺️ Lộ Trình</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="theory-quick-synopsis" id="prob-theory-synopsis">
+                                Đang nạp tóm tắt lý thuyết nền tảng...
+                            </div>
+                        </div>
                         
                         <div id="prob-desc" style="color: var(--text); margin-bottom: 12px; font-size: 13px; line-height: 1.6;"></div>
 
@@ -1604,18 +1625,78 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                         </div>
                     </div>
 
-                    <!-- Right: Gemini AI Doc Assistant & RAG -->
+                    <!-- Right: Dual-Mode Workspace (Reader View & Gemini Doc AI Chat) -->
                     <div class="nb-panel">
-                        <div class="nb-panel-header">
-                            <div class="nb-panel-title" style="color: var(--accent);">
-                                <span>🤖</span> Trợ Lý Hỏi Đáp Tài Liệu (Gemini Doc AI)
+                        <!-- Mode Switcher Header -->
+                        <div class="nb-panel-header" style="padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div class="nb-mode-switcher">
+                                <button type="button" class="nb-mode-tab active" id="nb-tab-reader" onclick="setNotebookRightMode('reader')">
+                                    <span>📖</span> Đọc Giáo Trình & Lý Thuyết
+                                </button>
+                                <button type="button" class="nb-mode-tab" id="nb-tab-chat" onclick="setNotebookRightMode('chat')">
+                                    <span>🤖</span> Trợ Lý Gemini Doc AI
+                                </button>
                             </div>
-                            <button class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="clearNotebookChat()">
-                                ↺ Xóa Hội Thoại
-                            </button>
+                            <div id="nb-header-extra-actions" style="display: flex; gap: 6px; align-items: center;">
+                                <button class="btn btn-secondary" id="nb-btn-ask-ai-from-reader" style="font-size: 11px; padding: 4px 8px; color: var(--accent); border-color: rgba(0,255,157,0.3);" onclick="askAiAboutCurrentDoc()" title="Nhờ Gemini phân tích sâu bài học này">
+                                    🤖 Hỏi AI Về Bài Này ↗
+                                </button>
+                                <button class="btn btn-secondary" id="nb-btn-clear-chat" style="font-size: 11px; padding: 4px 8px; display: none;" onclick="clearNotebookChat()">
+                                    ↺ Xóa Hội Thoại
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- Context Bar -->
+                        <!-- 1. DOCUMENT READER VIEW (HIỂN THỊ NỘI DUNG GIÁO TRÌNH & BÀI TẬP C LIÊN KẾT) -->
+                        <div class="nb-doc-reader-container" id="nb-doc-reader-view">
+                            <div class="nb-reader-header-card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                                    <div style="flex: 1; min-width: 250px;">
+                                        <div class="nb-reader-category" id="nb-reader-category">Lộ Trình 1</div>
+                                        <h2 class="nb-reader-title" id="nb-reader-title">Giáo Trình Cốt Lõi: Làm Chủ Con Trỏ (Pointers)</h2>
+                                        <div class="nb-reader-meta-row" id="nb-reader-meta-row">
+                                            <span id="nb-reader-tags">#Pointers #ESP32 #Memory</span>
+                                            <span style="color: var(--text-dim);">•</span>
+                                            <span id="nb-reader-stats">1,150 từ • ~5 phút đọc</span>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button type="button" class="btn btn-secondary" style="font-size: 11.5px; padding: 5px 10px; color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="scrollToPracticeInReader()" title="Cuộn nhanh xuống danh sách bài tập C áp dụng">
+                                            💻 Làm Bài Tập C Liên Quan ⬇
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Document Markdown Body -->
+                            <div class="nb-reader-body" id="nb-doc-reader-content">
+                                <!-- Rendered Markdown by js/notebook.js -->
+                            </div>
+
+                            <!-- Hands-on Practice Exercises Section Linked Directly to this Lesson -->
+                            <div class="nb-reader-practice-box" id="nb-reader-practice-section">
+                                <div class="nb-reader-practice-header">
+                                    <div>
+                                        <div class="nb-reader-practice-title">
+                                            <span>🎯</span> BÀI TẬP C THỰC HÀNH ÁP DỤNG TRỰC TIẾP CHO BÀI HỌC NÀY
+                                        </div>
+                                        <div class="nb-reader-practice-sub" id="nb-reader-practice-sub">
+                                            Làm ngay các bài tập C này để biến lý thuyết vừa học thành kỹ năng lập trình nhúng thực tế (+XP):
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-accent" style="font-size: 11.5px; padding: 4px 10px;" id="nb-reader-btn-do-all" onclick="openPracticeForCurrentDocModule()">
+                                        🚀 Mở Toàn Bộ 12 Bài Tập Module Này ↗
+                                    </button>
+                                </div>
+                                <div class="nb-reader-practice-grid" id="nb-reader-practice-grid">
+                                    <!-- Rendered dynamically by js/notebook.js -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. GEMINI AI DOC ASSISTANT & RAG CHAT VIEW -->
+                        <div class="nb-chat-workspace-wrap" id="nb-doc-chat-view" style="display: none;">
+                            <!-- Context Bar -->
                         <div class="nb-chat-context-bar">
                             <div>
                                 <span>🎯 Ngữ cảnh truy vấn: </span>
@@ -1665,6 +1746,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                 <span>Hỗ trợ trích dẫn nguồn & code C/C++</span>
                             </div>
                         </div>
+                        </div> <!-- End #nb-doc-chat-view -->
                     </div>
                 </div>
             </div>
@@ -1777,41 +1859,6 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
 
     </div>
 
-    <!-- ============================================== -->
-    <!-- ROADMAP TASK THEORY MODAL                      -->
-    <!-- ============================================== -->
-    <div class="modal-overlay" id="task-theory-modal">
-        <div class="modal-card" style="max-width: 680px;">
-            <div class="modal-header">
-                <h3 id="task-modal-title">📖 Lý Thuyết Kỹ Thuật Chuyên Sâu</h3>
-                <button class="btn-close" onclick="closeTaskTheoryModal()">✕</button>
-            </div>
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 4px 6px;">
-                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
-                    <span class="badge badge-ai" id="task-modal-stage">Bước 1</span>
-                    <span class="badge badge-gold" id="task-modal-skill">Skill</span>
-                </div>
-                <div id="task-modal-content" style="font-size: 13.5px; color: var(--text); line-height: 1.65; margin-bottom: 14px;"></div>
-                <div id="task-modal-code-wrap">
-                    <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); margin-bottom: 4px;">
-                        MÃ C / KIẾN TRÚC MINH HỌA:
-                    </div>
-                    <pre style="background: #030509; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); overflow-x: auto;" id="task-modal-code"></pre>
-                </div>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
-                <button type="button" class="btn btn-secondary" onclick="saveTaskToMyNotes()">
-                    📝 Lưu Vào Sổ Tay Riêng
-                </button>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn btn-accent" id="btn-task-modal-ai" onclick="askAiFromTaskModal()">
-                        🤖 Hỏi Trợ Lý Gemini AI ↗
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="closeTaskTheoryModal()">Đóng</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- ============================================== -->
     <!-- EDIT PROFILE MODAL                             -->

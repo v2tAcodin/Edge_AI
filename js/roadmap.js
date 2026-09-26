@@ -177,6 +177,9 @@ function renderRoadmap() {
                         <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
                             📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗
                         </button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="openPracticeForStage(${stageIndex})" title="Mở 12 bài tập C áp dụng cho giai đoạn này">
+                            💻 Thực Hành 12 Bài Tập C Bước Này ↗
+                        </button>
                         <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 4px 10px;" onclick="askAiAboutStage(${stageIndex})">
                             🤖 Nhờ Gemini Giải Thích Sâu Thêm ↗
                         </button>
@@ -187,9 +190,14 @@ function renderRoadmap() {
         `;
 
         stage.tasks.forEach((task, taskIndex) => {
-            const linkedProbIdx = (typeof practiceExercises !== 'undefined') 
-                ? practiceExercises.findIndex(p => p.linkedSkill === task.skill)
-                : -1;
+            let linkedProbIdx = -1;
+            if (typeof practiceExercises !== 'undefined' && practiceExercises.length > 0) {
+                linkedProbIdx = practiceExercises.findIndex(p => p.linkedSkill === task.skill);
+                if (linkedProbIdx === -1 && stageIndex <= 5) {
+                    const fallbackIdx = stageIndex * 12 + Math.min(taskIndex, 11);
+                    if (practiceExercises[fallbackIdx]) linkedProbIdx = fallbackIdx;
+                }
+            }
 
             const label = document.createElement("label");
             label.className = "task-item";
@@ -386,4 +394,12 @@ function renderRoadmap() {
             }
         };
 
-        
+        window.openPracticeForStage = function (stageIndex) {
+            if (typeof setModuleFilter === 'function') {
+                setModuleFilter(String(stageIndex));
+            }
+            if (typeof switchTab === 'function') {
+                switchTab('practice');
+            }
+            showToast(`🎯 Đã mở danh sách 12 bài tập C áp dụng cho Bước ${stageIndex + 1}!`);
+        };

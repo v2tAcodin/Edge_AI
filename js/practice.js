@@ -1717,12 +1717,201 @@ function openPracticeProblem(probIdx) {
     showToast(`🎯 Đã mở bài tập: ${prob.title}`);
 }
 
+// ==========================================
+// 📚 MAPPING LIÊN KẾT BÀI TẬP VỚI LÝ THUYẾT NỀN TẢNG (THEORY LINK BRIDGE)
+// ==========================================
+const STAGE_THEORY_PRACTICE_MAP = {
+    0: {
+        stageBadge: "Lý thuyết Bước 1",
+        stageTitle: "Bước 1: C Core, Con Trỏ (Pointers) & Quản Lý Bộ Nhớ ESP32-S3",
+        docId: "doc_stage1_memory",
+        deepdiveDocId: "doc_c_pointers_deepdive",
+        concepts: {
+            bitwise: {
+                title: "Thao Tác Bitwise & Memory-Mapped I/O",
+                synopsis: "Trên vi điều khiển ESP32, các chân GPIO và thanh ghi phần cứng được điều khiển qua từng bit riêng lẻ. Sử dụng toán tử OR (|) để set bit, AND đảo (& ~) để clear bit, XOR (^) để toggle bit trực tiếp trên ALU nhằm tối ưu chu kỳ máy và tránh rẽ nhánh if/else."
+            },
+            pointers: {
+                title: "Con Trỏ C, Con Trỏ Struct & Truyền Zero-Copy",
+                synopsis: "Con trỏ lưu địa chỉ ô nhớ RAM. Khi xử lý buffer âm thanh hoặc cảm biến (32KB), truyền con trỏ struct (const Frame_t *f) chỉ tốn 4 byte Stack (Zero-Copy), bảo vệ hệ thống không bị tràn Stack Overflow. Sử dụng toán tử mũi tên (->) để truy xuất trường dữ liệu trực tiếp trong RAM."
+            },
+            memory: {
+                title: "Kiến Trúc Bộ Nhớ SRAM/PSRAM, Căn Lề 16-Byte & Cấp Phát Tĩnh",
+                synopsis: "Internal SRAM (512KB) chạy 240MHz tốc độ 1 cycle, lý tưởng cho Tensor Arena của TinyML. Lệnh Vector SIMD 128-bit bắt buộc mảng phải căn lề 16-byte (alignas(16)). Để hệ thống chạy 24/7 ổn định, luôn ưu tiên cấp phát tĩnh (Static Allocation), tránh malloc() gây phân mảnh Heap."
+            }
+        }
+    },
+    1: {
+        stageBadge: "Lý thuyết Bước 2",
+        stageTitle: "Bước 2: GPTimer Định Thời Micro-giây & Hàm Ngắt IRAM_ATTR",
+        docId: "doc_stage2_timer",
+        concepts: {
+            timer: {
+                title: "Định Thời Chính Xác Micro-Giây Bằng Hardware GPTimer",
+                synopsis: "Mô hình Edge AI đòi hỏi tần số lấy mẫu cực kỳ chuẩn xác (Deterministic Sampling). GPTimer 54-bit chạy trên xung 80MHz, prescaler 80 cho độ phân giải đúng 1 µs, loại bỏ hoàn toàn độ lệch (jitter) của hệ điều hành."
+            },
+            isr: {
+                title: "Hàm Ngắt IRAM_ATTR & Cơ Chế Deferred Processing",
+                synopsis: "Hàm ngắt phục vụ Timer bắt buộc gắn cờ IRAM_ATTR để nằm trọn vẹn trong SRAM, tránh crash khi Flash Cache bị khóa. ISR không được gọi delay() hay printf(), chỉ kích hoạt FreeRTOS Semaphore để chuyển việc nặng cho Task bên ngoài."
+            }
+        }
+    },
+    2: {
+        stageBadge: "Lý thuyết Bước 3",
+        stageTitle: "Bước 3: Thu Thập Tín Hiệu Cảm Biến I2C/I2S DMA & Biến Đổi Phổ FFT",
+        docId: "doc_stage3_sensors",
+        concepts: {
+            sensors: {
+                title: "Giao Tiếp I2C Burst Read & I2S Digital Audio DMA",
+                synopsis: "Đọc cảm biến IMU qua chế độ Burst Read đọc liên tục 14 bytes giảm overhead trên bus I2C. Microphone kỹ thuật số xuất tín hiệu qua I2S DMA Ping-Pong buffer tự động nạp vào RAM mà không tốn chu kỳ lệnh CPU."
+            },
+            dsp: {
+                title: "Lọc Nhiễu Số & Biến Đổi Fourier Nhanh (FFT Feature Extraction)",
+                synopsis: "Tín hiệu sóng thời gian được lọc nhiễu qua Moving Average, sau đó biến đổi Fourier nhanh FFT 512 điểm qua thư viện ESP-DSP để trích xuất phổ tần số Spectrogram làm đầu vào cho mạng nơ-ron."
+            }
+        }
+    },
+    3: {
+        stageBadge: "Lý thuyết Bước 4",
+        stageTitle: "Bước 4: Đa Nhiệm FreeRTOS Dual-Core & Đồng Bộ Hóa Hàng Đợi Queue",
+        docId: "doc_stage4_freertos",
+        concepts: {
+            freertos: {
+                title: "Phân Chia 2 Nhân Asymmetric Task Pinning & FreeRTOS Queue",
+                synopsis: "Core 0 chuyên trách mạng Wi-Fi và I/O, Core 1 dành trọn 100% tài nguyên cho mô hình TinyML suy luận. Dữ liệu cảm biến chuyển sang AI qua FreeRTOS Queue đệm an toàn, dùng Mutex chống xung đột tài nguyên chung và Task Watchdog (TWDT) chống treo CPU."
+            }
+        }
+    },
+    4: {
+        stageBadge: "Lý thuyết Bước 5",
+        stageTitle: "Bước 5: Network Wi-Fi, Giao Thức MQTT & Nâng Cấp Firmware Từ Xa OTA",
+        docId: "doc_stage5_network",
+        concepts: {
+            network: {
+                title: "Wi-Fi Tự Phục Hồi, MQTT Telemetry & Bảng Phân Vùng Dual OTA",
+                synopsis: "Thuật toán Exponential Backoff chống dội mạng khi Wi-Fi mất kết nối. MQTT truyền gói tin siêu nhẹ tiêu thụ ít năng lượng. Bảng phân vùng Flash gồm 2 slot (ota_0, ota_1) cho phép tải và xác thực firmware từ xa an toàn 100% không lo bị 'biến thành cục gạch'."
+            }
+        }
+    },
+    5: {
+        stageBadge: "Lý thuyết Bước 6",
+        stageTitle: "Bước 6: Mô Hình AI Trên Edge (TinyML), TFLite Micro & Lượng Tử Hóa INT8",
+        docId: "doc_stage6_tinyml",
+        concepts: {
+            tinyml: {
+                title: "Lượng Tử Hóa INT8, Khởi Tạo Tensor Arena & Gọi Invoke() Suy Luận",
+                synopsis: "Chuyển đổi trọng số Float32 sang INT8 theo công thức: q = round(r / scale) + zero_point, giảm 75% dung lượng RAM/Flash. Tensor Arena được cấp phát tĩnh căn lề 16-byte. Sau khi gọi invoke(), dùng ArgMax để trích xuất nhãn xác suất cao nhất."
+            }
+        }
+    }
+};
+
+function getProblemTheoryContext(prob) {
+    if (!prob) {
+        return {
+            stageBadge: "Lý thuyết C Core",
+            stageTitle: "Bước 1: C Core & Quản Lý Bộ Nhớ",
+            conceptTitle: "Kiến trúc nhúng & C Core",
+            docId: "doc_c_pointers_deepdive",
+            synopsis: "Nền tảng C nhúng và quản lý bộ nhớ vi điều khiển ESP32."
+        };
+    }
+
+    const sIdx = (typeof prob.stageIndex === 'number' && prob.stageIndex >= 0 && prob.stageIndex <= 5) ? prob.stageIndex : 0;
+    const meta = STAGE_THEORY_PRACTICE_MAP[sIdx] || STAGE_THEORY_PRACTICE_MAP[0];
+
+    let conceptKey = "bitwise";
+    let targetDocId = meta.docId;
+
+    if (sIdx === 0) {
+        const pNum = parseInt((prob.id || "").replace("prob_", ""), 10);
+        if (pNum >= 1 && pNum <= 4) {
+            conceptKey = "bitwise";
+            targetDocId = meta.docId;
+        } else if (pNum >= 5 && pNum <= 8) {
+            conceptKey = "pointers";
+            targetDocId = meta.deepdiveDocId || meta.docId;
+        } else {
+            conceptKey = "memory";
+            targetDocId = meta.docId;
+        }
+    } else if (sIdx === 1) {
+        const pNum = parseInt((prob.id || "").replace("prob_", ""), 10);
+        conceptKey = (pNum <= 16) ? "timer" : "isr";
+    } else if (sIdx === 2) {
+        const pNum = parseInt((prob.id || "").replace("prob_", ""), 10);
+        conceptKey = (pNum <= 32) ? "sensors" : "dsp";
+    } else if (sIdx === 3) {
+        conceptKey = "freertos";
+    } else if (sIdx === 4) {
+        conceptKey = "network";
+    } else if (sIdx === 5) {
+        conceptKey = "tinyml";
+    }
+
+    const concept = (meta.concepts && meta.concepts[conceptKey]) ? meta.concepts[conceptKey] : {
+        title: prob.linkedSkill || "Lập trình C Nhúng Thực Chiến",
+        synopsis: "Bài tập rèn luyện kỹ năng cốt lõi được giảng dạy trong lý thuyết giai đoạn này."
+    };
+
+    return {
+        stageBadge: meta.stageBadge,
+        stageTitle: meta.stageTitle,
+        conceptTitle: concept.title,
+        docId: targetDocId,
+        synopsis: concept.synopsis
+    };
+}
+
+function openLinkedTheoryForCurrentProblem() {
+    const prob = practiceExercises[currentProblemIndex];
+    if (!prob) return;
+    const theoryCtx = getProblemTheoryContext(prob);
+    if (typeof switchTab === 'function') {
+        switchTab('notebook');
+    }
+    if (typeof selectNotebookDoc === 'function') {
+        selectNotebookDoc(theoryCtx.docId);
+    }
+    if (typeof setNotebookRightMode === 'function') {
+        setNotebookRightMode('reader');
+    }
+    showToast(`📖 Đã mở giáo trình: ${theoryCtx.stageTitle}`);
+}
+
+function openRoadmapStageForCurrentProblem() {
+    const prob = practiceExercises[currentProblemIndex];
+    if (!prob) return;
+    const sIdx = (typeof prob.stageIndex === 'number' && prob.stageIndex >= 0) ? prob.stageIndex : 0;
+    if (typeof switchTab === 'function') {
+        switchTab('learning');
+    }
+    setTimeout(() => {
+        const stages = document.querySelectorAll(".roadmap-stage");
+        if (stages && stages[sIdx]) {
+            stages[sIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 250);
+    showToast(`🗺️ Đã định vị Bước ${sIdx + 1} trên Lộ Trình`);
+}
+
 function loadProblemDetails(index) {
     const prob = practiceExercises[index];
     if (!prob) return;
 
     const titleEl = document.getElementById("prob-title");
     if (titleEl) titleEl.innerText = prob.title;
+
+    // 📚 Cập nhật Khối Liên Kết Lý Thuyết Nền Tảng (Theory Link Bridge)
+    const theoryCtx = getProblemTheoryContext(prob);
+    const theoryBadge = document.getElementById("prob-theory-stage-badge");
+    if (theoryBadge) theoryBadge.innerText = `📖 ${theoryCtx.stageBadge}`;
+
+    const theoryConcept = document.getElementById("prob-theory-concept");
+    if (theoryConcept) theoryConcept.innerText = `Khái niệm: ${theoryCtx.conceptTitle}`;
+
+    const theorySynopsis = document.getElementById("prob-theory-synopsis");
+    if (theorySynopsis) theorySynopsis.innerText = theoryCtx.synopsis;
 
     const descEl = document.getElementById("prob-desc");
     if (descEl) descEl.innerHTML = prob.desc;
@@ -2291,7 +2480,7 @@ Trả về duy nhất định dạng JSON chuẩn (không chứa markdown backti
   ]
 }`;
 
-            const aiModels = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+            const aiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
             for (const m of aiModels) {
                 try {
                     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
