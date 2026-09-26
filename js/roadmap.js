@@ -210,6 +210,22 @@ function renderRoadmap() {
                     </div>
                     ` : ''}
 
+                    
+                    ${stageTheory.references && stageTheory.references.length > 0 ? `
+                    <div class="stage-theory-refs" style="margin-top: 12px; padding: 10px 14px; background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: 6px;">
+                        <strong style="color: var(--cyan); font-size: 11.5px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                            🌐 Tài Liệu Nguồn & Tiêu Chuẩn Quốc Tế Đã Kiểm Chứng:
+                        </strong>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${stageTheory.references.map(ref => `
+                                <a href="${ref.url}" target="_blank" rel="noopener noreferrer" class="theory-ref-pill" style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 10px; background: #070d18; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; color: #38bdf8; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--cyan)'; this.style.color='#fff';" onmouseout="this.style.borderColor='rgba(0,240,255,0.3)'; this.style.color='#38bdf8';">
+                                    <span>🔗</span> <span>${escapeHtml(ref.name)}</span> <span style="font-size: 9px; opacity: 0.7; background: rgba(0,240,255,0.15); padding: 1px 4px; border-radius: 3px;">${escapeHtml(ref.type)}</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="stage-theory-actions">
                         <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
                             📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗
