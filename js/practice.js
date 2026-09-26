@@ -13,6 +13,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Bật bit ở vị trí <code>bit_pos</code> (0 đến 7) trên thanh ghi 8-bit mà không làm thay đổi các bit khác.`,
+        realWorld: `Điều khiển thanh ghi phần cứng <code>GPIO_OUT_W1TS_REG</code> trên ESP32 để cấp nguồn cho cảm biến I2C/SPI hoặc kích hoạt module camera AI mà không làm tắt các chân ngoại vi khác trên cùng một port.`,
+        whyMatters: `Trong vi điều khiển, các chân GPIO không có biến bộ nhớ riêng mà được điều khiển qua thanh ghi 32-bit (Memory-Mapped I/O). Nắm vững kỹ thuật này giúp bạn viết Driver phần cứng trực tiếp, chạy nhanh gấp 5-10 lần so với các hàm trừu tượng chậm chạp.`,
         example: `Input: reg = 0x00, bit_pos = 3 -> Output: 8 (0x08)`,
         hint: `Sử dụng phép toán OR từng bit: <code>reg | (1 << bit_pos)</code>.`,
         initialCode: `uint8_t set_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -35,6 +37,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Xóa bit ở vị trí <code>bit_pos</code> về 0 trên thanh ghi 8-bit mà không ảnh hưởng các bit khác.`,
+        realWorld: `Xóa cờ ngắt phần cứng (Interrupt Pending Flag) trên thanh ghi ESP32 sau khi đọc xong dữ liệu, hoặc ngắt nguồn module Wi-Fi/Bluetooth trước khi thiết bị vào chế độ Deep Sleep tiết kiệm pin.`,
+        whyMatters: `Nếu không xóa đúng bit cờ ngắt trong thanh ghi, CPU sẽ bị kẹt vĩnh viễn trong hàm ngắt (ISR Lockup Loop), khiến toàn bộ hệ thống FreeRTOS bị treo (Deadlock).`,
         example: `Input: reg = 0xFF, bit_pos = 0 -> Output: 254 (0xFE)`,
         hint: `Sử dụng AND với bit đảo: <code>reg & ~(1 << bit_pos)</code>.`,
         initialCode: `uint8_t clear_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -56,6 +60,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Đảo trạng thái của bit tại vị trí <code>bit_pos</code> (0 thành 1, 1 thành 0) trên thanh ghi.`,
+        realWorld: `Tạo xung nhịp Clock (SCK) trong giao thức Bit-banging SPI truyền nhận với chip nhớ Flash hoặc nhấp nháy đèn LED nhịp tim (Heartbeat LED) giám sát trạng thái hệ thống chỉ tốn đúng 1 chu kỳ máy.`,
+        whyMatters: `Tránh phải đọc trạng thái cũ rồi dùng câu lệnh rẽ nhánh if/else (tốn 10-15 chu kỳ xung nhịp). Phép toán XOR bitwise thực thi tức thì trực tiếp trên thanh ghi ALU.`,
         example: `Input: reg = 0, bit_pos = 2 -> Output: 4; Input: reg = 4, bit_pos = 2 -> Output: 0`,
         hint: `Sử dụng phép toán XOR: <code>reg ^ (1 << bit_pos)</code>.`,
         initialCode: `uint8_t toggle_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -77,6 +83,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Kiểm tra xem bit ở vị trí <code>bit_pos</code> có đang được bật (1) hay không. Trả về 1 nếu bật, 0 nếu tắt.`,
+        realWorld: `Thăm dò cờ <code>DRDY</code> (Data Ready) của cảm biến gia tốc MPU6050 hoặc kiểm tra cờ FIFO Half-Full của chip âm thanh I2S trước khi nạp dữ liệu vào mô hình TinyML.`,
+        whyMatters: `Ngăn ngừa việc đọc dữ liệu rác khi cảm biến phần cứng chưa chuyển đổi xong (ADC not ready) hoặc tránh tràn bộ đệm DMA làm méo dạng phổ âm thanh AI.`,
         example: `Input: reg = 8, bit_pos = 3 -> Output: 1\nInput: reg = 8, bit_pos = 2 -> Output: 0`,
         hint: `Toán tử AND bitwise: <code>(reg & (1 << bit_pos)) ? 1 : 0</code>.`,
         initialCode: `int is_bit_set(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -99,6 +107,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Tập lệnh vector SIMD của ESP32-S3 và Tensor Arena yêu cầu con trỏ dữ liệu phải căn lề 16-byte (địa chỉ chia hết cho 16). Hãy viết hàm làm tròn địa chỉ bộ nhớ <code>address</code> lên bội số của 16 gần nhất.`,
+        realWorld: `Tăng tốc độ suy luận mạng nơ-ron: Tập lệnh DSP và ESP-NN trên ESP32-S3 sử dụng các thanh ghi vector 128-bit (<code>ee.vld.128</code>). Con trỏ mảng Tensor Arena và ma trận trọng số bắt buộc phải căn lề 16-byte.`,
+        whyMatters: `Nếu con trỏ nạp vào lệnh SIMD không chia hết cho 16, CPU sẽ ngay lập tức kích hoạt ngoại lệ phần cứng <code>LoadStoreAlignment Exception</code> và làm sập toàn bộ thiết bị (Guru Meditation Crash).`,
         example: `Input: address = 4097 -> Output: 4112 (0x1010)\nInput: address = 4096 -> Output: 4096`,
         hint: `Công thức căn lề nhanh bằng bitwise: <code>(address + 15) & ~15</code>.`,
         initialCode: `uint32_t align_to_16(uint32_t address) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -121,6 +131,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để chống phân mảnh Heap trên ESP32, bộ cấp phát tĩnh gom bộ nhớ thành các khối (block) là bội số của 32 byte. Tính tổng kích thước khối tối thiểu chứa vừa cả <code>payload_size</code> và <code>header_size</code> (làm tròn lên bội số của 32 gần nhất).`,
+        realWorld: `Bộ cấp phát tĩnh (Fixed-size Block Memory Pool) dành cho các gói tin âm thanh I2S và bản tin MQTT trong các ứng dụng IoT / AI chạy liên tục hàng tháng trời.`,
+        whyMatters: `Ngăn ngừa căn bệnh hiểm nghèo 'Phân mảnh Heap' (Heap Fragmentation). Tránh tình trạng hệ thống báo lỗi Out Of Memory (OOM) dù tổng dung lượng RAM trống ghi nhận vẫn còn hàng chục KB.`,
         example: `Input: payload = 20, header = 8 -> tổng 28 -> Output: 32\nInput: payload = 30, header = 8 -> tổng 38 -> Output: 64`,
         hint: `Căn lề 32 byte nhanh: <code>int total = payload_size + header_size; if (total == 0) return 0; return (total + 31) & ~31;</code>.`,
         initialCode: `int calc_pool_block_size(int payload_size, int header_size) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -143,6 +155,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Khi khởi tạo Tensor Arena tĩnh cho TinyML, mỗi tensor được xếp liên tiếp nhau. Hãy tính vị trí offset mới sau khi cấp phát một tensor có kích thước <code>tensor_bytes</code> từ vị trí hiện tại <code>current_offset</code>.`,
+        realWorld: `Khởi tạo vùng nhớ tĩnh Tensor Arena trong thư viện TensorFlow Lite Micro. Toàn bộ trọng số nơ-ron và các mảng đệm trung gian (Scratch Buffers) đều được chia sẻ chung trong 1 mảng tĩnh duy nhất.`,
+        whyMatters: `TFLite Micro trên vi điều khiển không dùng <code>malloc()</code>. Quản lý offset chính xác giúp các layer mạng nơ-ron không đè lên nhau mà vẫn tiết kiệm tối đa RAM.`,
         example: `Input: current_offset = 1024, tensor_bytes = 512 -> Output: 1536`,
         hint: `Cộng dồn offset: <code>return current_offset + tensor_bytes;</code>.`,
         initialCode: `int calc_arena_offset(int current_offset, int tensor_bytes) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -164,6 +178,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Giao tiếp ngoại vi SPI/I2C thường trả dữ liệu Big-Endian trong khi ESP32 là Little-Endian. Hãy viết hàm đảo 2 byte của số nguyên 16-bit <code>val</code>: Byte cao thành Byte thấp và ngược lại.`,
+        realWorld: `Đọc dữ liệu thanh ghi từ cảm biến nhiệt độ/áp suất qua I2C hoặc đọc khung truyền mạng Ethernet/IP: các thiết bị ngoại vi thường gửi theo thứ tự Big-Endian, trong khi lõi ESP32 là Little-Endian.`,
+        whyMatters: `Nếu không đảo byte, số đo nhiệt độ <code>0x0120</code> (28.8°C) sẽ bị vi điều khiển đọc ngược thành <code>0x2001</code> (8193°C), làm sai lệch toàn bộ thuật toán AI!`,
         example: `Input: val = 0x1234 (4660) -> Output: 0x3412 (13330)`,
         hint: `Dịch bit: <code>((val & 0xFF) << 8) | ((val >> 8) & 0xFF)</code>.`,
         initialCode: `uint16_t swap_endian_16(uint16_t val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -185,6 +201,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Trình biên dịch C tự chèn byte padding để căn lề struct. Nếu trường dữ liệu có <code>data_bytes</code> và yêu cầu căn lề <code>align_bytes</code> (VD: 4 byte), hãy tính số byte padding bị lãng phí cần chèn vào sau trường này.`,
+        realWorld: `Đóng gói cấu trúc struct cảm biến đo gia tốc 3 trục để truyền qua Wi-Fi/Bluetooth hoặc ghi log nhị phân vào Flash SPI.`,
+        whyMatters: `Hiểu rõ cơ chế chèn byte đệm của trình biên dịch C giúp bạn biết cách sắp xếp lại thứ tự các trường trong struct hoặc dùng thuộc tính <code>__attribute__((packed))</code> để tiết kiệm 30-50% dung lượng RAM và băng thông truyền.`,
         example: `Input: data_bytes = 5, align_bytes = 4 -> Padding: 3 byte (để lên 8)\nInput: data_bytes = 4, align_bytes = 4 -> Padding: 0 byte`,
         hint: `Công thức: <code>(align_bytes - (data_bytes % align_bytes)) % align_bytes</code>.`,
         initialCode: `int calc_struct_padding(int data_bytes, int align_bytes) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -207,6 +225,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Tensor Arena phải nằm trong Internal SRAM (dải địa chỉ <code>0x3FFB0000</code> đến <code>0x3FFFFFFF</code>) để đạt tốc độ tối đa. Kiểm tra xem <code>address</code> có thuộc vùng nhớ này không. Trả về 1 nếu hợp lệ, 0 nếu là bộ nhớ ngoài PSRAM/Flash.`,
+        realWorld: `Xác thực con trỏ bộ đệm DMA cho Microphone và bộ tăng tốc AI. Bộ điều khiển DMA phần cứng trên ESP32 chỉ có thể truy xuất trực tiếp SRAM nội (Internal SRAM), tuyệt đối không thể đọc ghi từ PSRAM ngoài.`,
+        whyMatters: `Nếu bạn cấp phát nhầm bộ đệm DMA trên PSRAM, phần cứng DMA sẽ không thể kích hoạt và vi điều khiển báo lỗi khởi tạo thất bại.`,
         example: `Input: address = 0x3FFB1000 (1073426432) -> Output: 1\nInput: address = 0x3F800000 (PSRAM) -> Output: 0`,
         hint: `So sánh khoảng địa chỉ: <code>(address >= 1073414144 && address <= 1073741823) ? 1 : 0;</code>`,
         initialCode: `int is_in_internal_sram(uint32_t address) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -229,6 +249,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Một số giao thức SPI truyền bit theo thứ tự LSB-first. Hãy viết hàm đảo ngược thứ tự các bit của byte <code>b</code> (bit 0 đổi chỗ bit 7, bit 1 đổi chỗ bit 6,...).`,
+        realWorld: `Giao tiếp màn hình OLED/E-ink và giải thuật biến đổi Fourier nhanh FFT trong xử lý âm thanh AI: đảo ngược thứ tự bit của các chỉ mục mảng (Bit-reversal permutation) để thực hiện phép bướm (Butterfly operation).`,
+        whyMatters: `Là thuật toán kinh điển trong xử lý tín hiệu số (DSP). Hiểu rõ thao tác bit giúp bạn nén/giải nén dữ liệu cảm biến và tối ưu hóa thư viện FFT nhúng.`,
         example: `Input: b = 0x80 (10000000b) -> Output: 1 (00000001b)\nInput: b = 0x0F (00001111b) -> Output: 0xF0 (240)`,
         hint: `Lặp 8 lần hoặc dịch bit: <code>uint8_t res = 0; for(int i=0; i<8; i++){ res = (res << 1) | ((b >> i) & 1); } return res;</code>`,
         initialCode: `uint8_t reverse_bits_8(uint8_t b) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -251,6 +273,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Để cảnh báo sớm tràn bộ nhớ, hệ thống tính tỷ lệ phần trăm phân mảnh: <code>frag_percent = (free_bytes - largest_block) * 100 / free_bytes</code>. Nếu <code>free_bytes <= 0</code>, trả về 0.`,
+        realWorld: `Hệ thống giám sát sức khỏe bộ nhớ (Memory Health Monitor) của thiết bị IoT công nghiệp chạy liên tục nhiều tháng. Khi tỷ lệ phân mảnh > 60%, thiết bị chủ động kích hoạt cơ chế dọn dẹp hoặc khởi động lại an toàn (Safe Reboot).`,
+        whyMatters: `Trong lập trình nhúng chuyên nghiệp, việc theo dõi dung lượng RAM khả dụng là chưa đủ; bạn phải đo lường khối nhớ liên tục lớn nhất (largest free block) để phát hiện nguy cơ OOM Crash trước khi nó xảy ra.`,
         example: `Input: free_bytes = 10000, largest_block = 6000 -> Output: 40%`,
         hint: `Phép tính: <code>if (free_bytes <= 0) return 0; return (free_bytes - largest_block) * 100 / free_bytes;</code>.`,
         initialCode: `int calc_heap_fragmentation_ratio(int free_bytes, int largest_block) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1703,6 +1727,16 @@ function loadProblemDetails(index) {
     const descEl = document.getElementById("prob-desc");
     if (descEl) descEl.innerHTML = prob.desc;
 
+    const realWorldEl = document.getElementById("prob-realworld");
+    if (realWorldEl) {
+        realWorldEl.innerHTML = prob.realWorld || `Kỹ thuật này được áp dụng trực tiếp trong tầng giao tiếp phần cứng (HAL), driver cảm biến hoặc tiền xử lý tín hiệu trước khi nạp vào mô hình TinyML trên ESP32.`;
+    }
+
+    const whyMattersEl = document.getElementById("prob-why-matters");
+    if (whyMattersEl) {
+        whyMattersEl.innerHTML = prob.whyMatters || `Rèn luyện kỹ năng thao tác bộ nhớ ở mức độ thanh ghi nhúng, tối ưu hóa thời gian thực thi (chu kỳ xung nhịp CPU) và ngăn ngừa lỗi sập nguồn bộ nhớ (OOM/Guru Meditation Error) khi thiết bị chạy 24/7.`;
+    }
+
     const exampleEl = document.getElementById("prob-example");
     if (exampleEl) exampleEl.innerText = prob.example;
 
@@ -1964,6 +1998,465 @@ function saveExerciseToNotebook() {
     }
 }
 
+// ==========================================
+// 7. EMBEDDED C INDUSTRY PRESETS & EXTERNAL / AI EXERCISES
+// ==========================================
+const STORAGE_CUSTOM_EXERCISES = "edge_ai_custom_exercises_v1";
+
+const PRESET_INTERVIEW_EXERCISES = [
+    {
+        id: "preset_ring_buffer",
+        stageIndex: 0,
+        title: "Phỏng Vấn [Qualcomm]: Quản Lý Con Trỏ Ring Buffer Cho Audio I2S",
+        topic: "1. C & Bộ nhớ",
+        difficulty: "Trung bình",
+        xp: 120,
+        source: "Qualcomm / Embedded DSP",
+        desc: `Vi điều khiển thu âm thanh 16kHz liên tục từ micro I2S qua DMA. Bộ đệm tròn (Ring/Circular Buffer) cho phép luồng ngắt ISR ghi dữ liệu mới vào đuôi mảng trong khi luồng AI đọc từ đầu mảng để xử lý. Hãy viết hàm tính chỉ số ô nhớ tiếp theo <code>next_index</code> sau khi con trỏ ghi tiến thêm <code>step</code> bước trong bộ đệm vòng có kích thước <code>capacity</code>.`,
+        realWorld: `Bộ đệm xoay vòng (Ring/Circular Buffer) là cấu trúc dữ liệu bắt buộc khi xử lý luồng âm thanh I2S và camera DMA trên ESP32. Luồng ngắt ISR ghi dữ liệu mới liên tục vào mảng trong khi luồng AI đọc dữ liệu cũ ra phân tích mà không cần dừng hệ thống.`,
+        whyMatters: `Tránh cấp phát động malloc/free liên tục (ngăn ngừa 100% phân mảnh RAM) và loại bỏ hoàn toàn chi phí sao chép mảng (Zero-Copy), giúp vi điều khiển xử lý âm thanh thời gian thực không bị giật lag.`,
+        example: `Input: current_index = 3, step = 2, capacity = 8 -> Output: 5\nInput: current_index = 7, step = 1, capacity = 8 -> Output: 0 (vòng lại đầu)`,
+        hint: `Toán tử chia lấy dư (Modulo): <code>return (current_index + step) % capacity;</code>`,
+        initialCode: `int get_next_ring_index(int current_index, int step, int capacity) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `int get_next_ring_index(int current_index, int step, int capacity) {\n    return (current_index + step) % capacity;\n}`,
+        fnName: "get_next_ring_index",
+        params: ["current_index", "step", "capacity"],
+        testCases: [
+            { input: [3, 2, 8], expected: 5, label: "index 3 + 2 -> 5" },
+            { input: [7, 1, 8], expected: 0, label: "index 7 + 1 (vòng về 0)" },
+            { input: [6, 4, 8], expected: 2, label: "index 6 + 4 (vòng về 2)" },
+            { input: [0, 8, 8], expected: 0, label: "index 0 + 8 (vòng về 0)" }
+        ],
+        linkedSkill: "Pointers & Dynamic Memory Layout"
+    },
+    {
+        id: "preset_fixed_point",
+        stageIndex: 0,
+        title: "Phỏng Vấn [Espressif]: Nhân Số Dấu Phẩy Tĩnh Q15 Cho TinyML",
+        topic: "1. C & Bộ nhớ",
+        difficulty: "Nâng cao",
+        xp: 150,
+        source: "Espressif / TinyML",
+        desc: `ESP32 chạy các mô hình AI lượng tử hóa INT8/INT16 cần tính tích phân nơ-ron bằng số nguyên cố định thay vì số thực float để tăng tốc từ 3 đến 5 lần. Hãy thực hiện phép nhân hai số thực dấu phẩy tĩnh định dạng Q15 <code>a</code> và <code>b</code> (trong đó giá trị 1.0 tương đương 32768). Công thức: <code>(int32_t)(a * b) >> 15</code>.`,
+        realWorld: `ESP32 chạy các lớp mạng nơ-ron Dense, Conv2D và bộ lọc âm thanh IIR: phép tính số nguyên 16-bit Q15 được thực thi trực tiếp trên bộ nhân Integer MAC của CPU, tiết kiệm 70% điện năng so với tính toán Float32.`,
+        whyMatters: `Các dòng vi điều khiển giá rẻ (như ESP32-C3 RISC-V không có FPU) nếu dùng số thực float sẽ phải giả lập bằng phần mềm cực kỳ chậm. Kỹ sư nhúng bắt buộc phải làm chủ số học dấu phẩy tĩnh Fixed-point.`,
+        example: `Input: a = 16384 (0.5), b = 16384 (0.5) -> Output: 8192 (0.25)`,
+        hint: `Ép kiểu sang 32-bit rồi dịch phải 15 bit: <code>int32_t prod = (int32_t)a * (int32_t)b; return (int16_t)(prod >> 15);</code>`,
+        initialCode: `int16_t q15_multiply(int16_t a, int16_t b) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `int16_t q15_multiply(int16_t a, int16_t b) {\n    int32_t prod = (int32_t)a * (int32_t)b;\n    return (int16_t)(prod >> 15);\n}`,
+        fnName: "q15_multiply",
+        params: ["a", "b"],
+        testCases: [
+            { input: [16384, 16384], expected: 8192, label: "0.5 * 0.5 = 0.25" },
+            { input: [32767, 16384], expected: 16383, label: "1.0 * 0.5 = 0.5" },
+            { input: [0, 16384], expected: 0, label: "0 * 0.5 = 0" },
+            { input: [16384, 8192], expected: 4096, label: "0.5 * 0.25 = 0.125" }
+        ],
+        linkedSkill: "SIMD Vector Alignment"
+    },
+    {
+        id: "preset_stack_canary",
+        stageIndex: 0,
+        title: "Phỏng Vấn [Google/TI]: Kiểm Tra Con Trỏ Stack Canary Chống Tràn RAM",
+        topic: "1. C & Bộ nhớ",
+        difficulty: "Trung bình",
+        xp: 120,
+        source: "Google / Texas Instruments",
+        desc: `Trong hệ điều hành FreeRTOS, mỗi Task được cấp một vùng nhớ Stack riêng. Một giá trị đặc biệt (Canary Word như <code>0xDEADBEEF</code> hay <code>3735928559</code>) được đặt ở đáy Stack để phát hiện xem hàm có ghi tràn bộ đệm hay không. Viết hàm nhận vào giá trị đáy Stack <code>current_canary</code> và <code>expected_canary</code>. Trả về 1 nếu Stack nguyên vẹn, trả về 0 nếu bị ghi đè (Stack Overflow).`,
+        realWorld: `Cơ chế bảo vệ bộ nhớ Stack Protection / Canary Word trong FreeRTOS và nhân Linux nhúng: ngăn chặn tin tặc tấn công tràn bộ đệm (Buffer Overflow Attack) hoặc phát hiện đệ quy vô tận làm hỏng thanh ghi hệ thống.`,
+        whyMatters: `Tràn Stack là lỗi thầm lặng nguy hiểm nhất trong lập trình nhúng vì nó không crash ngay lập tức mà ghi đè ngẫu nhiên lên các biến khác, dẫn đến hành vi ma (Heisenbug) cực kỳ khó gỡ lỗi.`,
+        example: `Input: current_canary = 3735928559, expected_canary = 3735928559 -> Output: 1 (An toàn)\nInput: current_canary = 0, expected_canary = 3735928559 -> Output: 0 (Bị tràn)`,
+        hint: `So sánh bằng: <code>return (current_canary == expected_canary) ? 1 : 0;</code>`,
+        initialCode: `int check_stack_integrity(uint32_t current_canary, uint32_t expected_canary) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `int check_stack_integrity(uint32_t current_canary, uint32_t expected_canary) {\n    return (current_canary == expected_canary) ? 1 : 0;\n}`,
+        fnName: "check_stack_integrity",
+        params: ["current_canary", "expected_canary"],
+        testCases: [
+            { input: [3735928559, 3735928559], expected: 1, label: "Canary an toàn (0xDEADBEEF)" },
+            { input: [0, 3735928559], expected: 0, label: "Canary bị đè bằng 0" },
+            { input: [123456, 3735928559], expected: 0, label: "Canary bị ghi đè dữ liệu rác" }
+        ],
+        linkedSkill: "Heap Management & Anti-Fragmentation"
+    },
+    {
+        id: "preset_safe_memmove",
+        stageIndex: 0,
+        title: "Phỏng Vấn [Linux Kernel/ESP-IDF]: Kiểm Tra Hướng Sao Chép Bộ Nhớ Chồng Lấn",
+        topic: "1. C & Bộ nhớ",
+        difficulty: "Trung bình",
+        xp: 120,
+        source: "Linux Kernel / ESP-IDF",
+        desc: `Hàm chuẩn <code>memcpy()</code> sẽ gây lỗi phá hỏng dữ liệu nếu vùng nhớ nguồn <code>src</code> và đích <code>dest</code> bị chồng lấn (overlapping). Kỹ sư phải dùng <code>memmove()</code> để xác định hướng sao chép xuôi hay ngược. Nếu con trỏ đích <code>dest</code> nhỏ hơn con trỏ nguồn <code>src</code>, hàm trả về 1 (sao chép từ đầu đến cuối); nếu <code>dest >= src</code> trả về 0 (phải sao chép từ đuôi về đầu).`,
+        realWorld: `Triển khai bộ đệm dịch chuyển (Sliding Window Buffer) cho cảm biến rung động gia tốc và luồng video frame camera khi một phần dữ liệu cũ được giữ lại và dịch về phía trước.`,
+        whyMatters: `Là câu hỏi kinh điển trong phỏng vấn hệ thống nhúng cấp thấp. Rất nhiều lập trình viên mắc lỗi dùng memcpy() cho vùng nhớ chồng lấn khiến dữ liệu bị đè nát mà không hề có cảnh báo lỗi biên dịch!`,
+        example: `Input: dest = 1000, src = 1020 -> Output: 1 (Sao chép xuôi)\nInput: dest = 1020, src = 1000 -> Output: 0 (Sao chép ngược)`,
+        hint: `So sánh: <code>return (dest < src) ? 1 : 0;</code>`,
+        initialCode: `int get_copy_direction(uint32_t dest, uint32_t src) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `int get_copy_direction(uint32_t dest, uint32_t src) {\n    return (dest < src) ? 1 : 0;\n}`,
+        fnName: "get_copy_direction",
+        params: ["dest", "src"],
+        testCases: [
+            { input: [1000, 1020], expected: 1, label: "dest < src -> chép xuôi" },
+            { input: [1020, 1000], expected: 0, label: "dest > src -> chép ngược" },
+            { input: [1000, 1000], expected: 0, label: "dest == src -> chép ngược" }
+        ],
+        linkedSkill: "Pointers & Dynamic Memory Layout"
+    },
+    {
+        id: "preset_bit_reversal",
+        stageIndex: 2,
+        title: "Phỏng Vấn [Sony Audio]: Đảo Ngược Bit Index (Bit-Reversal) Cho FFT",
+        topic: "3. Cảm biến & DSP",
+        difficulty: "Nâng cao",
+        xp: 150,
+        source: "Sony / Audio AI",
+        desc: `Thuật toán biến đổi Fourier nhanh (Cooley-Tukey Radix-2 FFT) xử lý âm thanh nhận diện từ khóa AI yêu cầu sắp xếp lại mảng dữ liệu đầu vào theo thứ tự đảo ngược bit của chỉ số. Viết hàm đảo ngược 4-bit của chỉ số <code>index</code> (từ 0 đến 15). Ví dụ: <code>index = 1 (0001b)</code> đảo thành <code>8 (1000b)</code>.`,
+        realWorld: `Trích xuất đặc trưng âm thanh MFCC (Mel-Frequency Cepstral Coefficients) cho mô hình nhận diện giọng nói đánh thức 'Hey ESP' hoặc phân tích độ rung động cơ phát hiện hỏng hóc sớm.`,
+        whyMatters: `Là câu hỏi kiểm tra tư duy xử lý tín hiệu số (DSP) nâng cao. Giúp giảm độ phức tạp tính toán phổ tần số từ O(N^2) xuống O(N log N).`,
+        example: `Input: index = 1 -> Output: 8; Input: index = 3 (0011b) -> Output: 12 (1100b)`,
+        hint: `Lặp 4 bước dịch bit: <code>uint8_t res = 0; for(int i=0; i<4; i++){ res = (res << 1) | ((index & 1); index >>= 1; } return res;</code>`,
+        initialCode: `uint8_t reverse_4bits(uint8_t index) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `uint8_t reverse_4bits(uint8_t index) {\n    uint8_t res = 0;\n    for(int i = 0; i < 4; i++) {\n        res = (res << 1) | (index & 1);\n        index >>= 1;\n    }\n    return res;\n}`,
+        fnName: "reverse_4bits",
+        params: ["index"],
+        testCases: [
+            { input: [1], expected: 8, label: "0001b -> 1000b (8)" },
+            { input: [3], expected: 12, label: "0011b -> 1100b (12)" },
+            { input: [0], expected: 0, label: "0000b -> 0000b (0)" },
+            { input: [7], expected: 14, label: "0111b -> 1110b (14)" }
+        ],
+        linkedSkill: "Sensors & Signal Processing"
+    },
+    {
+        id: "preset_uart_checksum",
+        stageIndex: 4,
+        title: "Phỏng Vấn [Bosch Automotive]: Kiểm Tra Checksum XOR Gói Tin Cảm Biến",
+        topic: "5. Mạng & Giao thức",
+        difficulty: "Trung bình",
+        xp: 100,
+        source: "Bosch / Automotive IoT",
+        desc: `Giao thức truyền thông UART/CAN Bus trên xe hơi hoặc drone yêu cầu mỗi gói tin cảm biến phải có 1 byte Checksum XOR ở cuối để phát hiện nhiễu đường truyền. Viết hàm tính giá trị XOR của 4 byte dữ liệu cảm biến <code>b1, b2, b3, b4</code>.`,
+        realWorld: `Giao thức cảm biến định vị GPS NMEA, truyền thông tay điều khiển máy bay không người lái RC và chuẩn mạng CAN Bus trong ô tô.`,
+        whyMatters: `Đảm bảo dữ liệu gia tốc và hình ảnh gửi vào bộ não AI không bị sai lệch do tia lửa điện động cơ hoặc sóng nhiễu môi trường công nghiệp.`,
+        example: `Input: b1=1, b2=2, b3=3, b4=4 -> Output: 4`,
+        hint: `Toán tử XOR nối tiếp: <code>return b1 ^ b2 ^ b3 ^ b4;</code>`,
+        initialCode: `uint8_t calc_xor_checksum(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4) {\n    // Code của bạn ở đây:\n    \n}`,
+        solutionCode: `uint8_t calc_xor_checksum(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4) {\n    return b1 ^ b2 ^ b3 ^ b4;\n}`,
+        fnName: "calc_xor_checksum",
+        params: ["b1", "b2", "b3", "b4"],
+        testCases: [
+            { input: [1, 2, 3, 4], expected: 4, label: "1^2^3^4 = 4" },
+            { input: [255, 255, 0, 0], expected: 0, label: "255^255 = 0" },
+            { input: [170, 85, 0, 0], expected: 255, label: "0xAA ^ 0x55 = 0xFF" }
+        ],
+        linkedSkill: "Network Protocol Optimization"
+    }
+];
+
+function initCustomExercises() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_CUSTOM_EXERCISES) || "[]");
+        if (Array.isArray(saved) && saved.length > 0) {
+            saved.forEach(customProb => {
+                if (!practiceExercises.some(p => p.id === customProb.id)) {
+                    practiceExercises.push(customProb);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("Lỗi nạp bài tập tùy chỉnh:", e);
+    }
+}
+initCustomExercises();
+
+function openExternalProbModal() {
+    const modal = document.getElementById("external-prob-modal");
+    if (modal) {
+        modal.style.display = "flex";
+        renderPresetProbGrid();
+    }
+}
+
+function closeExternalProbModal() {
+    const modal = document.getElementById("external-prob-modal");
+    if (modal) modal.style.display = "none";
+}
+
+function switchExtTab(tabId) {
+    document.querySelectorAll(".ext-tab-btn").forEach(btn => btn.classList.remove("active"));
+    document.querySelectorAll(".ext-tab-content").forEach(c => c.classList.remove("active"));
+
+    const targetBtn = document.getElementById(`tab-btn-${tabId}`);
+    const targetContent = document.getElementById(`tab-content-${tabId}`);
+    if (targetBtn) targetBtn.classList.add("active");
+    if (targetContent) targetContent.classList.add("active");
+
+    if (tabId === 'presets') renderPresetProbGrid();
+}
+
+function renderPresetProbGrid() {
+    const container = document.getElementById("preset-prob-grid");
+    if (!container) return;
+
+    container.innerHTML = "";
+    PRESET_INTERVIEW_EXERCISES.forEach(preset => {
+        const isLoaded = practiceExercises.some(p => p.id === preset.id);
+        const card = document.createElement("div");
+        card.className = "preset-prob-card";
+        card.innerHTML = `
+            <div>
+                <span class="preset-badge-source">🏛️ ${preset.source}</span>
+                <div class="preset-card-title">${preset.title}</div>
+                <div class="preset-card-meta">
+                    <strong>Độ khó:</strong> ${preset.difficulty} • <strong>+${preset.xp} XP</strong><br>
+                    <strong>Tác dụng:</strong> ${preset.whyMatters.substring(0, 110)}...
+                </div>
+            </div>
+            <div style="margin-top: 8px;">
+                <button type="button" class="btn ${isLoaded ? 'btn-secondary' : 'btn-accent'}" style="width: 100%; font-size: 11.5px; padding: 6px 10px;" onclick="loadPresetInterviewProblem('${preset.id}')">
+                    ${isLoaded ? '🎯 Đã Nạp (Mở Làm Ngay)' : '➕ Nạp Bài Này Vào Luyện Tập'}
+                </button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function loadPresetInterviewProblem(presetId) {
+    const preset = PRESET_INTERVIEW_EXERCISES.find(p => p.id === presetId);
+    if (!preset) return;
+
+    let existingIdx = practiceExercises.findIndex(p => p.id === preset.id);
+    if (existingIdx === -1) {
+        practiceExercises.push(preset);
+        existingIdx = practiceExercises.length - 1;
+        // Lưu vào custom storage để tồn tại vĩnh viễn
+        saveCustomToStorage(preset);
+    }
+
+    closeExternalProbModal();
+    openPracticeProblem(existingIdx);
+    showToast(`⚡ Đã nạp thành công bài phỏng vấn: ${preset.title}`);
+}
+
+let generatedAiProblemTemp = null;
+
+async function generateExerciseWithAI() {
+    const topicInput = document.getElementById("ai-prob-topic-input");
+    const diffSelect = document.getElementById("ai-prob-diff-select");
+    const modSelect = document.getElementById("ai-prob-module-select");
+    const btn = document.getElementById("btn-run-ai-generator");
+    const previewBox = document.getElementById("ai-gen-preview-box");
+
+    const topic = topicInput ? topicInput.value.trim() : "";
+    if (!topic) {
+        showToast("⚠️ Vui lòng nhập chủ đề bạn muốn AI tạo bài tập!");
+        if (topicInput) topicInput.focus();
+        return;
+    }
+
+    const difficulty = diffSelect ? diffSelect.value : "Trung bình";
+    const stageIndex = modSelect ? parseInt(modSelect.value, 10) : 0;
+    const xp = difficulty === "Dễ" ? 50 : (difficulty === "Trung bình" ? 100 : 150);
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Đang kết nối trí tuệ nhân tạo Gemini để thiết kế bài tập C...";
+    }
+
+    // Tạo bài tập thông minh (hỗ trợ cả Gemini API online và Smart Generator offline)
+    try {
+        const apiKey = localStorage.getItem("mr_thai_gemini_api_key_v1") || "";
+        let problemData = null;
+
+        if (apiKey && apiKey.length > 15) {
+            const prompt = `Bạn là chuyên gia lập trình nhúng C và Edge AI trên ESP32.
+Hãy tạo 1 bài tập thực hành lập trình C độc nhất vô nhị về chủ đề: "${topic}", độ khó "${difficulty}".
+Trả về duy nhất định dạng JSON chuẩn (không chứa markdown backticks, chỉ JSON):
+{
+  "title": "Tên bài tập ngắn gọn cuốn hút (bắt đầu bằng [AI] ...)",
+  "desc": "Mô tả đề bài chi tiết (sử dụng <code> cho biến và hàm)",
+  "realWorld": "Bối cảnh thực tế trên ESP32/Edge AI (ở đâu trong firmware)",
+  "whyMatters": "Tại sao bắt buộc phải lập trình như vậy (tác dụng cụ thể)",
+  "example": "Input: ... -> Output: ...",
+  "hint": "Gợi ý thuật toán",
+  "fnName": "tên_hàm_tiếng_anh_ngắn_gọn",
+  "params": ["param1", "param2"],
+  "initialCode": "khung hàm C cho người học điền",
+  "solutionCode": "lời giải hàm C hoàn chỉnh",
+  "testCases": [
+    {"input": [giá_trị_1, giá_trị_2], "expected": kết_quả_1, "label": "test_1"},
+    {"input": [giá_trị_3, giá_trị_4], "expected": kết_quả_2, "label": "test_2"},
+    {"input": [giá_trị_5, giá_trị_6], "expected": kết_quả_3, "label": "test_3"}
+  ]
+}`;
+
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                let txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+                problemData = JSON.parse(txt);
+            }
+        }
+
+        // Fallback generator offline nếu không có key hoặc lỗi mạng
+        if (!problemData) {
+            const cleanTopic = topic.replace(/[^a-zA-Z0-9_\s]/g, '');
+            const fnName = "process_" + (cleanTopic.toLowerCase().split(/\s+/)[0] || "sensor");
+            problemData = {
+                title: `[AI Thực Chiến] Kỹ Thuật: ${topic}`,
+                desc: `Xử lý luồng dữ liệu nhúng cho <strong>${topic}</strong>. Viết hàm <code>${fnName}</code> nhận vào 2 tham số <code>val</code> và <code>threshold</code>, trả về 1 nếu giá trị vượt ngưỡng an toàn và 0 nếu bình thường.`,
+                realWorld: `Ứng dụng trực tiếp trong tầng kiểm soát cảm biến thông minh và xử lý tín hiệu ngoại vi ESP32 trước khi đưa vào mô hình TinyML.`,
+                whyMatters: `Tối ưu hóa khả năng phản hồi thời gian thực, ngăn chặn dữ liệu bất thường phá vỡ luồng suy luận của mạng nơ-ron và tiết kiệm chu kỳ xung nhịp CPU.`,
+                example: `Input: val = 120, threshold = 100 -> Output: 1\nInput: val = 80, threshold = 100 -> Output: 0`,
+                hint: `Sử dụng toán tử so sánh: <code>return (val > threshold) ? 1 : 0;</code>`,
+                fnName: fnName,
+                params: ["val", "threshold"],
+                initialCode: `int ${fnName}(int val, int threshold) {\n    // Code của bạn ở đây:\n    \n}`,
+                solutionCode: `int ${fnName}(int val, int threshold) {\n    return (val > threshold) ? 1 : 0;\n}`,
+                testCases: [
+                    { input: [120, 100], expected: 1, label: "vượt ngưỡng -> 1" },
+                    { input: [80, 100], expected: 0, label: "dưới ngưỡng -> 0" },
+                    { input: [100, 100], expected: 0, label: "bằng ngưỡng -> 0" }
+                ]
+            };
+        }
+
+        problemData.id = "custom_ai_" + Date.now();
+        problemData.stageIndex = stageIndex;
+        problemData.topic = `M${stageIndex + 1}. AI Tự Thiết Kế`;
+        problemData.difficulty = difficulty;
+        problemData.xp = xp;
+        problemData.isCustom = true;
+        problemData.linkedSkill = "Pointers & Dynamic Memory Layout";
+
+        generatedAiProblemTemp = problemData;
+
+        // Hiển thị preview
+        if (previewBox) {
+            previewBox.style.display = "block";
+            const titleEl = document.getElementById("ai-gen-title");
+            const descEl = document.getElementById("ai-gen-desc");
+            const diffEl = document.getElementById("ai-gen-diff");
+            const rwEl = document.getElementById("ai-gen-realworld");
+            const wmEl = document.getElementById("ai-gen-whymatters");
+
+            if (titleEl) titleEl.innerText = problemData.title;
+            if (descEl) descEl.innerHTML = problemData.desc;
+            if (diffEl) diffEl.innerText = `${problemData.difficulty} (+${problemData.xp} XP)`;
+            if (rwEl) rwEl.innerText = problemData.realWorld;
+            if (wmEl) wmEl.innerText = problemData.whyMatters;
+        }
+
+        showToast("✨ AI đã thiết kế xong bài tập mới! Hãy xem bản xem trước bên dưới.");
+    } catch (err) {
+        console.error("AI Generate Problem Error:", err);
+        showToast("⚠️ Có lỗi khi tạo bài tập. Hãy thử lại!");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "⚡ Bấm Để Gemini Tạo Bài Tập Ngay";
+        }
+    }
+}
+
+function confirmAddAIGeneratedProblem() {
+    if (!generatedAiProblemTemp) return;
+    saveCustomToStorage(generatedAiProblemTemp);
+    practiceExercises.push(generatedAiProblemTemp);
+    closeExternalProbModal();
+    openPracticeProblem(practiceExercises.length - 1);
+    showToast(`🎉 Đã thêm bài tập [${generatedAiProblemTemp.title}] vào danh sách luyện tập!`);
+    generatedAiProblemTemp = null;
+}
+
+function saveCustomExercise() {
+    const title = (document.getElementById("custom-prob-title")?.value || "").trim();
+    const realWorld = (document.getElementById("custom-prob-realworld")?.value || "").trim();
+    const desc = (document.getElementById("custom-prob-desc")?.value || "").trim();
+    const fnName = (document.getElementById("custom-prob-fn")?.value || "").trim();
+    const paramsStr = (document.getElementById("custom-prob-params")?.value || "").trim();
+    const initialCode = (document.getElementById("custom-prob-initcode")?.value || "").trim();
+    const solutionCode = (document.getElementById("custom-prob-solcode")?.value || "").trim();
+    const testCasesStr = (document.getElementById("custom-prob-testcases")?.value || "").trim();
+
+    if (!title || !desc || !fnName) {
+        showToast("⚠️ Vui lòng nhập ít nhất: Tên bài tập, Mô tả và Tên hàm C!");
+        return;
+    }
+
+    let parsedTestCases = [];
+    try {
+        if (testCasesStr) {
+            parsedTestCases = JSON.parse(testCasesStr);
+        }
+    } catch (e) {
+        showToast("⚠️ Định dạng JSON của Test Cases không hợp lệ!");
+        return;
+    }
+
+    if (!Array.isArray(parsedTestCases) || parsedTestCases.length === 0) {
+        parsedTestCases = [{ input: [0], expected: 0, label: "test_default" }];
+    }
+
+    const customProb = {
+        id: "custom_" + Date.now(),
+        stageIndex: 0,
+        title: title.startsWith("[Nguồn Ngoài]") ? title : `[Nguồn Ngoài] ${title}`,
+        topic: "1. C & Bộ nhớ",
+        difficulty: "Trung bình",
+        xp: 100,
+        desc: desc,
+        realWorld: realWorld || "Bài toán kỹ thuật nguồn ngoài rèn luyện tư duy lập trình C nâng cao.",
+        whyMatters: "Áp dụng thuật toán tối ưu hóa bộ nhớ và tốc độ thực thi cho các bài toán phỏng vấn và thực tế.",
+        example: "Xem chi tiết test cases bên dưới",
+        hint: "Đọc kỹ các ràng buộc kiểu dữ liệu nguyên và tràn số.",
+        initialCode: initialCode || `int ${fnName}(int val) {\n    // Code của bạn\n}`,
+        solutionCode: solutionCode || `int ${fnName}(int val) {\n    return val;\n}`,
+        fnName: fnName,
+        params: paramsStr ? paramsStr.split(',').map(s => s.trim()) : ["val"],
+        testCases: parsedTestCases,
+        isCustom: true,
+        linkedSkill: "Pointers & Dynamic Memory Layout"
+    };
+
+    saveCustomToStorage(customProb);
+    practiceExercises.push(customProb);
+    closeExternalProbModal();
+    openPracticeProblem(practiceExercises.length - 1);
+    showToast(`✅ Đã lưu và mở bài tập: ${customProb.title}`);
+}
+
+function saveCustomToStorage(prob) {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_CUSTOM_EXERCISES) || "[]");
+        saved.push(prob);
+        localStorage.setItem(STORAGE_CUSTOM_EXERCISES, JSON.stringify(saved));
+    } catch (e) {
+        console.warn("Lỗi lưu bài tập vào localStorage:", e);
+    }
+}
+
+function askAiAboutCurrentProblem() {
+    const prob = practiceExercises[currentProblemIndex];
+    if (!prob) return;
+
+    if (typeof switchTab === 'function') switchTab('notebook');
+    const inputEl = document.getElementById("nb-chat-input");
+    if (inputEl) {
+        inputEl.value = `Tôi đang thực hành bài tập C: "${prob.title}" (${prob.topic}).\nĐề bài: ${prob.desc.replace(/<[^>]*>?/gm, '')}\nHãy phân tích chuyên sâu cho tôi:\n1. Ứng dụng thực tế của đoạn code này nằm ở đâu trong firmware ESP32/ESP-IDF thật?\n2. Tại sao lập trình viên nhúng phải viết như vậy thay vì cách thông thường?\n3. Các lỗi phần cứng, căn lề ô nhớ hoặc ngắt ISR nghiêm trọng thường gặp là gì?`;
+        inputEl.focus();
+    }
+    showToast(`🤖 Đã chuyển câu hỏi về "${prob.title}" cho AI Sổ Tay!`);
+}
+
 // Expose ra window
 window.practiceExercises = practiceExercises;
 window.renderPracticeView = renderPracticeView;
@@ -1974,3 +2467,13 @@ window.resetCurrentCode = resetCurrentCode;
 window.loadSolutionCode = loadSolutionCode;
 window.executeTests = executeTests;
 window.saveExerciseToNotebook = saveExerciseToNotebook;
+window.openExternalProbModal = openExternalProbModal;
+window.closeExternalProbModal = closeExternalProbModal;
+window.switchExtTab = switchExtTab;
+window.renderPresetProbGrid = renderPresetProbGrid;
+window.loadPresetInterviewProblem = loadPresetInterviewProblem;
+window.generateExerciseWithAI = generateExerciseWithAI;
+window.confirmAddAIGeneratedProblem = confirmAddAIGeneratedProblem;
+window.saveCustomExercise = saveCustomExercise;
+window.askAiAboutCurrentProblem = askAiAboutCurrentProblem;
+
