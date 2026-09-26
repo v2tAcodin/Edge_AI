@@ -1,9 +1,9 @@
 // ==========================================
 // EDGE AI HUB — PWA SERVICE WORKER
-// Version: 3.0.0
+// Version: 3.1.2
 // ==========================================
 
-const CACHE_NAME = 'edge-ai-hub-v3.1.1';
+const CACHE_NAME = 'edge-ai-hub-v3.1.2';
 
 const PRECACHE_ASSETS = [
     './',

@@ -67,19 +67,121 @@ async function deletePdfFromIndexedDB(id) {
 // Kho tài liệu mặc định (Được chuẩn bị từ các buổi nghiên cứu NotebookLM & Lộ Trình 6 Bước)
 const defaultNotebookDocs = [
     {
-        id: "doc_stage1_memory",
-        title: "Lộ Trình Bước 1: Kiến Trúc Bộ Nhớ ESP32-S3 & Quản Lý C Core",
+        id: "doc_c_pointers_deepdive",
+        title: "Giáo Trình Cốt Lõi: Làm Chủ Con Trỏ (Pointers) & Thao Tác Bộ Nhớ Cho Kỹ Sư Nhúng ESP32",
         category: "Lộ Trình 1",
-        tags: ["#LộTrình", "#Bước1", "#ESP32", "#Memory"],
-        date: "24/09/2026",
-        words: 480,
+        tags: ["#ConTrỏ", "#Pointers", "#C_Core", "#Memory", "#ESP32"],
+        date: "26/09/2026",
+        words: 1150,
+        isNativePdf: false,
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI CỦA CON TRỎ (POINTER) TRONG C
+Đối với người mới học lập trình C, khái niệm "con trỏ" thường gây cảm giác mơ hồ vì nó gắn liền với kiến trúc phần cứng bên dưới.
+Để hiểu con trỏ, hãy hình dung **bộ nhớ RAM** của vi điều khiển ESP32 như một **khách sạn có hàng triệu ngăn tủ locker**:
+- Mỗi ngăn tủ có một **Số phòng duy nhất** gọi là **Địa chỉ bộ nhớ (Memory Address)**, viết dưới hệ thập lục phân Hexa (ví dụ: \`0x3FFB0004\`).
+- Bên trong ngăn tủ chứa **Dữ liệu thực tế (Value)**, ví dụ số nguyên \`42\`.
+
+👉 **Biến thông thường** (\`int x = 42;\`): Bạn đặt tên cho ngăn tủ đó là \`x\`. Giá trị lưu trong tủ là \`42\`.
+👉 **Biến con trỏ** (\`int *ptr = &x;\`): Là một tờ giấy ghi lại **Số phòng của x** (\`0x3FFB0004\`). Con trỏ **KHÔNG** chứa số 42, nó chỉ chứa **địa chỉ nơi số 42 đang ngụ cư**!
+
+---
+
+### 📌 2. HAI TOÁN TỬ NỀN TẢNG: TOÁN TỬ \`&\` VÀ TOÁN TỬ \`*\`
+- **Toán tử lấy địa chỉ \`&\` (Address-of):**
+  \`&x\` có nghĩa là: *"Hãy cho tôi biết địa chỉ ô nhớ nơi biến x đang nằm trên RAM!"*
+- **Toán tử giải tham chiếu \`*\` (Dereference):**
+  \`*ptr\` có nghĩa là: *"Hãy đi đến địa chỉ ô nhớ mà ptr đang chỉ tới, mở ngăn tủ đó ra để ĐỌC hoặc GHI ĐÈ dữ liệu mới!"*
+
+\`\`\`c
+int a = 10;      // Ô nhớ của a (ví dụ 0x1000) chứa số 10
+int *p = &a;     // p lưu giá trị 0x1000 (địa chỉ của a)
+
+printf("Địa chỉ của a: %p\\n", p);   // In ra: 0x1000
+printf("Giá trị trong a: %d\\n", *p);  // Đọc tại 0x1000 -> In ra: 10
+
+*p = 99;         // Ghi đè số 99 vào ô nhớ 0x1000!
+printf("Biến a sau ghi đè: %d\\n", a); // a bây giờ đã biến thành 99!
+\`\`\`
+
+---
+
+### 📌 3. CON TRỎ VÀ MẢNG: BẢN CHẤT SỐ HỌC CON TRỎ (POINTER ARITHMETIC)
+Trong C, **Tên mảng thực chất là một con trỏ hằng trỏ vào phần tử đầu tiên**:
+\`\`\`c
+int arr[3] = {10, 20, 30};
+// arr tương đương với &arr[0]
+\`\`\`
+- Khi bạn viết \`arr[i]\`, trình biên dịch thực chất dịch thành: \`*(arr + i)\`.
+- **Quy tắc số học con trỏ:**
+  Phép cộng con trỏ \`ptr + 1\` **KHÔNG PHẢI** là cộng thêm 1 byte! Nó tự động nhảy thêm **kích thước của kiểu dữ liệu** (\`sizeof(type)\`):
+  + Với \`char *p\`: \`p + 1\` nhảy 1 byte.
+  + Với \`int *p\` hoặc \`float *p\`: \`p + 1\` nhảy **4 bytes**.
+  + Với con trỏ Struct 16 byte: \`p + 1\` nhảy đúng **16 bytes**.
+
+---
+
+### 📌 4. CON TRỎ STRUCT & KỸ THUẬT TRUYỀN DỮ LIỆU ZERO-COPY
+Trong hệ thống nhúng, dữ liệu cảm biến hoặc âm thanh/hình ảnh thường được đóng gói vào Struct:
+\`\`\`c
+typedef struct __attribute__((packed)) {
+    uint32_t timestamp;
+    int16_t accel_x, accel_y, accel_z;
+} IMU_Frame_t;
+\`\`\`
+- **Toán tử mũi tên \`->\`:**
+  Nếu \`frame\` là con trỏ (\`IMU_Frame_t *frame\`), thay vì viết cồng kềnh \`(*frame).accel_x\`, ta viết gọn gàng: \`frame->accel_x\`.
+- **Tại sao bắt buộc truyền con trỏ (Zero-Copy)?**
+  Một khung âm thanh 16kHz có kích thước 32,000 bytes. Nếu truyền tham trị (\`void process(AudioFrame data)\`), CPU phải copy toàn bộ 32KB lên Stack -> **Tràn Stack Overflow làm sập nguồn vi điều khiển ngay lập tức**!
+  Khi truyền con trỏ (\`void process(const AudioFrame *data)\`), CPU chỉ truyền đúng **1 địa chỉ 4 byte**! Tiết kiệm 99.9% RAM và có độ trễ 0ms.
+- **Từ khóa \`__attribute__((packed))\`:**
+  Ngăn compiler chèn các byte padding rỗng, đảm bảo cấu trúc byte của struct khớp chính xác 100% với luồng byte thô đọc từ cảm biến I2C/SPI.
+
+---
+
+### 📌 5. CÁC LOẠI CON TRỎ ĐẶC BIỆT TRONG FREERTOS & EMBEDDED
+1. **Con trỏ \`void*\` (Generic Pointer):**
+   Con trỏ vạn năng có thể trỏ tới bất kỳ kiểu dữ liệu nào. Trong FreeRTOS, hàm tạo task luôn nhận \`void *pvParameters\` để kỹ sư truyền bất kỳ tham số nào vào task.
+2. **Con trỏ Hàm (Function Pointer):**
+   Con trỏ lưu địa chỉ mã máy của một hàm. Dùng làm hàm Callback khi ngắt xảy ra hoặc bảng vector ngắt ISR: \`void (*callback_fn)(int event_id);\`.
+3. **Con trỏ Hằng (\`const\` Pointers):**
+   - \`const int *p\`: Dữ liệu bị khóa chỉ đọc, rất an toàn để bảo vệ bộ đệm đầu vào không bị hàm vô tình sửa đổi.
+   - \`int * const p\`: Con trỏ bị khóa vị trí, nhưng giá trị bên trong sửa được.
+4. **Con trỏ Volatile (Memory-Mapped I/O):**
+   Thao tác trực tiếp thanh ghi phần cứng của ESP32 qua địa chỉ cố định:
+   \`*(volatile uint32_t*)0x60004008 = (1 << 2);\` -> Bật GPIO2 không qua thư viện trung gian!
+
+---
+
+### 📌 6. 4 CẠM BẪY CHÍ MẠNG KHI DÙNG CON TRỎ (VÀ CÁCH PHÒNG TRÁNH)
+1. **Con trỏ NULL (NULL Pointer Dereference):** Cố đọc \`*p\` khi \`p == NULL\` -> Kích hoạt Guru Meditation Crash.
+   ✅ *Khắc phục*: Luôn kiểm tra \`if (p == NULL) return ESP_ERR_INVALID_ARG;\`.
+2. **Con trỏ treo (Dangling Pointer):** Trỏ vào biến cục bộ trong một hàm đã kết thúc, hoặc ô nhớ vừa bị \`free()\`.
+   ✅ *Khắc phục*: Sau khi gọi \`free(ptr);\`, luôn gán ngay \`ptr = NULL;\`.
+3. **Rò rỉ bộ nhớ (Memory Leak):** Cấp phát \`malloc()\` nhưng quên \`free()\`, làm cạn kiệt RAM sau một thời gian chạy.
+4. **Ngoại lệ căn lề (Unaligned Access Fault):** Ép con trỏ mảng byte lẻ sang con trỏ 32-bit khiến phần cứng CPU phát sinh ngắt ngoại lệ crash.`
+    },
+    {
+        id: "doc_stage1_memory",
+        title: "Lộ Trình Bước 1: Kiến Trúc Bộ Nhớ ESP32-S3 & Quản Lý C Core Toàn Diện",
+        category: "Lộ Trình 1",
+        tags: ["#LộTrình", "#Bước1", "#ESP32", "#Memory", "#Pointers"],
+        date: "26/09/2026",
+        words: 850,
         isNativePdf: false,
         content: `### 1. Phân Vùng Bản Đồ Bộ Nhớ ESP32-S3
+Không gian địa chỉ 32-bit của ESP32-S3 được phân chia thành 4 phân vùng vật lý:
 - **Internal SRAM0 (64 KB)**: Dùng riêng cho CPU Instruction Cache và các hàm ngắt khẩn cấp \`IRAM_ATTR\`.
 - **Internal SRAM1 (384 KB)**: Vùng nhớ chính tốc độ 1 chu kỳ xung nhịp (~240MHz). Đây là nơi duy nhất lý tưởng để đặt **Tensor Arena** của TFLite Micro nhằm đạt độ trễ mili-giây.
+- **Internal SRAM2 (64 KB)**: Dành riêng cho các bộ đệm truyền nhận DMA của Wi-Fi, Bluetooth và ngoại vi I2S/SPI.
+- **RTC Fast/Slow SRAM (16 KB)**: Vùng nhớ duy nhất giữ được trạng thái khi vi điều khiển vào chế độ Deep Sleep tiết kiệm pin (\`RTC_DATA_ATTR\`).
 - **External PSRAM (Tối đa 8MB Octal SPI)**: Bộ nhớ ngoài dung lượng lớn nhưng tốc độ truy xuất chậm hơn SRAM nội ~3-4 lần do đi qua bus SPI. Thích hợp chứa buffer ảnh Camera hoặc trọng số mô hình lớn.
 
-### 2. Yêu Cầu Căn Lề (Memory Alignment 16-byte)
+### 2. Thao Tác Con Trỏ & Kỹ Thuật Zero-Copy Pass-By-Reference
+Khi xử lý các bộ đệm lớn (Audio 16kHz, Camera Frame, Tensor Arena), việc truyền tham trị (pass-by-value) sẽ sao chép toàn bộ mảng lên Stack gây tràn bộ nhớ **Stack Overflow** làm sập nguồn vi điều khiển.
+- **Giải pháp**: Luôn truyền con trỏ hằng (\`const Frame_t *frame\`).
+- Chỉ tốn đúng **4 bytes** địa chỉ trên Stack, độ trễ truyền tham số 0 mili-giây.
+- Sử dụng từ khóa \`__attribute__((packed))\` trên struct để ngăn chặn trình biên dịch tự ý chèn padding bytes, đảm bảo dữ liệu thô đọc từ cảm biến khớp 100% từng byte.
+
+### 3. Yêu Cầu Căn Lề (Memory Alignment 16-byte alignas(16))
 ESP32-S3 hỗ trợ tập lệnh mở rộng **Vector AI Instructions (SIMD)**. Để CPU có thể nạp một lúc 128-bit dữ liệu ma trận trọng số INT8, vùng đệm Tensor Arena bắt buộc phải được căn lề 16-byte:
 \`\`\`c
 constexpr int kTensorArenaSize = 64 * 1024;
@@ -87,8 +189,11 @@ alignas(16) static uint8_t tensor_arena[kTensorArenaSize];
 \`\`\`
 Nếu thiếu \`alignas(16)\`, mô hình sẽ phát sinh ngoại lệ phần cứng LoadStoreAlignment Crash làm sụp nguồn vi điều khiển.
 
-### 3. Stack vs Heap & Chống Phân Mảnh (Anti-Fragmentation)
-Trong hệ thống nhúng hoạt động 24/7, việc gọi \`malloc()\`/\`free()\` liên tục sẽ làm phân mảnh Heap, dẫn đến cạn kiệt bộ nhớ OOM (Out Of Memory) dù tổng RAM còn trống vẫn nhiều. Luôn ưu tiên cấp phát tĩnh (Static Allocation) cho các bộ đệm cố định.`
+### 4. Stack vs Heap & Chống Phân Mảnh (Anti-Fragmentation)
+Trong hệ thống nhúng hoạt động 24/7, việc gọi \`malloc()\`/\`free()\` liên tục sẽ làm phân mảnh Heap, dẫn đến cạn kiệt bộ nhớ OOM (Out Of Memory) dù tổng RAM còn trống vẫn nhiều.
+- **Giải pháp**: Luôn ưu tiên cấp phát tĩnh (Static Allocation) cho các bộ đệm cố định.
+- Sử dụng Memory Pool cho các đối tượng có kích thước đồng nhất.
+- Theo dõi định kỳ bằng \`heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)\`.`
     },
     {
         id: "doc_stage2_timer",
@@ -199,15 +304,23 @@ Chỉ đăng ký đúng các toán tử cần dùng (Conv2D, FullyConnected, Sof
     }
 ];
 
-// Khởi tạo state và tự động gộp các tài liệu lý thuyết lộ trình mới
+// Khởi tạo state và tự động gộp / cập nhật các tài liệu lý thuyết lộ trình mới
 let notebookDocs = JSON.parse(localStorage.getItem(STORAGE_NOTEBOOK_DOCS)) || [];
 if (notebookDocs.length === 0) {
     notebookDocs = [...defaultNotebookDocs];
 } else {
-    // Tự động bổ sung tài liệu 6 giai đoạn nếu chưa có
+    // Tự động bổ sung hoặc đồng bộ cập nhật tài liệu chuẩn hệ thống
     defaultNotebookDocs.forEach(defDoc => {
-        if (!notebookDocs.some(d => d.id === defDoc.id)) {
+        const existingIdx = notebookDocs.findIndex(d => d.id === defDoc.id);
+        if (existingIdx === -1) {
             notebookDocs.push(defDoc);
+        } else {
+            // Cập nhật nội dung tài liệu hệ thống lên bản mới nhất
+            notebookDocs[existingIdx].title = defDoc.title;
+            notebookDocs[existingIdx].category = defDoc.category;
+            notebookDocs[existingIdx].tags = defDoc.tags;
+            notebookDocs[existingIdx].content = defDoc.content;
+            notebookDocs[existingIdx].words = defDoc.words;
         }
     });
 }
@@ -247,7 +360,7 @@ if (geminiUsage.date !== todayUsageStr) {
 let notebookChatHistory = JSON.parse(localStorage.getItem(STORAGE_NOTEBOOK_CHAT)) || [
     {
         role: "ai",
-        text: `Chào Kỹ sư **Mr. Thai**! Tôi là **Trợ Lý Tài Liệu Nhúng & Edge AI (Doc AI)**.\n\n🔥 **Tính năng mới**: Tôi đã hỗ trợ **đọc trực tiếp file PDF nguyên bản (Native Multimodal PDF)** bằng mô hình **Gemini 2.5 Flash**. Tôi có thể "nhìn" và phân tích toàn bộ **bảng thanh ghi bitfield, sơ đồ khối phần cứng, sơ đồ chân GPIO và công thức toán học** trong Datasheet mà không bị mất chữ hay vỡ định dạng!\n\nBạn có thể bấm nút **"📎 PDF Gốc"** ở khung chat để đính kèm file PDF hoặc nạp vào thư viện bên trái nhé!`
+        text: `Chào Kỹ sư **Mr. Thai**! Tôi là **Trợ Lý Tài Liệu Nhúng & Edge AI (Doc AI)**.\n\n🔥 **Chế độ đa năng**: Tôi hỗ trợ phân tích chuyên sâu về **Con Trỏ C, Quản Lý Bộ Nhớ ESP32-S3, Ngắt ISR, FreeRTOS và TinyML**.\n- Bạn có thể đặt câu hỏi về bất kỳ khái niệm lý thuyết hay mã nguồn C nào ngay cả khi **ngoại tuyến** (nhờ Động cơ tri thức nhúng cục bộ).\n- Khi cấu hình **Google Gemini API Key** (nút ⚙️ Cấu Hình Key), tôi sẽ kết nối trực tiếp với **Gemini 2.0 Flash** để đọc hiểu toàn bộ file PDF nguyên bản với đầy đủ sơ đồ và bảng thanh ghi!\n\nHãy chọn một tài liệu bên trái hoặc đặt câu hỏi về con trỏ, mảng, bộ nhớ bất kỳ lúc nào!`
     }
 ];
 
@@ -309,11 +422,11 @@ function updateGeminiKeyStatus() {
     if (!statusPill) return;
 
     if (geminiApiKey && geminiApiKey.trim().length > 10) {
-        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 2.5 Flash Online</span>`;
-        statusPill.title = "Đã cấu hình Google Gemini API Key. Đang hoạt động ở chế độ Cloud AI RAG & Native PDF Multimodal.";
+        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 2.0 Flash Online</span>`;
+        statusPill.title = "Đã kết nối Google Gemini 2.0 Flash. Sẵn sàng xử lý tài liệu đa phương thức và PDF nguyên bản.";
     } else {
-        statusPill.innerHTML = `⚪ <span style="color: var(--cyan);">Local Knowledge Engine</span>`;
-        statusPill.title = "Đang chạy chế độ RAG ngoại tuyến trên tài liệu nhúng sẵn. Bấm Cấu Hình Key để kích hoạt Gemini.";
+        statusPill.innerHTML = `⚡ <span style="color: var(--cyan);">Offline Knowledge AI</span>`;
+        statusPill.title = "Đang chạy chế độ Động Cơ Tri Thức Nhúng Cục Bộ. Bấm ⚙️ Cấu Hình Key để kích hoạt Cloud Gemini AI.";
     }
 }
 
@@ -676,28 +789,44 @@ function renderNotebookChat() {
 
 function formatMarkdownChat(text) {
     if (!text) return "";
-    let formatted = escapeHtml(text);
 
-    // Code blocks ```c ... ```
-    formatted = formatted.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-        return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+    // 1. Tách các khối mã nguồn ```c ... ``` ra mảng đệm riêng để bảo toàn ngắt dòng và format
+    const codeBlocks = [];
+    let processed = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        const placeholder = `%%%CODE_BLOCK_${codeBlocks.length}%%%`;
+        const codeClass = lang ? `language-${lang}` : 'language-c';
+        codeBlocks.push(`<pre class="stage-theory-code" style="margin: 10px 0; background: #030712; border: 1px solid #1f2937; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38bdf8; overflow-x: auto; line-height: 1.55;"><code class="${codeClass}">${escapeHtml(code.trim())}</code></pre>`);
+        return placeholder;
     });
 
-    // Inline code `code`
-    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+    let formatted = escapeHtml(processed);
 
-    // Bold **text**
-    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // 2. Inline code `code`
+    formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(0, 240, 255, 0.1); color: var(--cyan); padding: 2px 6px; border-radius: 4px; font-family: \'JetBrains Mono\', monospace; font-size: 12px; border: 1px solid rgba(0, 240, 255, 0.2); font-weight: 500;">$1</code>');
 
-    // Headers ###
-    formatted = formatted.replace(/^### (.*$)/gim, '<h4 style="margin: 8px 0 4px; color: var(--cyan); font-size: 13.5px;">$1</h4>');
-    formatted = formatted.replace(/^## (.*$)/gim, '<h3 style="margin: 10px 0 6px; color: #fff; font-size: 14.5px;">$1</h3>');
+    // 3. Bold **text**
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #ffffff; font-weight: 700;">$1</strong>');
 
-    // Bullet points
-    formatted = formatted.replace(/^\s*-\s+(.*$)/gim, '• $1<br>');
+    // 4. Horizontal lines ---
+    formatted = formatted.replace(/^---$/gim, '<hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.12); margin: 12px 0;">');
 
-    // Line breaks
+    // 5. Callouts / Blockquotes > Note
+    formatted = formatted.replace(/^>\s+(.*$)/gim, '<div style="background: rgba(0, 240, 255, 0.06); border-left: 3px solid var(--cyan); padding: 8px 12px; border-radius: 4px; margin: 8px 0; color: #e2e8f0; font-size: 12.5px; line-height: 1.5;">$1</div>');
+
+    // 6. Headers ### and ##
+    formatted = formatted.replace(/^### (.*$)/gim, '<h4 style="margin: 12px 0 6px; color: var(--cyan); font-size: 13.5px; font-weight: 700; font-family: \'JetBrains Mono\', monospace; display: flex; align-items: center; gap: 6px;">$1</h4>');
+    formatted = formatted.replace(/^## (.*$)/gim, '<h3 style="margin: 14px 0 8px; color: #fff; font-size: 15px; font-weight: 700; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 4px;">$1</h3>');
+
+    // 7. Bullet points
+    formatted = formatted.replace(/^\s*-\s+(.*$)/gim, '<div style="display: flex; gap: 6px; margin: 3px 0 3px 6px;"><span>•</span><span>$1</span></div>');
+
+    // 8. Line breaks
     formatted = formatted.replace(/\n/g, '<br>');
+
+    // 9. Phục hồi lại các khối mã nguồn nguyên vẹn
+    codeBlocks.forEach((block, idx) => {
+        formatted = formatted.replace(`%%%CODE_BLOCK_${idx}%%%`, block);
+    });
 
     return formatted;
 }
@@ -781,16 +910,22 @@ async function handleSendNotebookQuery() {
     }
 }
 
+// ==========================================
+// CẤU HÌNH GOOGLE GEMINI API (MODEL 2.0 FLASH & FALLBACK 1.5 FLASH)
+// ==========================================
+const GEMINI_PRIMARY_MODEL = "gemini-2.0-flash";
+const GEMINI_FALLBACK_MODEL = "gemini-1.5-flash";
+
 // Gọi Google Gemini API (Multimodal PDF + Text)
 async function queryGeminiApi(question, docs, directPdf = null) {
     const systemPrompt = `Bạn là Trợ Lý Kỹ Sư Nghiên Cứu Nhúng & Edge AI (Doc AI) dành riêng cho Mr. Thai.
-Nhiệm vụ của bạn là đọc và phân tích các tài liệu kỹ thuật được cung cấp (tổng hợp từ Google NotebookLM, Datasheet ESP32, FreeRTOS, TinyML).
+Nhiệm vụ của bạn là đọc và phân tích các tài liệu kỹ thuật được cung cấp (tổng hợp từ Google NotebookLM, Datasheet ESP32, FreeRTOS, TinyML, Con Trỏ C).
 QUY TẮC PHẢN HỒI:
 1. Trả lời chi tiết, chuẩn xác, mang tính thực chiến cao của một Embedded Systems Architect.
-2. Khi tài liệu là file PDF nguyên bản, hãy phân tích toàn diện bao gồm: các bảng thanh ghi (register maps, bitfields), sơ đồ khối CPU/Ngoại vi, sơ đồ chân GPIO, thông số điện áp và mã nguồn C mẫu.
-3. Trích dẫn số trang hoặc đề mục cụ thể trong file PDF để Mr. Thai dễ đối chiếu.
-4. Cung cấp ví dụ code C/C++ chuẩn theo ESP-IDF / FreeRTOS.
-5. Nếu câu hỏi nằm ngoài tài liệu, hãy sử dụng kiến thức chuyên sâu về Edge AI và ESP32 để giải đáp, nhưng ghi chú rõ đây là kiến thức mở rộng ngoài tài liệu.`;
+2. Khi giải thích về C/C++ và con trỏ, hãy giải thích cặn kẽ bản chất ô nhớ, địa chỉ, toán tử & và *, mối quan hệ mảng, struct ->, và các cạm bẫy sụp nguồn.
+3. Khi tài liệu là file PDF nguyên bản, hãy phân tích toàn diện bao gồm: các bảng thanh ghi (register maps, bitfields), sơ đồ khối CPU/Ngoại vi, sơ đồ chân GPIO, thông số điện áp và mã nguồn C mẫu.
+4. Trích dẫn số trang hoặc đề mục cụ thể trong file PDF để Mr. Thai dễ đối chiếu.
+5. Cung cấp ví dụ code C/C++ chuẩn theo ESP-IDF / FreeRTOS kèm chú thích từng dòng.`;
 
     const parts = [];
     let nativePdfFoundName = directPdf ? directPdf.fileName : null;
@@ -830,10 +965,10 @@ QUY TẮC PHẢN HỒI:
 
     let promptText = `${systemPrompt}\n\n`;
     if (contextContent) {
-        promptText += `[DỮ LIỆU TÀI LIỆU VĂN BẢN]:\n${contextContent}\n\n`;
+        promptText += `[DỮ LIỆU TÀI LIỆU KHO TRI THỨC]:\n${contextContent}\n\n`;
     }
     if (parts.length > 0) {
-        promptText += `[GHI CHÚ QUAN TRỌNG]: Có tài liệu PDF gốc đính kèm dạng Multimodal. Hãy đọc kỹ các trang, bảng biểu thanh ghi và sơ đồ kỹ thuật trong file PDF.\n\n`;
+        promptText += `[GHI CHÚ]: Có file PDF gốc đính kèm dạng Multimodal. Hãy đọc kỹ bảng thanh ghi, sơ đồ chân GPIO và thông số kỹ thuật trong file PDF.\n\n`;
     }
     promptText += `[CÂU HỎI CỦA MR. THAI]:\n${question}`;
 
@@ -848,42 +983,246 @@ QUY TẮC PHẢN HỒI:
         ],
         generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 2048
+            maxOutputTokens: 2500
         }
     };
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey.trim()}`;
+    // Thử model chính (gemini-2.0-flash), nếu lỗi 404 thì tự động thử model phụ (gemini-1.5-flash)
+    const modelsToTry = [GEMINI_PRIMARY_MODEL, GEMINI_FALLBACK_MODEL];
+    let responseData = null;
+    let successfulModel = null;
+    let lastError = null;
 
-    const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody)
-    });
+    for (const modelName of modelsToTry) {
+        try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey.trim()}`;
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `HTTP ${response.status} - Lỗi xác thực hoặc hết quota API Key.`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const msg = errorData.error?.message || `HTTP ${response.status}`;
+                if (response.status === 404 || msg.toLowerCase().includes("not found")) {
+                    console.warn(`Model ${modelName} không khả dụng, thử fallback sang model tiếp theo...`);
+                    lastError = new Error(msg);
+                    continue;
+                }
+                throw new Error(msg);
+            }
+
+            responseData = await response.json();
+            successfulModel = modelName;
+            break;
+        } catch (err) {
+            lastError = err;
+            if (modelName === modelsToTry[modelsToTry.length - 1]) {
+                throw err;
+            }
+        }
     }
 
-    const data = await response.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Không nhận được phản hồi từ mô hình.";
+    if (!responseData) {
+        throw lastError || new Error("Không thể kết nối đến Google Gemini API.");
+    }
+
+    const answer = responseData.candidates?.[0]?.content?.parts?.[0]?.text || "Không nhận được phản hồi từ mô hình.";
 
     // Cập nhật mức sử dụng Quota hôm nay
     geminiUsage.requestsToday = (geminiUsage.requestsToday || 0) + 1;
-    const tokens = data.usageMetadata?.totalTokenCount || 0;
+    const tokens = responseData.usageMetadata?.totalTokenCount || 0;
     geminiUsage.tokensToday = (geminiUsage.tokensToday || 0) + tokens;
     geminiUsage.lastRequestTime = new Date().toLocaleTimeString('vi-VN');
     localStorage.setItem(STORAGE_GEMINI_USAGE, JSON.stringify(geminiUsage));
     updateGeminiQuotaDisplay();
 
-    let sourceName = nativePdfFoundName ? `📕 File PDF Gốc: ${nativePdfFoundName}` : (docs.length === 1 ? docs[0].title : `Toàn bộ ${docs.length} tài liệu NotebookLM`);
+    let sourceName = nativePdfFoundName 
+        ? `📕 PDF: ${nativePdfFoundName} • Model: ${successfulModel}` 
+        : (docs.length === 1 ? `${docs[0].title} • ${successfulModel}` : `${docs.length} tài liệu • ${successfulModel}`);
     addNotebookChatMessage("ai", answer, sourceName);
 }
 
-// Chế độ Local Heuristic RAG khi chưa có API Key
+// ============================================================================
+// ĐỘNG CƠ TRI THỨC NHÚNG CỤC BỘ (LOCAL OFFLINE AI ENGINE - ĐA DẠNG & THỰC CHIẾN)
+// ============================================================================
 function queryLocalKnowledgeEngine(question, docs) {
     const qLower = question.toLowerCase();
 
+    // 1. CHỦ ĐỀ: CON TRỎ (POINTERS), ĐỊA CHỈ, TOÁN TỬ VÀ DỮ LIỆU C
+    if (qLower.includes("con trỏ") || qLower.includes("pointer") || qLower.includes("địa chỉ") || 
+        qLower.includes("dereference") || qLower.includes("toán tử *") || qLower.includes("toán tử &") || 
+        qLower.includes("zero-copy") || qLower.includes("zero copy") || qLower.includes("mũi tên") || 
+        qLower.includes("void*") || qLower.includes("function pointer") || qLower.includes("con trỏ hàm")) {
+        
+        let pointerResponse = `### 🧠 GIẢI THÍCH CHUYÊN SÂU: CON TRỎ (POINTERS) TRONG C NHÚNG & EDGE AI\n\n` +
+            `Chào bạn! Con trỏ là "chìa khóa vàng" của lập trình vi điều khiển ESP32. Dưới đây là phân tích bản chất từ con số 0:\n\n` +
+            `#### 1. Bản Chất Ô Nhớ RAM & Địa Chỉ (Address vs Value)\n` +
+            `- Bộ nhớ RAM được cấu tạo bởi hàng triệu ô nhớ 1-byte liên tiếp. Mỗi ô nhớ có một **Địa chỉ duy nhất** (ví dụ: \`0x3FFB0004\`).\n` +
+            `- **Biến thường** (\`int x = 42;\`): Giá trị nằm trong ô nhớ là số \`42\`.\n` +
+            `- **Biến con trỏ** (\`int *ptr = &x;\`): \`ptr\` không chứa số 42, mà nó **lưu địa chỉ ô nhớ \`0x3FFB0004\` nơi x đang ngụ cư**!\n\n` +
+            `\`\`\`\n` +
+            `+--------------------+--------------------+\n` +
+            `| Địa chỉ ô nhớ RAM | Dữ liệu bên trong  | Tên biến đại diện  |\n` +
+            `+--------------------+--------------------+\n` +
+            `| 0x3FFB0004         | 42                 | int x              |\n` +
+            `| 0x3FFB0008         | 0x3FFB0004         | int *ptr = &x      |\n` +
+            `+--------------------+--------------------+\n` +
+            `\`\`\`\n\n` +
+            `#### 2. Hai Toán Tử Cốt Lõi: \`&\` và \`*\`\n` +
+            `- **Toán tử lấy địa chỉ \`&\` (Address-of)**: \`&x\` trả về địa chỉ \`0x3FFB0004\`.\n` +
+            `- **Toán tử giải tham chiếu \`*\` (Dereference)**: \`*ptr\` có nghĩa là: *"Đi đến địa chỉ ghi trong ptr, mở ô nhớ ra để đọc hoặc ghi đè giá trị mới!"*.\n` +
+            `  Nếu bạn gán: \`*ptr = 100;\`, biến \`x\` lập tức biến thành 100!\n\n` +
+            `#### 3. Con Trỏ & Mảng (Pointer Arithmetic)\n` +
+            `- Tên mảng thực chất là một con trỏ hằng: \`arr == &arr[0]\`.\n` +
+            `- Khi viết \`arr[i]\`, CPU thực chất tính: \`*(arr + i)\`.\n` +
+            `- **Bước nhảy con trỏ**: \`ptr + 1\` không phải là cộng 1 byte, mà là nhảy đúng \`sizeof(type)\` bytes (nhảy 4 bytes nếu là \`int*\`, nhảy 1 byte nếu là \`char*\`).\n\n` +
+            `#### 4. Kỹ Thuật Zero-Copy & Toán Tử Mũi Tên \`->\` Với Struct\n` +
+            `- Một khung âm thanh 16kHz có kích thước 32KB. Nếu truyền tham trị (\`void func(Audio data)\`), CPU phải copy toàn bộ 32KB vào Stack -> **Tràn bộ nhớ Stack Overflow làm reset vi điều khiển ngay lập tức**!\n` +
+            `- Truyền con trỏ (\`void func(const Audio *data)\`): Chỉ truyền đúng **1 địa chỉ 4 byte**! Tiết kiệm 99.9% RAM, độ trễ 0ms.\n` +
+            `- Khi có con trỏ struct \`frame\`, thay vì viết \`(*frame).accel_x\`, ta dùng toán tử mũi tên: \`frame->accel_x\`.\n\n` +
+            `\`\`\`c\n` +
+            `// Code mẫu truyền dữ liệu cảm biến Zero-Copy trên ESP32:\n` +
+            `typedef struct __attribute__((packed)) {\n` +
+            `    uint32_t timestamp;\n` +
+            `    int16_t accel_x, accel_y, accel_z;\n` +
+            `} IMU_Frame_t;\n\n` +
+            `void process_imu_sample(const IMU_Frame_t *frame) {\n` +
+            `    if (frame == NULL) return; // Luôn kiểm tra con trỏ NULL để chống Crash!\n` +
+            `    printf("X: %d | Y: %d\\n", frame->accel_x, frame->accel_y);\n` +
+            `}\n` +
+            `\`\`\`\n\n` +
+            `> 💡 **Mẹo**: Bạn có thể mở tài liệu *"Giáo Trình Cốt Lõi: Làm Chủ Con Trỏ (Pointers)"* ở cột bên trái để xem giáo trình đầy đủ 10 chương!`;
+
+        addNotebookChatMessage("ai", pointerResponse, "Động Cơ Tri Thức Nhúng: Chuyên Đề Con Trỏ (Pointers)");
+        return;
+    }
+
+    // 2. CHỦ ĐỀ: BỘ NHỚ ESP32, SRAM, PSRAM, MEMORY MAP, HEAP CAPS
+    if (qLower.includes("bộ nhớ") || qLower.includes("memory") || qLower.includes("sram") || 
+        qLower.includes("psram") || qLower.includes("flash") || qLower.includes("rtc") || 
+        qLower.includes("heap_caps") || qLower.includes("memory map")) {
+        
+        let memResponse = `### 🏛️ KIẾN TRÚC PHÂN VÙNG BỘ NHỚ ESP32-S3 THỰC CHIẾN\n\n` +
+            `ESP32-S3 sử dụng không gian địa chỉ thống nhất chia thành 4 phân vùng vật lý hoàn toàn khác biệt:\n\n` +
+            `| Phân Vùng Bộ Nhớ | Dung Lượng | Tốc Độ Truy Xuất | Mục Đích Sử Dụng |\n` +
+            `|---|---|---|---|\n` +
+            `| **Internal SRAM1** | 384 KB | Siêu tốc (1 chu kỳ CPU ~240MHz) | **Vị trí vàng đặt Tensor Arena** của TinyML |\n` +
+            `| **Internal SRAM0** | 64 KB | Siêu tốc | Instruction Cache & hàm ngắt \`IRAM_ATTR\` |\n` +
+            `| **Internal SRAM2** | 64 KB | Tốc độ cao | DMA Buffers cho Wi-Fi, Bluetooth, I2S |\n` +
+            `| **External PSRAM** | Tối đa 8MB | Chậm hơn SRAM 3-4 lần (SPI) | Chứa Frame buffer ảnh Camera, Model lớn |\n` +
+            `| **RTC SRAM** | 16 KB | Năng lượng thấp | Giữ dữ liệu sống khi Deep Sleep (\`RTC_DATA_ATTR\`) |\n` +
+            `| **SPI Flash ROM** | 4MB - 16MB | Qua SPI Cache | Chứa mã máy Firmware, Model weights tĩnh |\n\n` +
+            `\`\`\`c\n` +
+            `// Cấp phát đúng vùng nhớ bằng API ESP-IDF:\n` +
+            `// 1. Cấp phát Tensor Arena trong Internal SRAM:\n` +
+            `void *sram_ptr = heap_caps_malloc(64 * 1024, MALLOC_CAP_INTERNAL);\n\n` +
+            `// 2. Cấp phát Buffer ảnh Camera trong PSRAM ngoài:\n` +
+            `void *psram_ptr = heap_caps_malloc(256 * 1024, MALLOC_CAP_SPIRAM);\n` +
+            `\`\`\``;
+
+        addNotebookChatMessage("ai", memResponse, "Động Cơ Tri Thức Nhúng: Memory Mapping ESP32-S3");
+        return;
+    }
+
+    // 3. CHỦ ĐỀ: CĂN LỀ BỘ NHỚ 16-BYTE (ALIGNMENT & SIMD)
+    if (qLower.includes("căn lề") || qLower.includes("alignment") || qLower.includes("alignas") || 
+        qLower.includes("16-byte") || qLower.includes("simd") || qLower.includes("vector") || 
+        qLower.includes("loadstorealignment")) {
+        
+        let alignResponse = `### ⚡ TẠI SAO PHẢI CĂN LỀ 16-BYTE (\`alignas(16)\`) TRÊN ESP32-S3?\n\n` +
+            `1. **Tập lệnh mở rộng Vector AI (SIMD)**:\n` +
+            `   - ESP32-S3 sở hữu tập lệnh SIMD (Single Instruction Multiple Data). Mỗi chu kỳ xung nhịp CPU, bộ xử lý có thể nạp cùng lúc **128-bit (16 bytes)** dữ liệu ma trận trọng số INT8.\n` +
+            `2. **Yêu cầu phần cứng**:\n` +
+            `   - Để nạp 128-bit trong 1 chu kỳ máy, địa chỉ vùng nhớ bắt buộc phải chia hết cho 16 (\`address % 16 == 0\`).\n` +
+            `3. **Hậu quả nếu thiếu căn lề**:\n` +
+            `   - Nếu khai báo mảng thông thường rơi vào địa chỉ lẻ, khi TensorFlow Lite Micro nạp dữ liệu ma trận, phần cứng CPU sẽ phát sinh lỗi **LoadStoreAlignment Error** làm sập nguồn (Guru Meditation Crash) ngay lập tức!\n\n` +
+            `\`\`\`c\n` +
+            `// Khai báo chuẩn cho Tensor Arena:\n` +
+            `constexpr int kTensorArenaSize = 64 * 1024;\n` +
+            `alignas(16) static uint8_t tensor_arena[kTensorArenaSize];\n` +
+            `\`\`\``;
+
+        addNotebookChatMessage("ai", alignResponse, "Động Cơ Tri Thức Nhúng: SIMD 16-Byte Alignment");
+        return;
+    }
+
+    // 4. CHỦ ĐỀ: STACK VS HEAP, PHÂN MẢNH BỘ NHỚ VÀ OOM
+    if (qLower.includes("stack") || qLower.includes("heap") || qLower.includes("phân mảnh") || 
+        qLower.includes("fragmentation") || qLower.includes("oom") || qLower.includes("memory leak") || 
+        qLower.includes("watermark") || qLower.includes("memory pool")) {
+        
+        let heapResponse = `### 🛡️ QUẢN LÝ STACK VS HEAP & CHỐNG PHÂN MẢNH TRÊN THIẾT BỊ 24/7\n\n` +
+            `1. **Stack**: Nhanh, tự động, nhưng kích thước cố định theo Task FreeRTOS (2KB - 8KB). Tuyệt đối không khai báo mảng lớn cục bộ trên Stack vì sẽ gây **Stack Overflow**.\n` +
+            `2. **Căn bệnh phân mảnh Heap (Fragmentation)**:\n` +
+            `   - Gọi \`malloc()\`/\`free()\` liên tục với các kích thước khác nhau sẽ chia cắt RAM thành nhiều mẩu vụn li ti.\n` +
+            `   - Dù tổng RAM trống ghi nhận là 80KB, nhưng không có ô nhớ liên tục nào đủ 32KB -> Hệ thống báo lỗi **Out Of Memory (OOM Crash)**!\n` +
+            `3. **Quy tắc vàng của Kỹ sư Nhúng**:\n` +
+            `   - **Cấp phát tĩnh (Static Allocation)**: Tensor Arena, DMA Buffer được cấp phát cố định 1 lần duy nhất lúc khởi động.\n` +
+            `   - Giám sát mức RAM thấp nhất từng chạm tới bằng hàm: \`heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)\`.`;
+
+        addNotebookChatMessage("ai", heapResponse, "Động Cơ Tri Thức Nhúng: Stack, Heap & Anti-Fragmentation");
+        return;
+    }
+
+    // 5. CHỦ ĐỀ: TIMER, NGẮT (ISR), GPTIMER, IRAM_ATTR
+    if (qLower.includes("timer") || qLower.includes("ngắt") || qLower.includes("isr") || 
+        qLower.includes("gptimer") || qLower.includes("iram_attr") || qLower.includes("lấy mẫu") || 
+        qLower.includes("sampling") || qLower.includes("deferred")) {
+        
+        let timerResponse = `### ⏱️ GPTIMER ĐỊNH THỜI MICRO-GIÂY & NGẮT TỐC ĐỘ CAO \`IRAM_ATTR\`\n\n` +
+            `1. **Tại sao không dùng \`vTaskDelay()\`?**\n` +
+            `   - FreeRTOS Tick Rate chỉ ở mức 100Hz - 1000Hz (độ phân giải 1-10ms), gây sai lệch (Jitter) lớn làm sai lệch phổ âm thanh AI.\n` +
+            `   - **GPTimer 54-bit**: Prescaler 80 chia từ xung APB 80MHz giúp bộ đếm tăng 1 đơn vị mỗi đúng **1 micro-giây (1 µs)**.\n` +
+            `2. **Cờ \`IRAM_ATTR\`**:\n` +
+            `   - Bắt buộc gắn trước hàm ngắt ISR để ép mã máy nằm trọn trong SRAM nội. Tránh hiện tượng Crash nếu hàm ngắt được kích hoạt trong lúc vi điều khiển đang ghi Flash (Flash Cache Disabled).\n` +
+            `3. **Cơ chế Deferred Processing**:\n` +
+            `   - ISR chỉ gửi tín hiệu (\`vTaskNotifyGiveFromISR\`), đẩy công việc tính toán nặng ra Task bên ngoài xử lý, giữ thời gian phục vụ ngắt < 5µs!`;
+
+        addNotebookChatMessage("ai", timerResponse, "Động Cơ Tri Thức Nhúng: Hardware Timers & High-Speed ISR");
+        return;
+    }
+
+    // 6. CHỦ ĐỀ: FREERTOS, MULTI-CORE, QUEUE, MUTEX, TWDT
+    if (qLower.includes("freertos") || qLower.includes("core") || qLower.includes("nhân") || 
+        qLower.includes("queue") || qLower.includes("mutex") || qLower.includes("semaphore") || 
+        qLower.includes("twdt") || qLower.includes("watchdog") || qLower.includes("task")) {
+        
+        let rtosResponse = `### ⚡ ĐA NHIỆM FREERTOS DUAL-CORE & GIAO TIẾP ĐỒNG BỘ\n\n` +
+            `1. **Phân chia 2 nhân (Asymmetric Task Pinning)**:\n` +
+            `   - **Core 0 (PRO_CPU)**: Ghim tác vụ thu thập cảm biến, Wi-Fi Station và giao thức MQTT.\n` +
+            `   - **Core 1 (APP_CPU)**: Dành riêng 100% tài nguyên tính toán cho mô hình TinyML suy luận.\n` +
+            `2. **FreeRTOS Queue**:\n` +
+            `   - Cơ chế truyền dữ liệu an toàn luồng (Thread-Safe FIFO) giữa 2 core mà không bị Race Condition.\n` +
+            `3. **Task Watchdog Timer (TWDT)**:\n` +
+            `   - Tự động reset vi điều khiển nếu một tác vụ bị treo quá 3 giây (chống Deadlock).`;
+
+        addNotebookChatMessage("ai", rtosResponse, "Động Cơ Tri Thức Nhúng: FreeRTOS Dual-Core Architecture");
+        return;
+    }
+
+    // 7. CHỦ ĐỀ: TINYML, LƯỢNG TỬ HÓA INT8, TFLITE MICRO
+    if (qLower.includes("tinyml") || qLower.includes("lượng tử") || qLower.includes("quantiz") || 
+        qLower.includes("int8") || qLower.includes("tflite") || qLower.includes("arena") || 
+        qLower.includes("invoke") || qLower.includes("flatbuffer")) {
+        
+        let mlResponse = `### 🤖 TRIỂN KHAI TINYML & QUY TRÌNH LƯỢNG TỬ HÓA INT8\n\n` +
+            `1. **Lượng tử hóa INT8 (Post-Training Quantization)**:\n` +
+            `   - Chuyển đổi trọng số từ Float32 (4 bytes) sang INT8 (1 byte): Dung lượng giảm đúng **75%**.\n` +
+            `   - Tận dụng bộ nhân nguyên Integer MAC của ESP32-S3 giúp tốc độ suy luận nhanh gấp 3 - 5 lần.\n` +
+            `2. **Vòng đời suy luận 5 bước**:\n` +
+            `   1. Nạp con trỏ mô hình FlatBuffer từ Flash.\n` +
+            `   2. Khởi tạo mảng Tensor Arena căn lề 16-byte (\`alignas(16)\`).\n` +
+            `   3. Gán dữ liệu cảm biến / FFT vào tensor đầu vào \`interpreter->input(0)\`.\n` +
+            `   4. Gọi \`interpreter->Invoke()\` thực thi mạng nơ-ron.\n` +
+            `   5. Đọc kết quả phân loại từ tensor đầu ra \`interpreter->output(0)\`.`;
+
+        addNotebookChatMessage("ai", mlResponse, "Động Cơ Tri Thức Nhúng: TinyML & INT8 Quantization");
+        return;
+    }
+
+    // 8. CHẾ ĐỘ TÌM KIẾM THEO TÀI LIỆU HIỆN CÓ (DOCUMENT HEURISTIC SEARCH)
     let bestDoc = null;
     let maxMatches = -1;
 
@@ -910,31 +1249,36 @@ function queryLocalKnowledgeEngine(question, docs) {
 
     if (!bestDoc) bestDoc = docs[0];
 
-    let response = "";
+    let dynamicResponse = "";
 
     if (qLower.includes("tóm tắt") || qLower.includes("cốt lõi")) {
-        response = `### 📋 Tóm Tắt Cốt Lõi: "${bestDoc.title}"\n\n` +
-            `Dựa trên ghi chú thu thập từ NotebookLM:\n` +
-            (bestDoc.content || "").substring(0, 600) + `...\n\n` +
-            `💡 **Lời khuyên thực chiến**: Tài liệu này rất then chốt cho việc tối ưu bộ nhớ và thời gian thực trên vi điều khiển.`;
-    } else if (qLower.includes("thanh ghi") || qLower.includes("api") || qLower.includes("code")) {
-        response = `### 🔬 Trích Xuất Kỹ Thuật từ "${bestDoc.title}":\n\n` +
-            (bestDoc.content || "Không có nội dung văn bản thuần.") + `\n\n` +
-            `⚙️ *Lưu ý: Hãy đối chiếu kỹ với ESP-IDF Programming Guide phiên bản bạn đang cài đặt để đảm bảo tương thích API.*`;
+        dynamicResponse = `### 📋 Tóm Tắt Trọng Tâm Kỹ Thuật: "${bestDoc.title}"\n\n` +
+            `Dựa trên tài liệu hệ thống đã lưu trữ:\n\n` +
+            (bestDoc.content || "").substring(0, 750) + `...\n\n` +
+            `💡 **Lời khuyên thực chiến**: Hãy đối chiếu phần căn lề bộ nhớ và cấu trúc con trỏ trong tài liệu này trước khi nạp firmware lên kit mạch thật.`;
+    } else if (qLower.includes("code") || qLower.includes("mã") || qLower.includes("ví dụ") || qLower.includes("hàm")) {
+        dynamicResponse = `### 💻 Trích Xuất Code Mẫu Từ: "${bestDoc.title}"\n\n` +
+            (bestDoc.content || "Không có đoạn code mẫu thuần.") + `\n\n` +
+            `⚙️ **Kiểm thử**: Đảm bảo khai báo đúng thư viện header tương ứng trên ESP-IDF (\`esp_log.h\`, \`esp_heap_caps.h\`).`;
     } else if (qLower.includes("phỏng vấn") || qLower.includes("câu hỏi")) {
-        response = `### 🎯 3 Câu Hỏi Ôn Tập Phỏng Vấn từ "${bestDoc.title}":\n\n` +
-            `1. **Câu 1**: Tại sao vùng nhớ Tensor Arena của TinyML cần được căn lề 16-byte (\`alignas(16)\`) khi chạy trên ESP32-S3?\n` +
-            `2. **Câu 2**: Sự khác biệt cốt lõi giữa Internal SRAM1 và External PSRAM về độ trễ truy xuất là gì?\n` +
-            `3. **Câu 3**: Trong lập trình FreeRTOS đa lõi, cơ chế nào bảo vệ dữ liệu truyền giữa 2 core mà không bị nghẽn CPU?\n\n` +
-            `*(Bạn có thể thử trả lời trực tiếp hoặc dùng tab Phỏng Vấn để luyện tập!)*`;
+        dynamicResponse = `### 🎯 3 Câu Hỏi Ôn Tập Phỏng Vấn Dựa Trên: "${bestDoc.title}"\n\n` +
+            `1. **Câu 1**: Tại sao trong lập trình nhúng vi điều khiển, việc truyền con trỏ (Zero-copy) lại là nguyên tắc bắt buộc khi xử lý luồng âm thanh hay frame ảnh?\n` +
+            `2. **Câu 2**: Lỗi \`LoadStoreAlignment Error\` trên ESP32-S3 phát sinh do nguyên nhân gì và từ khóa nào trong C giúp ngăn chặn lỗi này?\n` +
+            `3. **Câu 3**: Hiện tượng phân mảnh Heap (Heap Fragmentation) khác gì với tràn Stack (Stack Overflow), và giải pháp nào triệt để nhất?\n\n` +
+            `*(Bạn có thể thử trả lời hoặc chuyển sang tab Phỏng Vấn để làm bài trắc nghiệm tính điểm!)*`;
     } else {
-        response = `### 💡 Trả lời từ Sổ tay: "${bestDoc.title}"\n\n` +
-            `Theo tài liệu được trích xuất:\n\n` +
-            (bestDoc.content || "Tài liệu này được lưu ở định dạng PDF gốc.") + `\n\n` +
-            `> 💡 **Mẹo:** Bạn có thể nhập **Google Gemini API Key** (nút ⚙️ Cấu Hình Key góc trên) để kích hoạt chế độ **Cloud AI RAG 2.5 Flash**, cho phép Gemini đọc trực tiếp toàn bộ sơ đồ và bảng thanh ghi trong file PDF!`;
+        // Phản hồi tổng quát có tính tương tác cao
+        dynamicResponse = `### 💡 Phản Hồi Từ Tài Liệu: "${bestDoc.title}"\n\n` +
+            `Dưới đây là nội dung kỹ thuật liên quan đến câu hỏi của bạn:\n\n` +
+            (bestDoc.content || "Tài liệu này được lưu trữ dạng PDF.") + `\n\n` +
+            `---\n` +
+            `💡 **Gợi ý tra cứu thêm:**\n` +
+            `- Hỏi: *"Giải thích chi tiết về con trỏ và mảng"* để xem bản đồ ô nhớ.\n` +
+            `- Hỏi: *"Bộ nhớ SRAM và PSRAM khác nhau thế nào?"* để xem bảng so sánh tốc độ.\n` +
+            `- Bấm **⚙️ Cấu Hình Key** góc trên để kích hoạt **Google Gemini 2.0 Flash Cloud AI** nếu bạn muốn trò chuyện tự do với trí tuệ nhân tạo!`;
     }
 
-    addNotebookChatMessage("ai", response, bestDoc.title);
+    addNotebookChatMessage("ai", dynamicResponse, bestDoc.title);
 }
 
 // Các nút câu hỏi nhanh (Quick Prompts)
@@ -965,12 +1309,51 @@ function openGeminiKeyModal() {
         modal.style.display = "flex";
         const input = document.getElementById("nb-api-key-input");
         if (input) input.value = geminiApiKey || "";
+        const statusEl = document.getElementById("nb-key-test-status");
+        if (statusEl) statusEl.innerHTML = "";
     }
 }
 
 function closeGeminiKeyModal() {
     const modal = document.getElementById("nb-key-modal");
     if (modal) modal.style.display = "none";
+}
+
+async function testGeminiApiConnection() {
+    const input = document.getElementById("nb-api-key-input");
+    const statusEl = document.getElementById("nb-key-test-status");
+    if (!input || !statusEl) return;
+
+    const testKey = input.value.trim();
+    if (!testKey || testKey.length < 15) {
+        statusEl.innerHTML = `<span style="color: var(--danger);">⚠️ Vui lòng nhập API Key hợp lệ (chuỗi bắt đầu bằng AIzaSy...) trước khi kiểm tra!</span>`;
+        return;
+    }
+
+    statusEl.innerHTML = `<span style="color: var(--cyan);">⏳ Đang kết nối thử nghiệm đến Google Gemini 2.0 Flash...</span>`;
+
+    try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${testKey}`;
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "Hello! Reply with 'OK'" }] }],
+                generationConfig: { maxOutputTokens: 10 }
+            })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${res.status}`);
+        }
+
+        statusEl.innerHTML = `<span style="color: var(--accent);">✅ KẾT NỐI THÀNH CÔNG! Google Gemini 2.0 Flash phản hồi tốt. Hãy bấm "Lưu Cấu Hình".</span>`;
+        showToast("Kết nối Gemini API thành công!");
+    } catch (err) {
+        console.error("Test Gemini connection failed:", err);
+        statusEl.innerHTML = `<span style="color: var(--danger);">❌ Lỗi kết nối: ${err.message}<br><small style="color: var(--text-muted);">Hãy kiểm tra lại API Key hoặc đảm bảo bạn đã bật Generative Language API tại Google AI Studio.</small></span>`;
+    }
 }
 
 function saveGeminiApiKey() {
@@ -984,9 +1367,9 @@ function saveGeminiApiKey() {
 
     if (geminiApiKey) {
         showToast("Đã lưu Gemini API Key! Sẵn sàng hỏi đáp Cloud AI.");
-        addNotebookChatMessage("ai", "🎉 **Tuyệt vời!** Đã kích hoạt kết nối **Google Gemini 2.5 Flash** thành công. Bây giờ tôi có thể đọc trực tiếp các file PDF nguyên bản với đầy đủ bảng biểu & sơ đồ phần cứng!");
+        addNotebookChatMessage("ai", "🎉 **Tuyệt vời!** Đã kích hoạt kết nối **Google Gemini 2.0 Flash** thành công. Bây giờ tôi có thể đọc trực tiếp các file PDF nguyên bản với đầy đủ bảng biểu & sơ đồ phần cứng!");
     } else {
-        showToast("Đã chuyển về chế độ Local Knowledge Engine!");
+        showToast("Đã chuyển về chế độ Động Cơ Tri Thức Nhúng Cục Bộ!");
     }
 }
 
@@ -1053,7 +1436,13 @@ function showTaskTheoryModal(stageIndex, taskIndex) {
     if (skillEl) skillEl.innerText = `Skill: ${task.skill}`;
 
     const contentEl = document.getElementById("task-modal-content");
-    if (contentEl) contentEl.innerHTML = taskTheory.content.replace(/\n/g, '<br>');
+    if (contentEl) {
+        if (typeof formatMarkdownChat === 'function') {
+            contentEl.innerHTML = formatMarkdownChat(taskTheory.content);
+        } else {
+            contentEl.innerHTML = taskTheory.content.replace(/\n/g, '<br>');
+        }
+    }
 
     const codeEl = document.getElementById("task-modal-code");
     if (codeEl) codeEl.innerText = taskTheory.code;
@@ -1133,3 +1522,8 @@ window.askAiFromTaskModal = askAiFromTaskModal;
 window.askAiAboutTask = askAiAboutTask;
 window.saveTaskToMyNotes = saveTaskToMyNotes;
 window.openPracticeFromTaskModal = openPracticeFromTaskModal;
+window.openGeminiKeyModal = openGeminiKeyModal;
+window.closeGeminiKeyModal = closeGeminiKeyModal;
+window.testGeminiApiConnection = testGeminiApiConnection;
+window.saveGeminiApiKey = saveGeminiApiKey;
+

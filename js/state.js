@@ -206,14 +206,16 @@ const defaultRoadmap = [
 const ROADMAP_STAGE_THEORY = [
     {
         stageIndex: 0,
-        title: "Bước 1: C Core, Con Trỏ & Quản Lý Bộ Nhớ ESP32-S3",
-        summary: "Nền tảng sống còn của kỹ sư nhúng: Làm chủ con trỏ, hiểu sâu bản đồ bộ nhớ (Memory Map) của vi điều khiển ESP32, căn lề 16-byte bắt buộc cho tập lệnh vector SIMD của TinyML và kỹ thuật cấp phát tĩnh chống phân mảnh SRAM.",
+        title: "Bước 1: C Core, Con Trỏ (Pointers) & Quản Lý Bộ Nhớ ESP32-S3",
+        summary: "Nền tảng sống còn của kỹ sư nhúng: Nắm vững bản chất con trỏ trong C (Địa chỉ Address vs Giá trị Value, toán tử & và *, số học con trỏ, toán tử mũi tên -> struct, con trỏ hàm, void*, zero-copy buffer), hiểu sâu bản đồ bộ nhớ ESP32 (Internal SRAM, PSRAM, Flash, RTC), căn lề 16-byte bắt buộc cho SIMD AI và kỹ thuật cấp phát tĩnh chống phân mảnh Heap.",
         highlights: [
-            "Internal SRAM0/1: Bộ nhớ tốc độ cao nhất (1 chu kỳ xung nhịp ~240MHz). Là nơi duy nhất lý tưởng đặt Tensor Arena để đạt độ trễ suy luận mili-giây.",
-            "External PSRAM: Bộ nhớ ngoài giao tiếp qua Octal SPI (80-120MHz), chậm hơn SRAM nội ~3-4 lần. Thích hợp lưu buffer camera hoặc trọng số mô hình lớn.",
-            "Căn lề bắt buộc alignas(16): Tập lệnh mở rộng SIMD của ESP32-S3 yêu cầu nạp đồng thời 128-bit dữ liệu. Nếu không căn lề 16-byte, CPU sẽ phát sinh lỗi phần cứng LoadStoreAlignment Crash."
+            "Bản chất Con Trỏ & Zero-Copy: Biến con trỏ lưu địa chỉ ô nhớ RAM. Dùng con trỏ struct giúp truyền frame dữ liệu 32KB mà chỉ tốn 4 byte Stack, bảo vệ hệ thống không bị tràn Stack Overflow.",
+            "Hai toán tử vàng: &x (lấy địa chỉ nơi x nằm) và *ptr (mở ô nhớ đọc/ghi đè dữ liệu). Tên mảng arr thực chất là con trỏ hằng trỏ vào phần tử đầu tiên arr == &arr[0].",
+            "Internal SRAM0/1 (512KB): Tốc độ 1 chu kỳ xung nhịp (~240MHz). Là vị trí duy nhất lý tưởng để đặt Tensor Arena giúp TinyML đạt độ trễ mili-giây.",
+            "External PSRAM (8MB SPI): Chậm hơn SRAM nội 3-4 lần, dùng cho frame buffer camera. Cấp phát bằng heap_caps_malloc(size, MALLOC_CAP_SPIRAM).",
+            "Căn lề bắt buộc alignas(16): Tập lệnh mở rộng SIMD nạp cùng lúc 128-bit dữ liệu. Nếu mảng Tensor Arena thiếu căn lề 16-byte, CPU sẽ Crash LoadStoreAlignment Error ngay."
         ],
-        codeSnippet: `// Khởi tạo Tensor Arena trong SRAM với căn lề 16-byte chuẩn SIMD:\nconstexpr int kTensorArenaSize = 64 * 1024; // 64 KB\nalignas(16) static uint8_t tensor_arena[kTensorArenaSize];`,
+        codeSnippet: `// 1. Con trỏ Struct Zero-copy an toàn:\ntypedef struct __attribute__((packed)) {\n    uint32_t timestamp;\n    int16_t accel_x, accel_y, accel_z;\n} IMU_Frame_t;\nvoid process_frame(const IMU_Frame_t *frame) {\n    if (!frame) return;\n    printf("X: %d\\n", frame->accel_x);\n}\n\n// 2. Tensor Arena căn lề 16-byte cho Vector SIMD:\nconstexpr int kTensorArenaSize = 64 * 1024;\nalignas(16) static uint8_t tensor_arena[kTensorArenaSize];`,
         docId: "doc_stage1_memory"
     },
     {
@@ -380,39 +382,308 @@ const ROADMAP_TASK_THEORY = {
         title: "Thao tác con trỏ (Pointers), mảng động và Struct đóng gói dữ liệu",
         stageName: "Bước 1: C & Quản Lý Bộ Nhớ",
         skill: "Pointers & Dynamic Memory Layout",
-        content: `Con trỏ là công cụ nền tảng của lập trình nhúng. Khi xử lý dữ liệu lớn như mảng âm thanh 16kHz hoặc ma trận ảnh 96x96, việc truyền tham trị (pass-by-value) sẽ sao chép toàn bộ mảng lên Stack gây tràn bộ nhớ Stack Overflow ngay lập tức.
-        
-        Kỹ sư bắt buộc phải truyền con trỏ (Zero-copy pass-by-reference). Đồng thời, sử dụng từ khóa \`__attribute__((packed))\` trên struct để ngăn chặn trình biên dịch tự ý chèn padding bytes, đảm bảo dữ liệu thô đọc từ cảm biến khớp 100% từng byte với bộ nhớ struct.`,
-        code: `typedef struct __attribute__((packed)) {\n    uint32_t timestamp;\n    int16_t accel_x;\n    int16_t accel_y;\n    int16_t accel_z;\n} IMU_Frame_t;\n\n// Truyền con trỏ hằng (Zero-copy, an toàn dữ liệu):\nvoid process_frame(const IMU_Frame_t *frame) {\n    printf("Time: %lu, X: %d\\n", frame->timestamp, frame->accel_x);\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CON TRỎ (POINTER) TRONG C LÀ GÌ?
+Nhiều bạn mới học thấy con trỏ mơ hồ vì chưa hình dung được vật lý phần cứng.
+Hãy tưởng tượng **bộ nhớ RAM** của vi điều khiển ESP32 như một **khách sạn có hàng triệu ngăn tủ locker**:
+- Mỗi ngăn tủ có một **Số phòng duy nhất** gọi là **Địa chỉ bộ nhớ (Memory Address)**, viết ở hệ thập lục phân Hexa (ví dụ: \`0x3FFB0004\`).
+- Bên trong ngăn tủ chứa **Dữ liệu thực tế (Value)**, ví dụ số nguyên \`42\`.
+
+👉 **Biến thông thường** (\`int x = 42;\`): Bạn đặt tên cho cái ngăn tủ đó là \`x\`. Giá trị lưu trong tủ là \`42\`.
+👉 **Biến con trỏ** (\`int *ptr = &x;\`): Là một tờ giấy ghi lại **Số phòng của x** (\`0x3FFB0004\`). Con trỏ **KHÔNG** chứa số 42, nó chỉ chứa **địa chỉ nơi 42 đang nằm**!
+
+---
+
+### 📌 2. HAI TOÁN TỬ VÀNG BẮT BUỘC PHẢI THUỘC LÒNG
+- **Toán tử lấy địa chỉ \`&\` (Address-of):**
+  \`&x\` có nghĩa là: *"Hãy cho tôi biết địa chỉ ô nhớ nơi biến x đang ngụ cư trên RAM!"*
+- **Toán tử giải tham chiếu \`*\` (Dereference):**
+  \`*ptr\` có nghĩa là: *"Hãy đi đến địa chỉ ô nhớ mà ptr đang ghi, mở ngăn tủ đó ra để ĐỌC hoặc GHI ĐÈ dữ liệu mới!"*
+
+**Ví dụ từng bước cực dễ hiểu:**
+\`\`\`c
+int a = 10;      // Ô nhớ của a (ví dụ 0x1000) chứa số 10
+int *p = &a;     // p lưu giá trị 0x1000 (địa chỉ của a)
+
+printf("%p\\n", p);   // In ra: 0x1000 (địa chỉ)
+printf("%d\\n", *p);  // Mở ô nhớ 0x1000 ra đọc -> In ra: 10
+
+*p = 99;         // Đến ô nhớ 0x1000 và thay thế số 10 bằng 99!
+printf("%d\\n", a);   // a bây giờ đã biến thành 99!
+\`\`\`
+
+---
+
+### 📌 3. MỐI QUAN HỆ MẬT THIẾT GIỮA CON TRỎ VÀ MẢNG (POINTER ARITHMETIC)
+Trong C, **Tên mảng thực chất chính là một con trỏ hằng trỏ vào phần tử đầu tiên**:
+\`\`\`c
+int arr[3] = {10, 20, 30};
+// arr tương đương với &arr[0]
+\`\`\`
+- Khi bạn viết \`arr[i]\`, trình biên dịch thực chất dịch thành: \`*(arr + i)\`.
+- **Số học con trỏ (Pointer Arithmetic):**
+  Phép cộng con trỏ \`ptr + 1\` **KHÔNG PHẢI** là cộng thêm 1 byte! Nó tự động nhảy thêm **kích thước của kiểu dữ liệu** (\`sizeof(type)\`):
+  + Với \`char *p\`: \`p + 1\` nhảy 1 byte.
+  + Với \`int *p\` hoặc \`float *p\`: \`p + 1\` nhảy **4 bytes**.
+  + Với con trỏ Struct 16 byte: \`p + 1\` nhảy đúng **16 bytes**.
+
+---
+
+### 📌 4. CON TRỎ & STRUCT: TOÁN TỬ MŨI TÊN \`->\` VÀ TRUYỀN ZERO-COPY
+Khi đóng gói dữ liệu cảm biến thành \`struct\`, ta thường dùng con trỏ trỏ vào struct:
+\`\`\`c
+typedef struct __attribute__((packed)) {
+    uint32_t timestamp; // 4 bytes
+    int16_t accel_x;    // 2 bytes
+    int16_t accel_y;    // 2 bytes
+    int16_t accel_z;    // 2 bytes
+} IMU_Frame_t;
+\`\`\`
+- **Toán tử mũi tên \`->\`:**
+  Nếu \`frame\` là con trỏ (\`IMU_Frame_t *frame\`), thay vì viết cồng kềnh \`(*frame).accel_x\`, C cung cấp toán tử mũi tên:
+  \`frame->accel_x\`
+- **Tại sao bắt buộc truyền con trỏ (Zero-copy pass-by-reference)?**
+  Một khung âm thanh 16kHz có 32,000 bytes. Nếu truyền tham trị (\`void process(AudioData data)\`), CPU sẽ phải copy toàn bộ 32KB vào Stack -> **Tràn bộ nhớ Stack Overflow làm reset vi điều khiển ngay lập tức**!
+  Khi truyền con trỏ (\`void process(const AudioData *data)\`), CPU chỉ truyền duy nhất **1 địa chỉ 4 byte**! Độ trễ 0ms, không tốn thêm 1 byte RAM nào.
+- **Từ khóa \`__attribute__((packed))\`:**
+  Trình biên dịch mặc định sẽ tự chèn các byte rỗng (padding bytes) để căn lề. Từ khóa \`packed\` ép các trường nằm sát nhau từng byte một, khớp 100% với luồng byte thô đọc từ cảm biến I2C/SPI.
+
+---
+
+### 📌 5. CÁC LOẠI CON TRỎ ĐẶC BIỆT TRONG NHÚNG & FREERTOS
+1. **Con trỏ \`void*\` (Generic Pointer):**
+   Con trỏ vạn năng có thể trỏ tới bất kỳ kiểu dữ liệu nào. Trong FreeRTOS, hàm tạo task luôn dùng \`void *pvParameters\` để kỹ sư truyền bất kỳ struct tham số nào vào task. Trước khi dùng, chỉ cần ép kiểu: \`MyConfig_t *cfg = (MyConfig_t*)pvParameters;\`.
+2. **Con trỏ Hàm (Function Pointer):**
+   Con trỏ lưu địa chỉ của hàm thực thi trong bộ nhớ. Dùng làm hàm Callback khi ngắt xảy ra, hoặc truyền task vào hệ điều hành:
+   \`void (*callback_fn)(int event_id);\`
+3. **Con trỏ Hằng (\`const\` Pointers):**
+   - \`const int *p\`: Dữ liệu bị khóa (chỉ đọc), không sửa được qua \`*p\`. Con trỏ \`p\` có thể đổi trỏ đi nơi khác. Rất an toàn cho buffer đầu vào.
+   - \`int * const p\`: Con trỏ bị khóa vị trí, nhưng giá trị \`*p\` sửa được.
+4. **Con trỏ Volatile (Memory-Mapped I/O):**
+   Trong vi điều khiển, các chân GPIO là các thanh ghi có địa chỉ cố định:
+   \`*(volatile uint32_t*)0x60004008 = (1 << 2);\` -> Bật chân GPIO2 bằng thao tác con trỏ trực tiếp trên thanh ghi phần cứng!
+
+---
+
+### 📌 6. 4 CẠM BẪY CHÍ MẠNG KHI DÙNG CON TRỎ (VÀ CÁCH PHÒNG TRÁNH)
+1. **Con trỏ NULL (NULL Pointer Dereference):** Cố truy xuất \`*p\` khi \`p == NULL\`.
+   ✅ *Khắc phục*: Luôn kiểm tra \`if (p == NULL) { return ESP_ERR_INVALID_ARG; }\`.
+2. **Con trỏ treo (Dangling Pointer):** Trỏ vào biến cục bộ trong một hàm đã kết thúc, hoặc ô nhớ vừa bị \`free()\`.
+   ✅ *Khắc phục*: Sau khi \`free(ptr);\`, luôn gán ngay \`ptr = NULL;\`.
+3. **Rò rỉ bộ nhớ (Memory Leak):** Cấp phát \`malloc()\` nhưng quên \`free()\`, làm cạn kiệt RAM sau vài giờ chạy.
+4. **Ngoại lệ căn lề (Unaligned Access Fault):** Ép con trỏ mảng byte lẻ sang con trỏ số 32-bit khiến CPU phát sinh lỗi phần cứng Crash Guru Meditation.`,
+        code: `// ============================================================================
+// VÍ DỤ THỰC CHIẾN C NHÚNG: TRUYỀN DỮ LIỆU ZERO-COPY & THAO TÁC CON TRỎ AN TOÀN
+// ============================================================================
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+// 1. Định nghĩa cấu trúc khung dữ liệu cảm biến (Packed, không có byte rác)
+typedef struct __attribute__((packed)) {
+    uint32_t timestamp_ms; // 4 bytes: Thời gian lấy mẫu
+    int16_t accel_x;       // 2 bytes: Trục X (-32768 đến +32767)
+    int16_t accel_y;       // 2 bytes: Trục Y
+    int16_t accel_z;       // 2 bytes: Trục Z
+    float temperature;     // 4 bytes: Nhiệt độ cảm biến
+} SensorFrame_t;
+
+// 2. Hàm xử lý dữ liệu: Sử dụng con trỏ hằng 'const SensorFrame_t *frame'
+//    -> Ưu điểm 1 (Zero-Copy): Chỉ truyền địa chỉ 4-byte, không tốn RAM sao chép
+//    -> Ưu điểm 2 (Safety): Từ khóa 'const' ngăn chặn việc vô tình sửa đổi dữ liệu gốc
+bool process_sensor_stream(const SensorFrame_t *frame) {
+    // Luôn kiểm tra con trỏ NULL trước khi giải tham chiếu để chống sụp nguồn
+    if (frame == NULL) {
+        printf("LỖI: Con trỏ truyền vào là NULL!\\n");
+        return false;
+    }
+
+    // Truy cập các trường thông qua toán tử mũi tên ->
+    printf("[T=%lums] X:%6d | Y:%6d | Z:%6d | Temp: %.1f*C\\n",
+           frame->timestamp_ms,
+           frame->accel_x,
+           frame->accel_y,
+           frame->accel_z,
+           frame->temperature);
+
+    return true;
+}
+
+// 3. Hàm thao tác mảng đệm âm thanh/ảnh bằng Pointer Arithmetic (Số học con trỏ)
+void normalize_audio_buffer(int16_t *audio_buf, size_t length) {
+    if (!audio_buf) return;
+
+    // Dùng con trỏ trượt quét qua từng mẫu âm thanh (Tốc độ cao hơn chỉ số mảng)
+    int16_t *ptr = audio_buf;
+    int16_t *end = audio_buf + length;
+
+    while (ptr < end) {
+        *ptr = (*ptr) / 2; // Giảm âm lượng một nửa trực tiếp trên ô nhớ gốc
+        ptr++;             // Nhảy tới mẫu 16-bit tiếp theo (tự động cộng 2 bytes)
+    }
+}
+
+void app_main(void) {
+    // Cấp phát tĩnh một khung mẫu trên Stack của app_main
+    SensorFrame_t current_sample = {
+        .timestamp_ms = 1250,
+        .accel_x = 512,
+        .accel_y = -128,
+        .accel_z = 16384,
+        .temperature = 28.5f
+    };
+
+    // Truyền địa chỉ (&current_sample) vào hàm xử lý
+    process_sensor_stream(&current_sample);
+}`
     },
     "t2": {
         title: "Phân biệt Memory Map: Flash, Internal SRAM, RTC SRAM và External PSRAM",
         stageName: "Bước 1: C & Quản Lý Bộ Nhớ",
         skill: "Memory Mapping (SRAM/Flash/PSRAM)",
-        content: `ESP32-S3 sử dụng không gian địa chỉ thống nhất chia thành 4 phân vùng chính:
-        1. **Flash (SPI ROM)**: Chứa firmware và trọng số mô hình tĩnh. Tốc độ đọc qua SPI Cache.
-        2. **Internal SRAM (512 KB)**: Tốc độ 1 chu kỳ CPU (nhanh nhất). Bắt buộc đặt Tensor Arena của TFLite Micro ở đây.
-        3. **RTC Fast/Slow SRAM (16 KB)**: Vùng nhớ duy nhất giữ được trạng thái khi vi điều khiển vào chế độ Deep Sleep tiết kiệm pin.
-        4. **External PSRAM (Tối đa 8MB)**: Mở rộng dung lượng cho frame buffer camera nhưng tốc độ chậm hơn SRAM 3-4 lần.`,
-        code: `// Cấp phát trong Internal SRAM tốc độ cao:\nvoid *sram_ptr = heap_caps_malloc(32 * 1024, MALLOC_CAP_INTERNAL);\n// Cấp phát trong PSRAM ngoài:\nvoid *psram_ptr = heap_caps_malloc(1024 * 1024, MALLOC_CAP_SPIRAM);`
+        content: `### 📌 KIẾN TRÚC BẢN ĐỒ BỘ NHỚ THỐNG NHẤT TRÊN ESP32-S3
+ESP32-S3 sử dụng không gian địa chỉ 32-bit (tối đa 4GB địa chỉ) phân chia thành 4 phân vùng vật lý hoàn toàn khác biệt:
+
+1. **Flash SPI ROM (External SPI Flash, 4MB - 16MB)**:
+   - Chứa Firmware biên dịch, Partition Table, hệ thống file SPIFFS/LittleFS và trọng số tĩnh (weights) của mô hình Deep Learning.
+   - CPU đọc mã lệnh và dữ liệu hằng qua cơ chế **Instruction & Data Cache**.
+   - ⚠️ *Lưu ý*: Tốc độ truy xuất chậm hơn SRAM nội. Không được phép đọc Flash khi đang thực thi ngắt khẩn cấp hoặc đang nạp OTA.
+
+2. **Internal SRAM (512 KB siêu tốc nội tại vi điều khiển)**:
+   - **SRAM0 (64 KB)**: Dành riêng cho Cache bộ nhớ và các hàm ngắt tốc độ cao mang cờ \`IRAM_ATTR\`.
+   - **SRAM1 (384 KB)**: Vùng nhớ chính tốc độ 1 chu kỳ xung nhịp CPU (~240MHz). Đây là **vị trí vàng duy nhất** để khởi tạo **Tensor Arena** của TensorFlow Lite Micro nhằm đạt độ trễ suy luận mili-giây.
+   - **SRAM2 (64 KB)**: Chuyên dụng cho các bộ đệm truyền nhận DMA của Wi-Fi, Bluetooth và ngoại vi I2S/SPI.
+
+3. **RTC Fast/Slow Memory (16 KB SRAM năng lượng cực thấp)**:
+   - Là vùng nhớ duy nhất vẫn được cấp nguồn nuôi khi ESP32 vào chế độ **Deep Sleep** (tiết kiệm pin, dòng tiêu thụ chỉ vài micro-ampe).
+   - Biến mang tiền tố \`RTC_DATA_ATTR\` sẽ được lưu tại đây, bảo toàn giá trị đếm cảm biến qua các lần ngủ và thức dậy.
+
+4. **External PSRAM (Pseudo-Static RAM ngoài, tối đa 8MB Octal SPI)**:
+   - Dùng để mở rộng bộ nhớ khi làm bài toán Camera nhận diện hình ảnh hoặc mô hình AI lớn vượt quá 512KB SRAM.
+   - Giao tiếp qua bus Octal SPI tốc độ cao (80-120MHz). Tuy nhiên tốc độ đọc ghi vẫn **chậm hơn SRAM nội khoảng 3 - 4 lần**. Không nên đặt các mảng tính toán ma trận đòi hỏi thời gian thực khắt khe vào đây nếu SRAM nội còn đủ chỗ.`,
+        code: `// ============================================================================
+// CẤP PHÁT BỘ NHỚ ĐÚNG VÙNG TRONG ESP-IDF VỚI HEAP CAPABILITIES API
+// ============================================================================
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+
+void allocate_memory_example(void) {
+    // 1. Cấp phát mảng Tensor Arena trong Internal SRAM tốc độ cao (1 chu kỳ xung nhịp)
+    size_t arena_size = 64 * 1024; // 64 KB
+    uint8_t *tensor_arena = (uint8_t *)heap_caps_malloc(arena_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (tensor_arena == NULL) {
+        ESP_LOGE("MEM", "Không đủ SRAM nội cho Tensor Arena!");
+    } else {
+        ESP_LOGI("MEM", "Đã cấp phát 64KB Tensor Arena trong Internal SRAM tại: %p", tensor_arena);
+    }
+
+    // 2. Cấp phát Frame Buffer chứa ảnh Camera 320x240 RGB trong External PSRAM
+    size_t frame_size = 320 * 240 * 3; // 230 KB
+    uint8_t *camera_buf = (uint8_t *)heap_caps_malloc(frame_size, MALLOC_CAP_SPIRAM);
+    if (camera_buf == NULL) {
+        ESP_LOGE("MEM", "Không tìm thấy PSRAM hoặc PSRAM đầy!");
+    } else {
+        ESP_LOGI("MEM", "Đã cấp phát Frame Buffer Camera trong External PSRAM tại: %p", camera_buf);
+    }
+
+    // Luôn giải phóng khi kết thúc tác vụ
+    if (tensor_arena) heap_caps_free(tensor_arena);
+    if (camera_buf) heap_caps_free(camera_buf);
+}`
     },
     "t3": {
         title: "Quản lý Stack vs Heap, chống phân mảnh bộ nhớ và Memory Leak",
         stageName: "Bước 1: C & Quản Lý Bộ Nhớ",
         skill: "Heap Management & Anti-Fragmentation",
-        content: `Khác với ứng dụng PC, vi điều khiển hoạt động liên tục nhiều tháng hoặc nhiều năm mà không được khởi động lại. Nếu gọi \`malloc()\` và \`free()\` liên tục với các kích thước khác nhau, bộ nhớ Heap sẽ bị phân mảnh thành nhiều mảnh nhỏ. Khi cần cấp phát khối Tensor 64KB, hệ thống sẽ báo lỗi OOM (Out Of Memory) dù tổng RAM còn trống vẫn nhiều.
-        
-        Giải pháp: Cấp phát tĩnh trước toàn bộ vùng đệm hoặc dùng cơ chế Memory Pool với kích thước khối cố định. Luôn kiểm tra hàm \`heap_caps_get_minimum_free_size()\` để theo dõi điểm thấp nhất của bộ nhớ.`,
-        code: `// Kiểm tra mức RAM tự do thấp nhất trong lịch sử vận hành:\nsize_t min_free = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);\nESP_LOGI("MEM", "SRAM Watermark: %d bytes còn trống", min_free);`
+        content: `### 📌 STACK VS HEAP TRONG HỆ THỐNG NHÚNG VẬN HÀNH 24/7
+
+1. **Stack (Ngăn xếp - Tự động, tốc độ cao nhưng có hạn)**:
+   - Lưu trữ các biến cục bộ trong hàm, địa chỉ trả về của hàm và con trỏ khung stack.
+   - Được CPU cấp phát và giải phóng tự động cực nhanh (chỉ bằng việc tăng giảm con trỏ Stack Pointer \`SP\`).
+   - ⚠️ **Nguy cơ**: Kích thước Stack của mỗi Task FreeRTOS được cố định khi tạo task (thường 2KB - 8KB). Khai báo mảng lớn cục bộ như \`float matrix[100][100];\` (40KB) sẽ gây **Stack Overflow**, ghi đè vào vùng nhớ lân cận và lập tức kích hoạt lỗi Guru Meditation làm sụp nguồn vi điều khiển!
+
+2. **Heap (Vùng nhớ tự do - Động, linh hoạt nhưng nguy hiểm)**:
+   - Dùng cho các khối bộ nhớ được cấp phát động bằng \`malloc()\`, \`calloc()\` hoặc \`heap_caps_malloc()\`.
+   - Vùng nhớ này tồn tại cho đến khi kỹ sư chủ động gọi \`free()\`.
+
+3. **CĂN BỆNH NGUY HIỂM NHẤT: PHÂN MẢNH HEAP (HEAP FRAGMENTATION)**:
+   - Khác với ứng dụng trên máy tính cá nhân thường tắt sau vài tiếng, thiết bị IoT / Edge AI phải hoạt động liên tục nhiều tháng hoặc nhiều năm không khởi động lại.
+   - Nếu chương trình liên tục gọi \`malloc()\` và \`free()\` với các kích thước lớn nhỏ khác nhau, bộ nhớ Heap sẽ bị đục thành hàng ngàn lỗ thủng nhỏ.
+   - Hậu quả: Dù tổng RAM còn trống ghi nhận là 100KB, nhưng không còn một ô nhớ liên tục nào đủ 32KB -> Hệ thống báo lỗi **OOM (Out Of Memory Crash)**!
+
+4. **GIẢI PHÁP CHỐNG PHÂN MẢNH CHO KỸ SƯ CHUYÊN NGHIỆP**:
+   - **Ưu tiên cấp phát tĩnh (Static Allocation)**: Toàn bộ Tensor Arena, DMA Buffer, Queue đệm được cấp phát cố định 1 lần duy nhất lúc khởi động hệ thống.
+   - **Kỹ thuật Memory Pool**: Chia bộ nhớ thành các Block có kích thước cố định (ví dụ các block 64 byte, 128 byte). Cấp phát và thu hồi theo block nguyên khối.
+   - **Theo dõi Watermark**: Định kỳ gọi \`heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)\` để ghi nhận mức RAM tự do thấp nhất từng chạm tới.`,
+        code: `// ============================================================================
+// GIÁM SÁT SỨC KHỎE BỘ NHỚ TRÁNH OOM TRÊN HỆ THỐNG NHÚNG
+// ============================================================================
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+void memory_monitor_task(void *pvParameters) {
+    while (1) {
+        // 1. Lấy lượng RAM nội bộ tự do hiện tại
+        size_t free_sram = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+
+        // 2. Lấy khối nhớ liên tục lớn nhất hiện có (Chỉ số sống còn chống phân mảnh)
+        size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+
+        // 3. Mức RAM thấp nhất trong lịch sử (Watermark)
+        size_t min_ever_free = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+
+        ESP_LOGI("HEALTH", "RAM Trống: %u bytes | Khối Liên Tục Lớn Nhất: %u bytes | Watermark: %u bytes",
+                 free_sram, largest_block, min_ever_free);
+
+        // Cảnh báo nếu mức phân mảnh cao (khối lớn nhất nhỏ hơn 40% tổng dung lượng trống)
+        if (free_sram > 0 && (largest_block * 100 / free_sram) < 40) {
+            ESP_LOGW("HEALTH", "CẢNH BÁO: Bộ nhớ đang bị phân mảnh nghiêm trọng!");
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(5000)); // Kiểm tra chu kỳ 5 giây
+    }
+}`
     },
     "t4": {
         title: "Kỹ thuật cấp phát bộ nhớ tĩnh (Static Allocation) chuẩn bị Tensor Arena",
         stageName: "Bước 1: C & Quản Lý Bộ Nhớ",
         skill: "Static Tensor Arena Allocation",
-        content: `Tensor Arena là mảng byte liên tục nơi TensorFlow Lite for Microcontrollers lưu trữ toàn bộ activations trung gian giữa các lớp mạng nơ-ron. 
-        
-        Để kiến trúc Vector Extension (SIMD) của ESP32-S3 có thể nạp các vector 128-bit chỉ trong 1 chu kỳ máy, mảng này bắt buộc phải được căn lề 16-byte: \`alignas(16)\`. Nếu thiếu căn lề, CPU sẽ phát sinh ngoại lệ LoadStoreAlignment Error gây sụp nguồn (Guru Meditation Error).`,
-        code: `constexpr int kTensorArenaSize = 64 * 1024;\nalignas(16) static uint8_t tensor_arena[kTensorArenaSize];\n\n// Truyền Tensor Arena vào interpreter:\ntflite::MicroInterpreter interpreter(model, resolver, tensor_arena, kTensorArenaSize);`
+        content: `### 📌 TENSOR ARENA LÀ GÌ VÀ TẠI SAO CẦN CĂN LỀ 16-BYTE ALIGNAS(16)?
+
+1. **Khái niệm Tensor Arena**:
+   - Trong thư viện **TensorFlow Lite for Microcontrollers (TFLite Micro)**, hệ thống không dùng \`malloc()\` trong suốt quá trình suy luận để bảo đảm độ trễ thời gian thực bất biến (Zero-Dynamic Allocation at Runtime).
+   - Thay vào đó, toàn bộ vùng đệm đầu vào, đầu ra, trọng số tạm thời và các lớp kích hoạt trung gian (activations giữa Conv2D, Dense, Softmax) đều được xếp gọn trong một mảng byte liên tục duy nhất gọi là **Tensor Arena**.
+
+2. **Tại sao bắt buộc phải căn lề 16-byte (\`alignas(16)\`)?**:
+   - Vi xử lý Xtensa LX7 trên **ESP32-S3** tích hợp tập lệnh mở rộng chuyên dụng **Vector AI Extension (SIMD - Single Instruction Multiple Data)**.
+   - Mỗi chu kỳ xung nhịp CPU, bộ xử lý SIMD có thể nạp đồng thời một lúc **128-bit (16 bytes)** dữ liệu ma trận trọng số INT8 vào các thanh ghi vector \`q0 - q7\`.
+   - Để phần cứng nạp được 128-bit trong 1 chu kỳ máy, địa chỉ vùng nhớ bắt buộc phải chia hết cho 16 (\`address % 16 == 0\`).
+   - ⚠️ **Hậu quả nếu thiếu căn lề**: Nếu bạn chỉ khai báo \`static uint8_t tensor_arena[64 * 1024];\` thông thường, mảng có thể rơi vào địa chỉ lẻ. Khi bộ giải mã AI gọi tập lệnh Vector nạp dữ liệu, phần cứng CPU sẽ lập tức phát sinh ngắt ngoại lệ **LoadStoreAlignment Error** làm Crash và khởi động lại vi điều khiển ngay tức khắc!`,
+        code: `// ============================================================================
+// KHỞI TẠO TENSOR ARENA ĐẠT CHUẨN CĂN LỀ VECTOR SIMD TRÊN ESP32-S3
+// ============================================================================
+#include <stdalign.h>
+#include <stdint.h>
+#include "esp_log.h"
+
+// Kích thước Tensor Arena tính toán theo mô hình (ví dụ 64 KB cho KWS / Audio)
+constexpr int kTensorArenaSize = 64 * 1024;
+
+// alignas(16) ép trình biên dịch và Linker đặt mảng này tại địa chỉ chia hết cho 16
+alignas(16) static uint8_t tensor_arena[kTensorArenaSize];
+
+void verify_tensor_arena_alignment(void) {
+    uintptr_t addr = (uintptr_t)tensor_arena;
+
+    ESP_LOGI("AI_INIT", "Địa chỉ Tensor Arena: 0x%08lx", (unsigned long)addr);
+
+    if (addr % 16 == 0) {
+        ESP_LOGI("AI_INIT", "✅ ĐẠT CHUẨN: Vùng nhớ đã được căn lề 16-byte cho Vector SIMD AI!");
+    } else {
+        ESP_LOGE("AI_INIT", "❌ NGUY HIỂM: Thiếu căn lề 16-byte! Mô hình sẽ bị Crash khi gọi SIMD.");
+    }
+}`
     },
     "t5": {
         title: "Cấu hình GPTimer định thời chính xác micro-giây cho lấy mẫu chu kỳ",

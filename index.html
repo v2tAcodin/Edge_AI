@@ -1909,7 +1909,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
 
     <!-- Modal: Cấu hình Gemini API Key -->
     <div class="nb-modal-backdrop" id="nb-key-modal">
-        <div class="nb-modal-box" style="max-width: 520px;">
+        <div class="nb-modal-box" style="max-width: 540px;">
             <div class="nb-modal-header">
                 <div class="nb-modal-title">
                     <span>⚙️</span> Cấu Hình Google Gemini API Key
@@ -1918,29 +1918,40 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
             </div>
             <div class="nb-modal-body">
                 <div class="nb-notice-box">
-                    🔒 Khóa API được lưu trữ cục bộ an toàn trong trình duyệt của bạn (LocalStorage) và chỉ được dùng khi bạn gửi câu hỏi trực tiếp đến Google Gemini API (model <code>gemini-2.5-flash</code>).
+                    🔒 Khóa API được lưu trữ an toàn trong trình duyệt (LocalStorage). Hệ thống sử dụng mô hình tối tân <strong>Google Gemini 2.0 Flash</strong> (kèm tự động dự phòng <strong>Gemini 1.5 Flash</strong>) để đọc hiểu tài liệu kỹ thuật, sơ đồ chân GPIO và Datasheet PDF nguyên bản.
                 </div>
                 <div class="nb-form-group">
-                    <label class="nb-form-label">Gemini API Key (AI Studio)</label>
-                    <input type="password" class="nb-form-control" id="nb-api-key-input" placeholder="AIzaSy...">
+                    <label class="nb-form-label" for="nb-api-key-input">Google Gemini API Key</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="password" class="nb-form-control" id="nb-api-key-input" placeholder="Dán khóa API bắt đầu bằng AIzaSy..." style="flex: 1;">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px; white-space: nowrap; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="testGeminiApiConnection()" title="Gửi một request thử nghiệm để kiểm tra tính hợp lệ của API Key">
+                            ⚡ Thử Kết Nối
+                        </button>
+                    </div>
                 </div>
-                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
-                    👉 Chưa có khóa API? Bạn có thể lấy khóa miễn phí hoàn toàn tại:<br>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: underline;">
-                        Google AI Studio API Keys ↗
-                    </a>
+                <div id="nb-key-test-status" style="font-size: 12px; min-height: 20px; margin-top: 4px; line-height: 1.4;"></div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; background: rgba(255,255,255,0.02); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+                    👉 <strong>Cách lấy khóa API miễn phí trong 1 phút:</strong><br>
+                    1. Truy cập <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: underline; font-weight: 600;">Google AI Studio API Keys ↗</a>.<br>
+                    2. Đăng nhập Google ➔ Bấm <em>"Create API key"</em>.<br>
+                    3. Sao chép chuỗi mã (dạng <code>AIzaSy...</code>) và dán vào ô bên trên ➔ Bấm <em>"Thử Kết Nối"</em> ➔ <em>"Lưu Cấu Hình"</em>.
                 </div>
             </div>
-            <div class="nb-modal-footer">
+            <div class="nb-modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
                 <button type="button" class="btn btn-secondary" onclick="closeGeminiKeyModal()">Đóng</button>
-                <button type="button" class="btn btn-accent" onclick="saveGeminiApiKey()">💾 Lưu Cấu Hình</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-secondary" style="color: var(--danger); border-color: rgba(255,77,106,0.4);" onclick="if(confirm('Bạn có muốn xóa API Key đã lưu? Hệ thống sẽ chuyển về chế độ Tri Thức Cục Bộ (Offline Engine).')) { document.getElementById('nb-api-key-input').value = ''; saveGeminiApiKey(); }" title="Xóa API Key">
+                        🗑️ Xóa Key
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="saveGeminiApiKey()">💾 Lưu Cấu Hình</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Modal: Chi Tiết Lý Thuyết Nhiệm Vụ Lộ Trình -->
     <div class="nb-modal-backdrop" id="task-theory-modal">
-        <div class="nb-modal-box" style="max-width: 680px;">
+        <div class="nb-modal-box" style="max-width: 820px;">
             <div class="nb-modal-header">
                 <div class="nb-modal-title" id="task-modal-title">
                     📖 Lý Thuyết Nhiệm Vụ
