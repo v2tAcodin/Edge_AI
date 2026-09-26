@@ -360,6 +360,27 @@ function renderInterviewArena() {
 
     container.innerHTML = "";
 
+    // Banner liên kết trực tiếp tới Trắc Nghiệm 14 Module
+    const moduleQuizBanner = document.createElement("div");
+    moduleQuizBanner.className = "stage-quiz-cta-banner";
+    moduleQuizBanner.style.marginBottom = "20px";
+    moduleQuizBanner.innerHTML = `
+        <div>
+            <div class="stage-quiz-cta-title">
+                <span>📝</span> SÁT HẠCH LÝ THUYẾT THEO 14 MODULE LỘ TRÌNH (70 CÂU HỎI GỐC)
+            </div>
+            <div class="stage-quiz-cta-desc">
+                Làm bài kiểm tra trắc nghiệm lý thuyết độc lập cho từng Module (từ C Core, FreeRTOS, TinyML đến MISRA C &amp; CAN Bus) có chấm điểm &amp; thưởng +50 XP mỗi module!
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <button type="button" class="btn btn-accent" style="font-size: 12px; padding: 6px 14px;" onclick="openModuleQuizSelector()">
+                <span>📋</span> Mở Danh Sách 14 Module ↗
+            </button>
+        </div>
+    `;
+    container.appendChild(moduleQuizBanner);
+
     const filtered = interviewQuestions.filter(q => {
         return currentQuizCategory === "all" || q.category === currentQuizCategory;
     });

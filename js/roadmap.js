@@ -150,6 +150,9 @@ function renderRoadmap() {
                     <span class="stage-count">${stageDoneCount}/${stage.tasks.length} Hoàn thành</span>
                 </div>
                 <div class="stage-header-actions">
+                    <button type="button" class="stage-theory-btn stage-quiz-btn" onclick="openModuleQuiz(${stageIndex})" title="Làm bài kiểm tra trắc nghiệm lý thuyết Module ${stageIndex + 1}">
+                        📝 Trắc Nghiệm <span id="stage-quiz-badge-${stageIndex}">${(typeof getModuleQuizScoreBadge === 'function') ? getModuleQuizScoreBadge(stageIndex) : ''}</span>
+                    </button>
                     <button type="button" class="stage-theory-btn" onclick="toggleStageTheory(${stageIndex})" title="Đọc tóm tắt lý thuyết giai đoạn này">
                         📖 Tóm Tắt
                     </button>
@@ -250,7 +253,27 @@ function renderRoadmap() {
                     </div>
                     ` : ''}
 
+                    <div class="stage-quiz-cta-banner">
+                        <div>
+                            <div class="stage-quiz-cta-title">
+                                <span>📝</span> KIỂM TRA TRẮC NGHIỆM LÝ THUYẾT: ${escapeHtml(stage.stage)}
+                            </div>
+                            <div class="stage-quiz-cta-desc">
+                                5 Câu hỏi trắc nghiệm chuyên sâu sát thực tế trích từ tài liệu gốc. Yêu cầu đạt tối thiểu 4/5 câu đúng (+50 XP).
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                            <span id="stage-quiz-drawer-badge-${stageIndex}">${(typeof getModuleQuizScoreBadge === 'function') ? getModuleQuizScoreBadge(stageIndex) : ''}</span>
+                            <button type="button" class="btn btn-accent" style="font-size: 11.5px; padding: 5px 12px;" onclick="openModuleQuiz(${stageIndex})">
+                                <span>📝</span> Bắt Đầu Làm Bài ↗
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="stage-theory-actions">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #c084fc; border-color: rgba(168,85,247,0.4);" onclick="openModuleQuiz(${stageIndex})" title="Kiểm tra trắc nghiệm lý thuyết Module này">
+                            📝 Thi Trắc Nghiệm ↗
+                        </button>
                         <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" onclick="openBookshelfForStage(${stageIndex})" title="Mở sách/tài liệu gốc của giai đoạn này trong Tủ Sách">
                             📚 Sách Gốc Trong Tủ Sách ↗
                         </button>

@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="css/analytics.css">
     <link rel="stylesheet" href="css/audio.css">
     <link rel="stylesheet" href="css/bookshelf.css">
+    <link rel="stylesheet" href="css/module-quiz.css?v=3.1.5">
 </head>
 
 <body>
@@ -364,6 +365,21 @@
                             <div class="portal-card-action" style="color: #38bdf8;">
                                 <span>12 Sách &amp; Paper Gốc</span>
                                 <span>Mở Tủ Sách →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal: Module Theory Quiz (Trắc Nghiệm 14 Module) -->
+                        <div class="portal-card" onclick="openModuleQuizSelector()" style="border-color: rgba(168, 85, 247, 0.45); background: linear-gradient(145deg, rgba(16, 24, 40, 0.95), rgba(168, 85, 247, 0.06));">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4);">📝</div>
+                                <div class="portal-card-title" style="color: #c084fc;">Trắc Nghiệm Lý Thuyết (14 Module)</div>
+                                <div class="portal-card-desc">
+                                    70 Câu hỏi trắc nghiệm chuyên sâu sát thực tế: Trích xuất từ Datasheet TRM, FreeRTOS, Paper Jacob INT8, MISRA C:2012 &amp; CAN Bus ISO 11898.
+                                </div>
+                            </div>
+                            <div class="portal-card-action" style="color: #c084fc;">
+                                <span id="portal-quiz-stat">0/14 Module Đạt Chuẩn</span>
+                                <span>Làm Bài Thi →</span>
                             </div>
                         </div>
 
@@ -1729,6 +1745,26 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                 <!-- Rendered Markdown by js/notebook.js -->
                             </div>
 
+                            <!-- Module Theory Quiz Callout Box Inside Notebook Reader -->
+                            <div class="nb-reader-quiz-card" id="nb-reader-quiz-container" style="margin-top: 20px; margin-bottom: 20px;">
+                                <div>
+                                    <div style="font-size: 10px; color: #c084fc; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        📝 SÁT HẠCH LÝ THUYẾT THEO MODULE
+                                    </div>
+                                    <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 2px;" id="nb-reader-quiz-title">
+                                        Bài Kiểm Tra Trắc Nghiệm Lý Thuyết
+                                    </div>
+                                    <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;" id="nb-reader-quiz-status">
+                                        5 Câu hỏi trắc nghiệm chuyên sâu sát thực tế trích từ tài liệu gốc. Yêu cầu đạt tối thiểu 4/5 câu đúng (+50 XP).
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                                    <button type="button" class="btn btn-accent" id="nb-reader-quiz-btn" onclick="openModuleQuizForCurrentDoc()" style="font-size: 12px; padding: 6px 14px;">
+                                        <span>📝</span> Bắt Đầu Làm Bài Trắc Nghiệm ↗
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Hands-on Practice Exercises Section Linked Directly to this Lesson -->
                             <div class="nb-reader-practice-box" id="nb-reader-practice-section">
                                 <div class="nb-reader-practice-header">
@@ -2381,6 +2417,70 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
     </div>
 
+    <!-- Module Theory Quiz Arena Modal -->
+    <div class="module-quiz-modal" id="module-quiz-modal">
+        <div class="mq-modal-box">
+            <div class="mq-modal-header">
+                <div style="flex: 1; min-width: 0;">
+                    <div class="mq-modal-title" id="mq-modal-title">
+                        <span>📝</span> Bài Kiểm Tra Trắc Nghiệm Lý Thuyết
+                    </div>
+                    <div class="mq-modal-domain" id="mq-modal-domain">
+                        Domain &amp; Reference
+                    </div>
+                    <div class="mq-progress-wrapper">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 4px;">
+                            <span id="mq-progress-text">Câu 1 / 5</span>
+                            <button type="button" class="btn btn-secondary" id="mq-book-ref-btn" style="display: none; font-size: 10.5px; padding: 2px 8px; color: var(--cyan); border-color: rgba(0,240,255,0.4);" title="Mở sách/tài liệu gốc tương ứng trong Tủ Sách">
+                                📚 Sách Tham Chiếu ↗
+                            </button>
+                        </div>
+                        <div class="mq-progress-bar-bg">
+                            <div class="mq-progress-fill" id="mq-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="closeModuleQuiz()" title="Đóng">✕</button>
+            </div>
+            <div class="mq-modal-body">
+                <!-- Question Card -->
+                <div class="mq-question-card" id="mq-question-card"></div>
+
+                <!-- 4 Options Container -->
+                <div class="mq-options-container" id="mq-options-container"></div>
+
+                <!-- Explanation Box (Appears after answer is selected) -->
+                <div class="mq-explanation-box" id="mq-explanation-box" style="display: none;"></div>
+
+                <!-- Next Question Action Bar -->
+                <div class="mq-action-container" id="mq-action-container" style="display: none;"></div>
+
+                <!-- Final Summary Screen -->
+                <div class="mq-summary-screen" id="mq-summary-screen" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Quiz Selector Modal (14 Modules Directory) -->
+    <div class="module-quiz-modal" id="module-quiz-selector-modal">
+        <div class="mq-modal-box" style="max-width: 960px;">
+            <div class="mq-modal-header">
+                <div>
+                    <div class="mq-modal-title">
+                        <span>📋</span> Danh Mục 14 Module Trắc Nghiệm Lý Thuyết Edge AI
+                    </div>
+                    <div class="mq-modal-domain" id="mq-selector-overall-stat">
+                        0/14 Module Đạt Chuẩn • 0/70 Câu Đúng
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="closeModuleQuizSelector()" title="Đóng">✕</button>
+            </div>
+            <div class="mq-modal-body" id="mq-selector-grid" style="max-height: 75vh; overflow-y: auto;">
+                <!-- Rendered dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Modular JavaScript Scripts -->
     <script src="js/auth.js?v=3.1.5" defer></script>
     <script src="js/state.js?v=3.1.5" defer></script>
@@ -2397,6 +2497,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/interview.js?v=3.1.5" defer></script>
     <script src="js/notebook.js?v=3.1.5" defer></script>
     <script src="js/bookshelf.js?v=3.1.5" defer></script>
+    <script src="js/module-quiz.js?v=3.1.5" defer></script>
     <script src="js/projects.js?v=3.1.5" defer></script>
     <script src="js/hexmem.js?v=3.1.5" defer></script>
     <script src="js/search.js?v=3.1.5" defer></script>

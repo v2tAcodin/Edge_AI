@@ -631,14 +631,41 @@ function renderNotebookDocReader(docId) {
         contentEl.innerHTML = bannerHtml + formatMarkdownChat(doc.content || "Nội dung tài liệu đang được cập nhật...");
     }
 
-    // Xác định Stage Index của tài liệu này để nạp 12 bài tập C tương ứng
-    let stageIdx = 0;
-    if (doc.id === "doc_stage1_memory" || doc.id === "doc_c_pointers_deepdive") stageIdx = 0;
-    else if (doc.id === "doc_stage2_timer") stageIdx = 1;
-    else if (doc.id === "doc_stage3_sensors") stageIdx = 2;
-    else if (doc.id === "doc_stage4_freertos") stageIdx = 3;
-    else if (doc.id === "doc_stage5_network") stageIdx = 4;
-    else if (doc.id === "doc_stage6_tinyml") stageIdx = 5;
+    // Xác định Stage Index của tài liệu này để nạp 12 bài tập C tương ứng (14 Modules)
+    const docStageMap = {
+        "doc_c_pointers_deepdive": 0,
+        "doc_stage1_memory": 0,
+        "doc_stage2_timer": 1,
+        "doc_stage3_sensors": 2,
+        "doc_stage4_freertos": 3,
+        "doc_stage5_network": 4,
+        "doc_stage6_tinyml": 5,
+        "doc_stage7_lowpower": 6,
+        "doc_stage8_capstone": 7,
+        "doc_stage9_c_interview": 8,
+        "doc_stage10_baremetal": 9,
+        "doc_stage11_debug": 10,
+        "doc_stage12_misra": 11,
+        "doc_stage13_canbus": 12,
+        "doc_stage14_unittest": 13
+    };
+    let stageIdx = (docStageMap[doc.id] !== undefined) ? docStageMap[doc.id] : 0;
+    window.currentReaderStageIdx = stageIdx;
+
+    // Cập nhật Thẻ Trắc Nghiệm Lý Thuyết trong Reader
+    const quizTitle = document.getElementById("nb-reader-quiz-title");
+    if (quizTitle) {
+        quizTitle.innerText = `Bài Kiểm Tra Trắc Nghiệm: Module ${stageIdx + 1} (${doc.title.length > 40 ? doc.title.slice(0, 40) + '...' : doc.title})`;
+    }
+    const quizStatus = document.getElementById("nb-reader-quiz-status");
+    if (quizStatus && typeof getModuleQuizResults === 'function') {
+        const res = getModuleQuizResults()[stageIdx];
+        if (res) {
+            quizStatus.innerHTML = `Kết quả đã thi: <strong style="color: ${res.passed ? '#34d399' : '#f87171'}">${res.score}/5 câu đúng ${res.passed ? '✅ (Đạt Chuẩn)' : '⚠️ (Chưa Đạt)'}</strong> • Bấm nút bên phải để làm lại hoặc cải thiện điểm.`;
+        } else {
+            quizStatus.innerHTML = `5 Câu hỏi trắc nghiệm chuyên sâu sát thực tế trích từ tài liệu gốc. Yêu cầu đạt tối thiểu 4/5 câu đúng (+50 XP).`;
+        }
+    }
 
     renderReaderPracticeGrid(stageIdx);
 }
@@ -717,13 +744,24 @@ function scrollToPracticeInReader() {
 function openPracticeForCurrentDocModule() {
     let doc = (selectedDocId && selectedDocId !== 'all') ? notebookDocs.find(d => d.id === selectedDocId) : null;
     if (!doc) doc = notebookDocs[0];
-    let stageIdx = 0;
-    if (doc.id === "doc_stage1_memory" || doc.id === "doc_c_pointers_deepdive") stageIdx = 0;
-    else if (doc.id === "doc_stage2_timer") stageIdx = 1;
-    else if (doc.id === "doc_stage3_sensors") stageIdx = 2;
-    else if (doc.id === "doc_stage4_freertos") stageIdx = 3;
-    else if (doc.id === "doc_stage5_network") stageIdx = 4;
-    else if (doc.id === "doc_stage6_tinyml") stageIdx = 5;
+    const docStageMap = {
+        "doc_c_pointers_deepdive": 0,
+        "doc_stage1_memory": 0,
+        "doc_stage2_timer": 1,
+        "doc_stage3_sensors": 2,
+        "doc_stage4_freertos": 3,
+        "doc_stage5_network": 4,
+        "doc_stage6_tinyml": 5,
+        "doc_stage7_lowpower": 6,
+        "doc_stage8_capstone": 7,
+        "doc_stage9_c_interview": 8,
+        "doc_stage10_baremetal": 9,
+        "doc_stage11_debug": 10,
+        "doc_stage12_misra": 11,
+        "doc_stage13_canbus": 12,
+        "doc_stage14_unittest": 13
+    };
+    let stageIdx = (doc && docStageMap[doc.id] !== undefined) ? docStageMap[doc.id] : 0;
 
     if (typeof setModuleFilter === 'function') {
         setModuleFilter(String(stageIdx));
@@ -732,6 +770,33 @@ function openPracticeForCurrentDocModule() {
         switchTab('practice');
     }
     showToast(`🎯 Đã mở danh sách 12 bài tập C của Module ${stageIdx + 1}`);
+}
+
+function openModuleQuizForCurrentDoc() {
+    let doc = (selectedDocId && selectedDocId !== 'all') ? notebookDocs.find(d => d.id === selectedDocId) : null;
+    if (!doc) doc = notebookDocs[0];
+    const docStageMap = {
+        "doc_c_pointers_deepdive": 0,
+        "doc_stage1_memory": 0,
+        "doc_stage2_timer": 1,
+        "doc_stage3_sensors": 2,
+        "doc_stage4_freertos": 3,
+        "doc_stage5_network": 4,
+        "doc_stage6_tinyml": 5,
+        "doc_stage7_lowpower": 6,
+        "doc_stage8_capstone": 7,
+        "doc_stage9_c_interview": 8,
+        "doc_stage10_baremetal": 9,
+        "doc_stage11_debug": 10,
+        "doc_stage12_misra": 11,
+        "doc_stage13_canbus": 12,
+        "doc_stage14_unittest": 13
+    };
+    let stageIdx = (doc && docStageMap[doc.id] !== undefined) ? docStageMap[doc.id] : 0;
+
+    if (typeof openModuleQuiz === 'function') {
+        openModuleQuiz(stageIdx);
+    }
 }
 
 function renderNotebookDocsList() {
@@ -1941,6 +2006,7 @@ window.renderNotebookDocReader = renderNotebookDocReader;
 window.askAiAboutCurrentDoc = askAiAboutCurrentDoc;
 window.scrollToPracticeInReader = scrollToPracticeInReader;
 window.openPracticeForCurrentDocModule = openPracticeForCurrentDocModule;
+window.openModuleQuizForCurrentDoc = openModuleQuizForCurrentDoc;
 window.openNotebookForStage = openNotebookForStage;
 window.askAiAboutStage = askAiAboutStage;
 window.selectNotebookDoc = selectNotebookDoc;
