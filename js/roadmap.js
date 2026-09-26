@@ -165,14 +165,51 @@ function renderRoadmap() {
             <div class="stage-theory-drawer" id="stage-theory-${stageIndex}">
                 <div class="stage-theory-content">
                     <h4>📖 ${stageTheory.title}</h4>
-                    <p>${stageTheory.summary}</p>
+                    <p style="margin-bottom: 12px; color: #e2e8f0; line-height: 1.6;">${stageTheory.summary}</p>
+                    
+                    ${stageTheory.coreAnalogy ? `
+                    <div class="stage-theory-analogy" style="background: rgba(255, 180, 0, 0.07); border-left: 3px solid #ffb400; padding: 10px 14px; border-radius: 6px; margin: 10px 0;">
+                        <strong style="color: #ffb400; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            💡 Ẩn Dụ Trực Quan & Bản Chất:
+                        </strong>
+                        <span style="color: #cbd5e1; font-style: italic;">${stageTheory.coreAnalogy}</span>
+                    </div>
+                    ` : ''}
+
+                    ${stageTheory.hardwareArchitecture ? `
+                    <div class="stage-theory-arch" style="background: rgba(0, 240, 255, 0.05); border-left: 3px solid #00f0ff; padding: 10px 14px; border-radius: 6px; margin: 10px 0;">
+                        <strong style="color: #00f0ff; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            ⚙️ Kiến Trúc Phần Cứng & Thanh Ghi:
+                        </strong>
+                        <div style="color: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(stageTheory.hardwareArchitecture)}</div>
+                    </div>
+                    ` : ''}
+
                     <div class="stage-theory-highlight">
-                        <strong>💡 Điểm cốt lõi cần nhớ:</strong>
-                        <ul style="margin-left: 18px; margin-top: 4px;">
-                            ${stageTheory.highlights.map(h => `<li>${h}</li>`).join('')}
+                        <strong>📌 Nguyên lý & Công thức cốt lõi:</strong>
+                        <ul style="margin-left: 18px; margin-top: 6px;">
+                            ${stageTheory.highlights.map(h => `<li style="margin-bottom: 4px;">${h}</li>`).join('')}
                         </ul>
                     </div>
-                    ${stageTheory.codeSnippet ? `<pre class="stage-theory-code"><code>${escapeHtml(stageTheory.codeSnippet)}</code></pre>` : ''}
+
+                    ${stageTheory.fatalTraps && stageTheory.fatalTraps.length > 0 ? `
+                    <div class="stage-theory-traps" style="background: rgba(255, 59, 48, 0.08); border-left: 3px solid #ff3b30; padding: 10px 14px; border-radius: 6px; margin: 10px 0;">
+                        <strong style="color: #ff3b30; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            ⚠️ Cạm Bẫy Chí Mạng & Bắt Lỗi Thực Tế:
+                        </strong>
+                        <ul style="margin-left: 18px; margin-top: 4px; color: #fca5a5;">
+                            ${stageTheory.fatalTraps.map(tr => `<li style="margin-bottom: 4px;">${tr}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+
+                    ${stageTheory.codeSnippet ? `
+                    <div style="margin-top: 10px;">
+                        <span style="font-size: 11px; color: var(--accent); font-family: 'JetBrains Mono', monospace;">💻 Mã Nguồn C/C++ Chuẩn Sản Xuất:</span>
+                        <pre class="stage-theory-code"><code>${escapeHtml(stageTheory.codeSnippet)}</code></pre>
+                    </div>
+                    ` : ''}
+
                     <div class="stage-theory-actions">
                         <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openNotebookForStage(${stageIndex})">
                             📚 Mở Đọc Đầy Đủ Trong Sổ Tay AI ↗

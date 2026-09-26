@@ -2322,6 +2322,56 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
     </div>
 
+    <!-- Modal: Lý Thuyết Chi Tiết Nhiệm Vụ (Task Theory Masterclass Modal) -->
+    <div class="nb-modal-backdrop" id="task-theory-modal" onclick="if(event.target === this) closeTaskTheoryModal()">
+        <div class="nb-modal-box" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="nb-modal-header" style="flex-shrink: 0;">
+                <div style="flex: 1; min-width: 0;">
+                    <div class="nb-modal-title" id="task-modal-title" style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                        📖 Lý Thuyết Chi Tiết Nhiệm Vụ
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap;">
+                        <span class="badge badge-accent" id="task-modal-stage">Giai đoạn</span>
+                        <span class="badge badge-gold" id="task-modal-skill">Kỹ năng</span>
+                    </div>
+                </div>
+                <button class="btn-close" onclick="closeTaskTheoryModal()" title="Đóng">✕</button>
+            </div>
+            <div class="nb-modal-body" style="flex: 1; overflow-y: auto; padding: 22px;">
+                <!-- Rendered Markdown Theory Content -->
+                <div id="task-modal-content" class="task-theory-rendered-body" style="font-size: 13.5px; line-height: 1.7; color: #cbd5e1;">
+                </div>
+
+                <!-- Production Code Block -->
+                <div style="margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="font-size: 12px; color: var(--accent); font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 6px;">
+                            💻 Mã Nguồn C/C++ Mẫu Chuẩn Sản Xuất (ESP-IDF v5.x):
+                        </strong>
+                        <button type="button" class="btn btn-secondary" style="font-size: 10.5px; padding: 3px 10px;" onclick="copyTaskModalCode()">
+                            📋 Sao Chép Mã Nguồn
+                        </button>
+                    </div>
+                    <pre class="stage-theory-code" style="margin: 0; max-height: 320px; overflow-y: auto; background: #030712; border: 1px solid #1f2937; border-radius: 8px; padding: 14px;"><code id="task-modal-code" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38bdf8; line-height: 1.55;"></code></pre>
+                </div>
+            </div>
+            <div class="nb-modal-footer" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" style="font-size: 11.5px;" onclick="saveTaskToMyNotes()">
+                        💾 Lưu Vào Sổ Tay Của Tôi
+                    </button>
+                    <button type="button" class="btn btn-secondary" style="font-size: 11.5px; color: var(--gold); border-color: rgba(255,180,0,0.4);" onclick="openPracticeFromTaskModal()">
+                        💻 Làm Bài Tập Thực Hành ↗
+                    </button>
+                    <button type="button" class="btn btn-accent" style="font-size: 11.5px;" onclick="askAiFromTaskModal()">
+                        🤖 Nhờ Gemini Giải Thích Sâu Thêm ↗
+                    </button>
+                </div>
+                <button type="button" class="btn btn-secondary" style="font-size: 11.5px;" onclick="closeTaskTheoryModal()">✕ Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modular JavaScript Scripts -->
     <script src="js/auth.js?v=3.1.5" defer></script>
     <script src="js/state.js?v=3.1.5" defer></script>

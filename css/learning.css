@@ -563,3 +563,11 @@
     border: 1px solid rgba(0, 255, 157, 0.35);
 }
 
+
+/* Enhanced Stage Theory Callouts */
+.stage-theory-analogy, .stage-theory-arch, .stage-theory-traps {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.stage-theory-analogy strong, .stage-theory-arch strong, .stage-theory-traps strong {
+    font-size: 12px;
+}
