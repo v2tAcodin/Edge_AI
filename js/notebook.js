@@ -1717,6 +1717,9 @@ function selectNotebookDoc(docId) {
     if (docId !== 'all') {
         renderNotebookDocReader(docId);
         setNotebookRightMode('reader');
+    } else {
+        renderNotebookDocReader(notebookDocs[0]?.id || "doc_stage1_memory");
+        setNotebookRightMode('reader');
     }
 }
 
@@ -2028,7 +2031,7 @@ function formatMarkdownChat(text) {
 
     // 9. Phục hồi lại các khối mã nguồn nguyên vẹn
     codeBlocks.forEach((block, idx) => {
-        formatted = formatted.replace(`%%%CODE_BLOCK_${idx}%%%`, block);
+        formatted = formatted.replace(`%%%CODE_BLOCK_${idx}%%%`, () => block);
     });
 
     return formatted;
@@ -2753,4 +2756,10 @@ window.renderNotebookDocReader = renderNotebookDocReader;
 window.askAiAboutCurrentDoc = askAiAboutCurrentDoc;
 window.scrollToPracticeInReader = scrollToPracticeInReader;
 window.openPracticeForCurrentDocModule = openPracticeForCurrentDocModule;
+window.openNotebookForStage = openNotebookForStage;
+window.askAiAboutStage = askAiAboutStage;
+window.selectNotebookDoc = selectNotebookDoc;
+window.setDocTagFilter = setDocTagFilter;
+window.renderNotebookView = renderNotebookView;
+window.renderNotebookDocsList = renderNotebookDocsList;
 

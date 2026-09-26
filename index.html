@@ -239,9 +239,9 @@
                 <span>🎯 Phỏng Vấn</span>
                 <span class="tab-badge tab-badge-gold" id="quiz-score-badge">0/24</span>
             </button>
-            <button class="tab-btn" id="tab-notebook" onclick="switchTab('notebook')">
-                <span>📚 Sổ Tay AI</span>
-                <span class="tab-badge" id="tab-notebook-count">4 Doc</span>
+            <button class="tab-btn" id="tab-notebook" onclick="switchTab('notebook')" title="Mở Giáo Trình Lý Thuyết & Sổ Tay AI">
+                <span>📖 Lý Thuyết &amp; Sổ Tay</span>
+                <span class="tab-badge" id="tab-notebook-count">14 Doc</span>
             </button>
             <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
                 <span>👤 Kỹ Sư Thai</span>
@@ -331,18 +331,33 @@
                     <!-- 4 Entrance Portal Cards -->
                     <div class="portal-grid">
                         
-                        <!-- Portal 1: Roadmap & Notebook -->
+                        <!-- Portal 0: Complete Theory Textbook & Doc AI -->
+                        <div class="portal-card" onclick="switchTab('notebook')" style="border-color: rgba(0, 240, 255, 0.4); background: linear-gradient(145deg, rgba(16, 24, 40, 0.95), rgba(0, 240, 255, 0.06));">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.4);">📖</div>
+                                <div class="portal-card-title" style="color: var(--cyan);">Giáo Trình Lý Thuyết &amp; Sổ Tay AI</div>
+                                <div class="portal-card-desc">
+                                    14 Chương lý thuyết chuẩn kỹ sư: Con trỏ C, Quản lý bộ nhớ ESP32-S3, GPTimer, FreeRTOS, TinyML, MISRA C &amp; CAN Bus.
+                                </div>
+                            </div>
+                            <div class="portal-card-action" style="color: var(--cyan);">
+                                <span id="portal-theory-stat">14 Chương Lý Thuyết</span>
+                                <span>Đọc Giáo Trình →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal 1: Roadmap & Checklist -->
                         <div class="portal-card" onclick="switchTab('learning')">
                             <div>
-                                <div class="portal-icon">📚</div>
-                                <div class="portal-card-title">Lộ Trình Edge AI (6 Bước)</div>
+                                <div class="portal-icon">🗺️</div>
+                                <div class="portal-card-title">Lộ Trình Edge AI (14 Bước)</div>
                                 <div class="portal-card-desc">
-                                    C & Bộ nhớ → Timer & Ngắt → Cảm biến → Đa nhiệm → Network/OTA → AI Model.
+                                    56 Nhiệm vụ thực chiến: Nền tảng nhúng → TinyML → Chuyên sâu Bare-Metal → Chuẩn công nghiệp Ô tô.
                                 </div>
                             </div>
                             <div class="portal-card-action">
-                                <span id="portal-roadmap-stat">0/24 Hoàn thành</span>
-                                <span>Mở →</span>
+                                <span id="portal-roadmap-stat">0/56 Hoàn thành</span>
+                                <span>Mở Lộ Trình →</span>
                             </div>
                         </div>
 

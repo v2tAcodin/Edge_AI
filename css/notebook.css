@@ -659,6 +659,11 @@
     padding: 20px;
 }
 
+.nb-modal-backdrop.active,
+.nb-modal-backdrop.open {
+    display: flex !important;
+}
+
 .nb-modal-box {
     background: var(--surface);
     border: 1px solid rgba(255, 255, 255, 0.12);

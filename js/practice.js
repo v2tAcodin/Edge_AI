@@ -2673,4 +2673,6 @@ window.generateExerciseWithAI = generateExerciseWithAI;
 window.confirmAddAIGeneratedProblem = confirmAddAIGeneratedProblem;
 window.saveCustomExercise = saveCustomExercise;
 window.askAiAboutCurrentProblem = askAiAboutCurrentProblem;
+window.openLinkedTheoryForCurrentProblem = openLinkedTheoryForCurrentProblem;
+window.openRoadmapStageForCurrentProblem = openRoadmapStageForCurrentProblem;
 

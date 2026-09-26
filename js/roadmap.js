@@ -206,15 +206,15 @@ function renderRoadmap() {
                 <span class="task-text">${task.title}</span>
                 <span class="task-skill-tag">${task.skill}</span>
                 <div class="task-actions-row">
-                    <button type="button" class="btn-task-theory" onclick="event.preventDefault(); showTaskTheoryModal(${stageIndex}, ${taskIndex})" title="Xem lý thuyết chi tiết của bài này">
+                    <button type="button" class="btn-task-theory" onclick="event.preventDefault(); event.stopPropagation(); showTaskTheoryModal(${stageIndex}, ${taskIndex})" title="Xem lý thuyết chi tiết của bài này">
                         📖 Lý thuyết
                     </button>
                     ${linkedProbIdx !== -1 ? `
-                    <button type="button" class="btn-task-code" onclick="event.preventDefault(); openPracticeProblem(${linkedProbIdx})" title="Làm bài tập thực hành tương ứng (+XP)">
+                    <button type="button" class="btn-task-code" onclick="event.preventDefault(); event.stopPropagation(); openPracticeProblem(${linkedProbIdx})" title="Làm bài tập thực hành tương ứng (+XP)">
                         💻 Thực hành
                     </button>
                     ` : ''}
-                    <button type="button" class="btn-task-ai" onclick="event.preventDefault(); askAiAboutTask(${stageIndex}, ${taskIndex})" title="Hỏi Gemini AI về bài này">
+                    <button type="button" class="btn-task-ai" onclick="event.preventDefault(); event.stopPropagation(); askAiAboutTask(${stageIndex}, ${taskIndex})" title="Hỏi Gemini AI về bài này">
                         🤖 Hỏi AI
                     </button>
                 </div>
@@ -403,3 +403,8 @@ function renderRoadmap() {
             }
             showToast(`🎯 Đã mở danh sách 12 bài tập C áp dụng cho Bước ${stageIndex + 1}!`);
         };
+
+        window.toggleStageTheory = toggleStageTheory;
+        window.setRoadmapPhase = setRoadmapPhase;
+        window.renderRoadmap = renderRoadmap;
+
