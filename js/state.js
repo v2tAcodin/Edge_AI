@@ -689,553 +689,1387 @@ void verify_tensor_arena_alignment(void) {
         title: "Cấu hình GPTimer định thời chính xác micro-giây cho lấy mẫu chu kỳ",
         stageName: "Bước 2: Timer & Xử Lý Ngắt (Interrupt)",
         skill: "Microsecond Hardware GPTimer",
-        content: `Mô hình AI nhận diện giọng nói hoặc rung động dựa trên giả định rằng các mẫu tín hiệu được lấy đều đặn tuyệt đối theo thời gian. Sử dụng hàm \`vTaskDelay()\` của FreeRTOS sẽ gây sai lệch (Jitter) hàng trăm micro-giây do độ phân giải của hệ thống chỉ là 1-10ms (100-1000Hz Tick Rate).
-        
-        Sử dụng bộ định thời phần cứng GPTimer với Prescaler 80 (tần số cơ sở 80MHz) chia xung về đúng 1MHz, giúp bộ đếm tăng 1 đơn vị mỗi đúng 1 µs độc lập với hệ điều hành.`,
-        code: `gptimer_config_t timer_config = {\n    .clk_src = GPTIMER_CLK_SRC_DEFAULT,\n    .direction = GPTIMER_COUNT_UP,\n    .resolution_hz = 1000000, // 1 MHz = 1 micro-giây mỗi tick\n};\ngptimer_new_timer(&timer_config, &gptimer);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI CẦN BỘ ĐỊNH THỜI PHẦN CỨNG?
+Trong các bài toán Edge AI (nhận diện giọng nói 16kHz, phân tích rung động 100Hz):
+- Mọi mô hình suy luận và thuật toán biến đổi phổ FFT đều dựa trên giả thiết: **Khoảng cách thời gian giữa 2 mẫu liên tiếp phải đều tuyệt đối**.
+- Nếu dùng hàm \`vTaskDelay()\` của FreeRTOS, thời gian chờ bị phụ thuộc vào tần số Tick (1ms - 10ms) và sẽ bị sai lệch hàng trăm micro-giây do độ trễ bộ lập lịch.
+- ✅ **Giải pháp**: GPTimer là bộ định thời phần cứng đếm xung độc lập với CPU, đảm bảo độ chính xác tới từng micro-giây!
+
+### 📌 2. NGUYÊN LÝ HOẠT ĐỘNG
+- Bộ đếm 54-bit chạy trên xung nhịp bus APB 80MHz.
+- Prescaler = 80 -> Tần số đếm giảm về đúng 1MHz (1 µs / 1 tick).
+- Chế độ Auto-Reload: Đếm từ 0 đến ngưỡng Alarm (ví dụ 62 µs cho âm thanh 16kHz), tự động nạp lại 0 và kích hoạt ngắt phần cứng.
+
+### 📌 3. BẪY LỖI KINH ĐIỂN
+❌ Quên cờ \`auto_reload_on_alarm = true\`: Sau lần kích hoạt ngắt đầu tiên, timer sẽ đếm tiếp lên vô cùng và không bao giờ ngắt lại nữa.`,
+        code: `// Cấu hình GPTimer 1 micro-giây trên ESP-IDF v5.x:
+gptimer_handle_t gptimer = NULL;
+gptimer_config_t timer_config = {
+    .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+    .direction = GPTIMER_COUNT_UP,
+    .resolution_hz = 1000000, // 1 MHz = 1us mỗi tick
+};
+ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &gptimer));
+
+gptimer_alarm_config_t alarm_config = {
+    .reload_count = 0,
+    .alarm_count = 62, // 62us ~ 16,000 Hz lấy mẫu âm thanh
+    .flags.auto_reload_on_alarm = true,
+};
+ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer, &alarm_config));
+ESP_ERROR_CHECK(gptimer_enable(gptimer));
+ESP_ERROR_CHECK(gptimer_start(gptimer));`
     },
     "t6": {
         title: "Lập trình hàm ngắt ISR với cờ IRAM_ATTR thực thi trực tiếp trên SRAM",
         stageName: "Bước 2: Timer & Xử Lý Ngắt (Interrupt)",
         skill: "High-Speed IRAM_ATTR Interrupts",
-        content: `Khi vi điều khiển phát sinh ngắt phần cứng, CPU phải nhảy đến hàm phục vụ ngắt (ISR) trong vòng vài nano-giây. Nếu hàm ISR nằm trên bộ nhớ Flash ngoài, CPU có thể bị khựng lại do Flash Cache Miss, hoặc nghiêm trọng hơn là Crash nếu hệ thống đang ghi dữ liệu vào Flash (SPI Flash Cache Disabled).
-        
-        Gắn cờ \`IRAM_ATTR\` trước tên hàm để chỉ định trình liên kết Linker đưa toàn bộ mã máy của hàm ngắt vào Internal SRAM, đảm bảo phản hồi tức thì và an toàn tuyệt đối.`,
-        code: `static bool IRAM_ATTR timer_on_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {\n    // Mã ngắt cực ngắn thực thi thẳng trên SRAM\n    BaseType_t high_task_awoken = pdFALSE;\n    vTaskNotifyGiveFromISR(ai_task_handle, &high_task_awoken);\n    return high_task_awoken == pdTRUE;\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: VÌ SAO ISR PHẢI ĐẶT TRONG IRAM?
+- Mã nguồn C thông thường được lưu trong bộ nhớ Flash ngoài. Khi thực thi, CPU phải nạp qua bộ đệm Cache.
+- Nếu hàm phục vụ ngắt (ISR) nằm trên Flash, khi ngắt nổ ra sẽ bị trễ do Cache Miss.
+- **Nguy hiểm nhất**: Khi vi điều khiển đang ghi dữ liệu vào Flash (như lưu NVS hoặc tải OTA), bộ đệm SPI Flash Cache bị vô hiệu hóa tạm thời. Nếu lúc này ngắt xảy ra và CPU cố đọc code trên Flash -> Lập tức Crash phần cứng **Guru Meditation Cache Disabled**!
+
+### 📌 2. NGUYÊN LÝ HOẠT ĐỘNG
+- Gắn cờ \`IRAM_ATTR\` trước tên hàm ép Linker đưa mã máy của hàm ngắt vào **Internal SRAM0**.
+- Đảm bảo thời gian phản hồi ngắt tức thì chỉ vài nano-giây và an toàn tuyệt đối ngay cả khi đang ghi Flash.
+
+### 📌 3. BẪY LỖI KINH ĐIỂN
+❌ Trong hàm có cờ \`IRAM_ATTR\`, tuyệt đối không gọi các hàm không có cờ IRAM (như \`printf\`, \`malloc\`), nếu không vẫn sẽ bị crash khi Flash bị khóa.`,
+        code: `// Hàm ngắt Timer ISR lưu trong Internal SRAM siêu tốc:
+static bool IRAM_ATTR timer_on_alarm_cb(gptimer_handle_t timer, 
+                                        const gptimer_alarm_event_data_t *edata, 
+                                        void *user_ctx) {
+    BaseType_t high_task_awoken = pdFALSE;
+
+    // Chỉ thực hiện công việc tối thiểu: Gửi tín hiệu đánh thức tác vụ AI
+    vTaskNotifyGiveFromISR(ai_task_handle, &high_task_awoken);
+
+    // Trả về true nếu cần chuyển ngữ cảnh ngay tức thì
+    return (high_task_awoken == pdTRUE);
+}`
     },
     "t7": {
         title: "Cơ chế Deferred Processing: Đẩy việc từ ISR sang Task qua Semaphore",
         stageName: "Bước 2: Timer & Xử Lý Ngắt (Interrupt)",
         skill: "Deferred ISR to Task Processing",
-        content: `Quy tắc vàng trong lập trình vi điều khiển: "Hàm ngắt ISR phải chạy càng nhanh càng tốt". Tuyệt đối không gọi các hàm tính toán nặng, FFT hay suy luận AI trong ISR vì sẽ làm tê liệt toàn bộ ngắt khác của vi điều khiển.
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: NGUYÊN TẮC VÀNG VỀ THỜI GIAN TRONG ISR
+- Trong hệ thống nhúng, hàm ngắt (ISR) có quyền ưu tiên cao nhất, nó chặn mọi tác vụ khác kể cả hệ điều hành.
+- Nếu bạn tính toán FFT hoặc chạy suy luận AI trong ISR, vi điều khiển sẽ bị tê liệt hoàn toàn, bỏ lỡ các ngắt Wi-Fi, bàn phím và Watchdog -> Sụp nguồn!
+
+### 📌 2. MÔ HÌNH DEFERRED PROCESSING (HOÃN XỬ LÝ)
+1. Trong ISR: Chỉ đọc thanh ghi và gửi tín hiệu đánh thức qua \`vTaskNotifyGiveFromISR\`. Thời gian chạy < 3 micro-giây.
+2. Ngoài Task chính: Tác vụ AI thức dậy, thu gom dữ liệu và thực hiện các thuật toán nặng nhọc ở ngữ cảnh bình thường, nơi các ngắt khác vẫn hoạt động trơn tru.`,
+        code: `// 1. Trong ISR: Phát tín hiệu đánh thức
+vTaskNotifyGiveFromISR(xTaskHandle, &xHigherPriorityTaskWoken);
+portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+// 2. Trong Task AI bên ngoài: Chờ nhận tín hiệu rồi tính toán
+void ai_deferred_task(void *pvParameters) {
+    while (1) {
+        // Ngủ đông không tốn CPU cho đến khi có tín hiệu từ ISR
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         
-        Kỹ thuật Deferred Processing: ISR chỉ kích hoạt cờ tín hiệu (Binary Semaphore hoặc Direct-to-Task Notification), sau đó trả quyền điều khiển về CPU. Hệ điều hành FreeRTOS sẽ lập tức đánh thức tác vụ AI bên ngoài thực thi.`,
-        code: `// Trong ISR: Đánh thức task\nvTaskNotifyGiveFromISR(xTaskHandle, &xHigherPriorityTaskWoken);\n\n// Trong Task ngoài: Chờ tín hiệu rồi xử lý\nvoid ai_task(void *pvParam) {\n    while(1) {\n        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);\n        run_feature_extraction_and_ai();\n    }\n}`
+        // Thực hiện tính toán nặng an toàn ngoài ngữ cảnh ngắt
+        run_heavy_fft_and_inference();
+    }
+}`
     },
     "t8": {
         title: "Ứng dụng Timer định nhịp tần số lấy mẫu chuẩn (16kHz Audio / 100Hz IMU)",
         stageName: "Bước 2: Timer & Xử Lý Ngắt (Interrupt)",
         skill: "Deterministic Sensor Sampling Rate",
-        content: `Mỗi bài toán Edge AI có một tần số lấy mẫu định mức (Sampling Rate):
-        - Nhận diện giọng nói từ khóa (Keyword Spotting): 16,000 Hz (khoảng cách giữa 2 mẫu = 62.5 µs).
-        - Phân tích rung động động cơ (Anomaly Detection): 100 Hz (khoảng cách = 10,000 µs).
-        - Phát hiện nhịp tim (ECG/PPG): 250 Hz (khoảng cách = 4,000 µs).
-        
-        Sử dụng GPTimer Alarm tự động nạp lại (Auto-reload) để đảm bảo chu kỳ lấy mẫu bất biến theo thời gian.`,
-        code: `gptimer_alarm_config_t alarm_config = {\n    .reload_count = 0,\n    .alarm_count = 10000, // 10,000 µs = 100Hz cho cảm biến IMU\n    .flags.auto_reload_on_alarm = true,\n};\ngptimer_set_alarm_action(gptimer, &alarm_config);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẦN SỐ LẤY MẪU TIÊU CHUẨN TRONG EDGE AI
+Mỗi mô hình Deep Learning được huấn luyện trên một tần số lấy mẫu cố định:
+- **Keyword Spotting (Giọng nói)**: Chuẩn 16,000 Hz -> Khoảng thời gian giữa 2 mẫu = $1 / 16000 = 62.5$ µs.
+- **Phân tích rung động động cơ (IMU)**: Chuẩn 100 Hz -> Khoảng cách giữa 2 mẫu = $10,000$ µs (10 ms).
+- **Điện tim (ECG) / Nhịp tim (PPG)**: Chuẩn 250 Hz -> Khoảng cách = $4,000$ µs (4 ms).
+
+### 📌 2. KỸ THUẬT AUTO-RELOAD KHÔNG BỊ TRÔI PHA
+Sử dụng cờ \`auto_reload_on_alarm = true\` để thanh ghi phần cứng tự động nạp lại giá trị 0 ngay thời khắc báo động. Không dùng phần mềm nạp lại vì sẽ bị trôi pha (Phase Drift) theo thời gian.`,
+        code: `// Cấu hình GPTimer cho cảm biến rung động IMU 100Hz:
+gptimer_alarm_config_t imu_alarm_cfg = {
+    .reload_count = 0,
+    .alarm_count = 10000, // 10,000 us = 10ms = đúng 100Hz
+    .flags.auto_reload_on_alarm = true,
+};
+gptimer_set_alarm_action(gptimer, &imu_alarm_cfg);`
     },
     "t9": {
         title: "Giao tiếp I2C/SPI đọc dữ liệu thô cảm biến chuyển động 6 trục (IMU MPU6050)",
         stageName: "Bước 3: Cảm Biến & Thu Thập Dữ Liệu",
         skill: "I2C/SPI 6-Axis IMU Driver",
-        content: `Cảm biến chuyển động 6 trục (3 trục gia tốc kế Accel + 3 trục con quay hồi chuyển Gyro) giao tiếp qua bus I2C (tối đa 400kHz Fast Mode) hoặc SPI (tối đa 10-20MHz).
-        
-        Để tối ưu băng thông I2C, thay vì đọc từng trục riêng lẻ (mỗi lần phát lệnh tốn địa chỉ Start/Stop), ta sử dụng kỹ thuật Burst Read: Đọc một lúc 14 bytes liên tục từ thanh ghi \`ACCEL_XOUT_H\` (0x3B) đến \`GYRO_ZOUT_L\` (0x48).`,
-        code: `uint8_t raw_buf[14];\ni2c_master_write_read_device(I2C_NUM_0, MPU6050_ADDR, &reg_start, 1, raw_buf, 14, 1000 / portTICK_PERIOD_MS);\nint16_t ax = (raw_buf[0] << 8) | raw_buf[1];\nint16_t ay = (raw_buf[2] << 8) | raw_buf[3];`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: KỸ THUẬT BURST READ TRÊN I2C
+Cảm biến chuyển động IMU 6-trục lưu trữ 3 trục gia tốc và 3 trục con quay hồi chuyển trong 14 thanh ghi liên tiếp từ \`0x3B\` đến \`0x48\`.
+- Đọc từng trục riêng lẻ tốn 6 chu kỳ Start/Stop trên bus I2C, làm chậm tốc độ lấy mẫu và nghẽn CPU.
+- **Kỹ thuật Burst Read**: Chỉ phát 1 lệnh đọc với địa chỉ bắt đầu \`0x3B\` và nhận liền một mạch 14 bytes.
+
+### 📌 2. GHÉP BIT CÓ DẤU (SIGNED 16-BIT INTEGER)
+Mỗi trục gồm 2 byte High và Low. Cần dịch bit và ép kiểu có dấu \`int16_t\`:
+\`\`\`c
+int16_t raw_accel_x = (int16_t)((buf[0] << 8) | buf[1]);
+\`\`\``,
+        code: `uint8_t raw_buf[14];
+uint8_t reg_start = 0x3B; // ACCEL_XOUT_H
+// Đọc Burst 14 bytes liên tục chỉ với 1 lệnh giao tiếp I2C:
+esp_err_t err = i2c_master_write_read_device(
+    I2C_NUM_0, 0x68, &reg_start, 1, raw_buf, 14, 100 / portTICK_PERIOD_MS);
+
+if (err == ESP_OK) {
+    int16_t ax = (int16_t)((raw_buf[0] << 8) | raw_buf[1]);
+    int16_t ay = (int16_t)((raw_buf[2] << 8) | raw_buf[3]);
+    int16_t az = (int16_t)((raw_buf[4] << 8) | raw_buf[5]);
+    int16_t gx = (int16_t)((raw_buf[8] << 8) | raw_buf[9]);
+    int16_t gy = (int16_t)((raw_buf[10] << 8) | raw_buf[11]);
+    int16_t gz = (int16_t)((raw_buf[12] << 8) | raw_buf[13]);
+}`
     },
     "t10": {
         title: "Thu âm thanh kỹ thuật số băng thông cao qua chuẩn giao tiếp I2S Microphone",
         stageName: "Bước 3: Cảm Biến & Thu Thập Dữ Liệu",
         skill: "I2S Digital Microphone Streaming",
-        content: `Khác với microphone analog nối qua ADC dễ bị nhiễu điện áp nguồn, microphone kỹ thuật số như INMP441 xuất trực tiếp dữ liệu âm thanh số 24-bit PCM qua giao tiếp I2S (Inter-IC Sound).
-        
-        ESP32-S3 sử dụng phần cứng DMA chuyên dụng với cấu trúc đệm đôi (Ping-Pong Buffer) để nhận luồng âm thanh liên tục mà không làm gián đoạn CPU.`,
-        code: `i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);\ni2s_new_channel(&chan_cfg, NULL, &rx_handle);\n\n// Đọc 512 mẫu âm thanh từ DMA buffer:\nsize_t bytes_read = 0;\ni2s_channel_read(rx_handle, pcm_data, sizeof(pcm_data), &bytes_read, portMAX_DELAY);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI DÙNG I2S THAY VÌ ADC?
+Microphone analog nối qua chân ADC rất dễ bị nhiễu do xung nguồn và sóng vô tuyến Wi-Fi.
+Microphone kỹ thuật số (như INMP441, SPH0645) tích hợp sẵn bộ chuyển đổi ADC 24-bit và bộ lọc số ngay bên trong chip micro, xuất luồng số trực tiếp qua giao thức I2S (Inter-IC Sound).
+
+### 📌 2. KÊNH TRUYỀN DMA ZERO-OVERHEAD
+I2S kết hợp với phần cứng Direct Memory Access (DMA): Dữ liệu âm thanh từ chân vi điều khiển được bơm thẳng vào RAM mà không tốn một chu kỳ lệnh CPU nào.`,
+        code: `i2s_chan_handle_t rx_handle;
+i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+i2s_new_channel(&chan_cfg, NULL, &rx_handle);
+
+i2s_std_config_t std_cfg = {
+    .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000), // 16kHz audio
+    .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(16, I2S_SLOT_MODE_MONO),
+    .gpio_cfg = { .mclk = I2S_GPIO_UNUSED, .bclk = GPIO_NUM_4, .ws = GPIO_NUM_5, .din = GPIO_NUM_6 }
+};
+i2s_channel_init_std_mode(rx_handle, &std_cfg);
+i2s_channel_enable(rx_handle);
+
+// Đọc 512 mẫu âm thanh từ DMA buffer:
+int16_t audio_frame[512];
+size_t bytes_read = 0;
+i2s_channel_read(rx_handle, audio_frame, sizeof(audio_frame), &bytes_read, portMAX_DELAY);`
     },
     "t11": {
         title: "Tiền xử lý tín hiệu: Bộ lọc nhiễu số (Moving Average, Low-pass Filter)",
         stageName: "Bước 3: Cảm Biến & Thu Thập Dữ Liệu",
         skill: "Digital Signal Noise Filtering",
-        content: `Tín hiệu cảm biến trong môi trường công nghiệp luôn chứa nhiễu: nhiễu điện áp lưới 50Hz, rung động cơ khí hoặc nhiễu trắng nhiệt.
-        
-        Áp dụng bộ lọc số bậc 1 Exponential Moving Average (EMA) để làm mượt dữ liệu mà không tốn nhiều phép tính:
-        \`y[n] = alpha * x[n] + (1 - alpha) * y[n-1]\`
-        Với alpha nằm trong khoảng [0.05 - 0.2].`,
-        code: `float filter_ema(float raw, float prev, float alpha) {\n    return alpha * raw + (1.0f - alpha) * prev;\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: KHỬ NHIỄU TRƯỚC KHI ĐƯA VÀO MÔ HÌNH AI
+Tín hiệu cảm biến trong môi trường công nghiệp luôn chứa nhiễu: nhiễu điện áp lưới 50Hz, rung động cơ khí hoặc nhiễu trắng nhiệt.
+Bộ lọc trung bình động số mũ (Exponential Moving Average - EMA) là giải pháp tối ưu cho vi điều khiển vì chỉ cần 1 phép nhân và 1 phép cộng, không cần lưu mảng lịch sử:
+$$y[n] = \alpha \cdot x[n] + (1 - \alpha) \cdot y[n-1]$$
+- $\alpha \in [0.05, 0.2]$: Lọc mượt mạnh nhưng có độ trễ pha.
+- $\alpha \in [0.2, 0.5]$: Phản ứng nhanh, lọc nhiễu vừa phải.`,
+        code: `typedef struct {
+    float alpha;
+    float prev_output;
+} EMA_Filter_t;
+
+float ema_filter_apply(EMA_Filter_t *f, float raw_val) {
+    if (!f) return raw_val;
+    f->prev_output = f->alpha * raw_val + (1.0f - f->alpha) * f->prev_output;
+    return f->prev_output;
+}`
     },
     "t12": {
         title: "Trích xuất đặc trưng (Feature Extraction): Chuẩn hóa dữ liệu & Biến đổi FFT",
         stageName: "Bước 3: Cảm Biến & Thu Thập Dữ Liệu",
         skill: "Normalization & FFT Feature Extraction",
-        content: `Mạng nơ-ron không xử lý tốt các số nguyên lớn biến thiên mạnh. Dữ liệu âm thanh hoặc rung động thô bắt buộc phải qua khâu:
-        1. **Chuẩn hóa (Z-Score Normalization)**: \`(x - mean) / std\`.
-        2. **Cửa sổ Hanning (Windowing)**: Tránh rò rỉ phổ (Spectral Leakage) ở hai đầu khung tín hiệu.
-        3. **Biến đổi Fourier nhanh (FFT)**: Chuyển tín hiệu sóng sang phổ tần số (Spectrogram).
-        Thư viện ESP-DSP của Espressif hỗ trợ tăng tốc SIMD phần cứng giúp tính toán FFT 512 điểm chỉ trong 0.8 mili-giây.`,
-        code: `// Tăng tốc FFT bằng tập lệnh SIMD DSP:\ndsps_wind_hann_f32(windowed_signal, 512);\ndsps_fft2r_fc32(windowed_signal, 512);\ndsps_bit_rev2r_fc32(windowed_signal, 512);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: VÌ SAO PHẢI DÙNG FFT VÀ CỬA SỔ HANNING?
+Mạng nơ-ron nhận diện giọng nói hoặc chẩn đoán vòng bi động cơ cần nhận diện tần số cộng hưởng, không thể học trực tiếp trên sóng biên độ thời gian thô.
+1. **Cửa sổ Hanning (Windowing)**: Ép hai mép khung tín hiệu về 0 để triệt tiêu hiện tượng rò rỉ phổ (Spectral Leakage).
+2. **FFT (Fast Fourier Transform)**: Chuyển đổi 512 mẫu thời gian thành 256 dải tần số.
+3. **Thư viện ESP-DSP**: Tận dụng tập lệnh Vector SIMD trên ESP32-S3, tính FFT 512 điểm chỉ trong **0.72 mili-giây**!`,
+        code: `// Tăng tốc FFT bằng tập lệnh SIMD DSP phần cứng:
+#include "esp_dsp.h"
+#define N_SAMPLES 512
+
+dsps_wind_hann_f32(windowed_signal, N_SAMPLES);
+dsps_fft2r_fc32(complex_signal, N_SAMPLES);
+dsps_bit_rev2r_fc32(complex_signal, N_SAMPLES);
+// Tính độ lớn phổ năng lượng (Magnitude):
+for (int i = 0; i < N_SAMPLES / 2; i++) {
+    float re = complex_signal[i * 2 + 0];
+    float im = complex_signal[i * 2 + 1];
+    power_spectrum[i] = sqrtf(re * re + im * im);
+}`
     },
     "t13": {
         title: "Phân chia 2 nhân ESP32 với xTaskCreatePinnedToCore (Core 0: IO, Core 1: AI)",
         stageName: "Bước 4: Multiple Task (Đa Nhiệm FreeRTOS)",
         skill: "Dual-Core Asymmetric Task Pinning",
-        content: `ESP32-S3 sở hữu 2 lõi vi xử lý Xtensa LX7 32-bit:
-        - **Core 0 (PRO_CPU)**: Mặc định xử lý ngăn xếp mạng Wi-Fi, Bluetooth, bộ nhớ Flash và các ngắt ngoại vi.
-        - **Core 1 (APP_CPU)**: Nên dành riêng cho các tác vụ tốn CPU nặng như tính toán ma trận TinyML và biến đổi số DSP.
-        
-        Bằng cách ghim tác vụ AI vào Core 1, mô hình suy luận sẽ chạy với độ trễ dự đoán được 100% (Deterministic Latency) mà không bị ngắt quãng khi có gói tin Wi-Fi gửi đến.`,
-        code: `xTaskCreatePinnedToCore(ai_inference_task, "AI_Core1", 8192, NULL, 5, NULL, 1);\nxTaskCreatePinnedToCore(sensor_sampler_task, "IO_Core0", 4096, NULL, 4, NULL, 0);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CƠ CHẾ GHIM TÁC VỤ 2 NHÂN (ASYMMETRIC PINNING)
+ESP32-S3 sở hữu 2 nhân vi xử lý Xtensa LX7 32-bit:
+- **Core 0 (PRO_CPU)**: Quản lý ngăn xếp mạng Wi-Fi, Bluetooth, SPI Flash Cache và các ngắt ngoại vi.
+- **Core 1 (APP_CPU)**: Dành trọn vẹn cho tính toán mô hình TinyML và DSP.
+Nếu không ghim nhân, khi mô hình AI tính toán ngốn 100% CPU sẽ làm trễ gói tin Wi-Fi, khiến thiết bị bị ngắt kết nối router liên tục!
+
+### 📌 2. BẪY LỖI KINH ĐIỂN
+❌ Đặt kích thước Stack cho tác vụ AI quá nhỏ (ví dụ 2048 bytes). TFLite Micro và các hàm ma trận cần ít nhất 6KB - 8KB Stack. Hãy dùng \`8192\` bytes trở lên!`,
+        code: `// Ghim tác vụ IO/Wi-Fi vào Core 0:
+xTaskCreatePinnedToCore(io_network_task, "IO_C0", 4096, NULL, 3, NULL, 0);
+
+// Ghim tác vụ AI suy luận vào Core 1 (Ưu tiên cao hơn, stack 8KB):
+xTaskCreatePinnedToCore(ai_inference_task, "AI_C1", 8192, NULL, 5, NULL, 1);`
     },
     "t14": {
         title: "Truyền dữ liệu cảm biến sang tác vụ suy luận qua FreeRTOS Queue đệm an toàn",
         stageName: "Bước 4: Multiple Task (Đa Nhiệm FreeRTOS)",
         skill: "Thread-Safe FreeRTOS Data Queues",
-        content: `Khi truyền dữ liệu giữa 2 nhân chạy song song độc lập, việc dùng biến toàn cục chung (Global Variable) sẽ gây lỗi Race Condition (nhân này đọc trong khi nhân kia đang ghi dở).
-        
-        FreeRTOS Queue cung cấp cơ chế hàng đợi First-In First-Out (FIFO) hoàn toàn an toàn luồng (Thread-safe) với cơ chế khóa ngắt nội tại. Nếu Queue rỗng, tác vụ AI sẽ tự động đi vào trạng thái Blocked để tiết kiệm pin.`,
-        code: `QueueHandle_t sensorQueue = xQueueCreate(10, sizeof(SensorFrame_t));\n// Bên Core 0 gửi: xQueueSend(sensorQueue, &frame, 0);\n// Bên Core 1 nhận: xQueueReceive(sensorQueue, &frame_for_ai, portMAX_DELAY);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TRUYỀN DỮ LIỆU AN TOÀN LUỒNG GIỮA 2 NHÂN
+Khi Core 0 thu thập cảm biến và Core 1 suy luận, nếu dùng biến toàn cục chung sẽ gây lỗi tranh chấp bộ nhớ (**Race Condition**).
+FreeRTOS Queue cung cấp hàng đợi FIFO thread-safe được khóa ở cấp phần cứng.
+Đặc biệt: Khi Queue rỗng, Core 1 tự động rơi vào trạng thái **Blocked** (tiết kiệm điện năng), ngay khi Core 0 gửi dữ liệu vào Queue, Core 1 lập tức thức dậy!`,
+        code: `// Khởi tạo hàng đợi chứa tối đa 10 khung dữ liệu:
+QueueHandle_t sensorQueue = xQueueCreate(10, sizeof(SensorFrame_t));
+
+// Core 0 gửi: Chờ tối đa 10ms nếu Queue đầy, tránh làm nghẽn Core 0
+xQueueSend(sensorQueue, &new_frame, pdMS_TO_TICKS(10));
+
+// Core 1 nhận: Ngủ đông cho đến khi có dữ liệu đến (portMAX_DELAY)
+SensorFrame_t frame_for_ai;
+if (xQueueReceive(sensorQueue, &frame_for_ai, portMAX_DELAY) == pdTRUE) {
+    run_ai_model(&frame_for_ai);
+}`
     },
     "t15": {
         title: "Tránh xung đột tài nguyên chung (Race Condition) bằng Mutex & Semaphore",
         stageName: "Bước 4: Multiple Task (Đa Nhiệm FreeRTOS)",
         skill: "Mutex & Resource Locking",
-        content: `Khi nhiều tác vụ cùng truy cập vào một bus ngoại vi chung (ví dụ bus I2C chia sẻ giữa cảm biến IMU và cảm biến nhiệt độ), phải sử dụng Mutex (Mutual Exclusion) để khóa tài nguyên.
-        
-        Mutex trong FreeRTOS tích hợp cơ chế Priority Inheritance (Kế thừa quyền ưu tiên) giúp ngăn chặn hiện tượng Nghịch đảo quyền ưu tiên (Priority Inversion) gây treo hệ thống.`,
-        code: `SemaphoreHandle_t i2c_mutex = xSemaphoreCreateMutex();\nif (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE) {\n    read_i2c_sensor();\n    xSemaphoreGive(i2c_mutex);\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: VÌ SAO PHẢI DÙNG MUTEX THAY VÌ BINARY SEMAPHORE?
+Khi 2 tác vụ cùng chia sẻ một ngoại vi (như bus I2C):
+Nếu dùng Binary Semaphore thông thường, hệ thống dễ rơi vào lỗi **Nghịch đảo quyền ưu tiên (Priority Inversion)**: Tác vụ khẩn cấp AI bị phong tỏa bởi một tác vụ ưu tiên trung bình.
+- ✅ **Mutex trong FreeRTOS** tích hợp cơ chế **Kế thừa quyền ưu tiên (Priority Inheritance)**: Tự động nâng tạm thời quyền ưu tiên của tác vụ đang giữ khóa lên bằng với tác vụ khẩn cấp nhất đang chờ, giải phóng khóa nhanh nhất có thể.`,
+        code: `SemaphoreHandle_t i2c_mutex = xSemaphoreCreateMutex();
+
+void safe_i2c_read(void) {
+    if (xSemaphoreTake(i2c_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        // Đã khóa an toàn: Thực hiện giao tiếp I2C không sợ xung đột
+        i2c_master_read_sensor();
+        // Luôn trả lại khóa sau khi dùng xong!
+        xSemaphoreGive(i2c_mutex);
+    } else {
+        ESP_LOGE("I2C", "Không thể lấy khóa Mutex (Timeout 100ms)!");
+    }
+}`
     },
     "t16": {
         title: "Cơ chế giám sát Task Watchdog (TWDT) chống treo CPU khi mô hình suy luận",
         stageName: "Bước 4: Multiple Task (Đa Nhiệm FreeRTOS)",
         skill: "Task Watchdog Timer (TWDT)",
-        content: `Nếu mô hình AI tính toán quá lâu trong một vòng lặp kín mà không nhường quyền điều khiển (yield) cho bộ lập lịch FreeRTOS, vi điều khiển có thể bỏ lỡ các tác vụ mạng quan trọng hoặc bị treo CPU.
-        
-        Cấu hình Task Watchdog Timer (TWDT) với ngưỡng thời gian (ví dụ 3 giây). Tác vụ AI phải gọi \`esp_task_wdt_reset()\` định kỳ sau mỗi lần suy luận xong. Nếu bị treo quá 3 giây, TWDT sẽ tự động khởi động lại vi điều khiển.`,
-        code: `esp_task_wdt_add(NULL); // Đăng ký tác vụ hiện tại với Watchdog\nwhile(1) {\n    run_ai_model();\n    esp_task_wdt_reset(); // Báo cáo còn sống\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: PHÒNG THỦ SỰ CỐ CHO HỆ THỐNG VẬN HÀNH 24/7
+Nếu mô hình AI bị rơi vào vòng lặp vô hạn hoặc phân mảnh bộ nhớ làm treo CPU:
+Task Watchdog Timer (TWDT) là chiếc "phao cứu sinh" đếm ngược độc lập.
+Tác vụ AI phải gọi \`esp_task_wdt_reset()\` định kỳ sau mỗi lần suy luận. Nếu sau 3 giây không báo cáo, TWDT sẽ in ra thanh ghi PC bị lỗi và tự động reset vi điều khiển trong 10ms!`,
+        code: `// Đăng ký tác vụ hiện tại với TWDT:
+ESP_ERROR_CHECK(esp_task_wdt_add(NULL));
+
+while (1) {
+    // 1. Chờ dữ liệu và thực thi suy luận AI
+    run_tinyml_inference();
+
+    // 2. "Cho chó ăn" - Báo cáo với Watchdog rằng tác vụ vẫn sống khỏe
+    esp_task_wdt_reset();
+}`
     },
     "t17": {
         title: "Cấu hình kết nối Wi-Fi Station & Quản lý mất mạng tự động kết nối lại",
         stageName: "Bước 5: Network & Nâng Cấp OTA",
         skill: "Robust Wi-Fi Auto-Reconnection",
-        content: `Trong môi trường thực tế, sóng Wi-Fi có thể bị chập chờn hoặc router bị tắt. Hệ thống Edge AI không được phép đứng đợi vô tận (Hanging).
-        
-        Lập trình Event Handler lắng nghe sự kiện \`WIFI_EVENT_STA_DISCONNECTED\` và triển khai giải thuật Exponential Backoff (tăng dần thời gian chờ giữa các lần thử lại từ 1s, 2s, 4s... đến 30s) để tránh làm nghẽn bus mạng.`,
-        code: `static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {\n    if (event_id == WIFI_EVENT_STA_DISCONNECTED) {\n        esp_wifi_connect();\n        ESP_LOGW("WIFI", "Mất kết nối, đang tự động kết nối lại...");\n    }\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: SỰ CỐ MẠNG TRONG THỰC TẾ
+Trong nhà máy hoặc ngoài trời, sóng Wi-Fi luôn có khả năng bị chập chờn, mất mạng hoặc router bị khởi động lại.
+Hệ thống Edge AI chạy độc lập không được phép bị treo (hanging) khi mất mạng, mà phải tiếp tục ghi nhận dữ liệu cảm biến và tự động kết nối lại một cách thông minh.
+
+### 📌 2. CHIẾN LƯỢC EXPONENTIAL BACKOFF
+- Không thử kết nối lại liên tục theo chu kỳ mili-giây vì sẽ làm quá nhiệt vi điều khiển và cạn pin.
+- Tăng dần thời gian chờ giữa các lần thử: $1s \to 2s \to 4s \to 8s \to 16s \to 32s$ (tối đa 60s).`,
+        code: `static int s_retry_num = 0;
+static void wifi_event_handler(void* arg, esp_event_base_t event_base, 
+                               int32_t event_id, void* event_data) {
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        s_retry_num++;
+        uint32_t delay_sec = (1 << (s_retry_num > 5 ? 5 : s_retry_num)); // Exponential Backoff
+        ESP_LOGW("WIFI", "Mất kết nối Wi-Fi! Thử lại sau %lu giây (Lần %d)...", delay_sec, s_retry_num);
+        vTaskDelay(pdMS_TO_TICKS(delay_sec * 1000));
+        esp_wifi_connect();
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        s_retry_num = 0;
+        ESP_LOGI("WIFI", "✅ Đã nhận địa chỉ IP thành công!");
+    }
+}`
     },
     "t18": {
         title: "Truyền phát gói tin cảnh báo / kết quả suy luận qua giao thức MQTT siêu nhẹ",
         stageName: "Bước 5: Network & Nâng Cấp OTA",
         skill: "Lightweight MQTT IoT Telemetry",
-        content: `Khác với HTTP cồng kềnh với tiêu đề (Headers) hàng trăm bytes, giao thức MQTT (Message Queuing Telemetry Transport) có Header siêu nhỏ chỉ 2 bytes, hoạt động theo mô hình Publish/Subscribe.
-        
-        Mô hình Edge AI chỉ gửi gói tin cảnh báo khi phát hiện bất thường (Event-driven Telemetry) thay vì gửi stream dữ liệu thô liên tục, giúp tiết kiệm 95% băng thông mạng và năng lượng pin.`,
-        code: `char payload[128];\nsnprintf(payload, sizeof(payload), "{\\"anomaly\\": true, \\"score\\": 0.94, \\"ms\\": 42}");\nesp_mqtt_client_publish(client, "factory/machine1/alert", payload, 0, 1, 0);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI DÙNG MQTT THAY CHO HTTP?
+- HTTP có header cồng kềnh (200 - 800 bytes) cho mỗi yêu cầu REST API.
+- **MQTT (Message Queuing Telemetry Transport)**: Header chỉ **2 bytes**, hoạt động theo cơ chế Publish/Subscribe.
+- **Triết lý Event-Driven**: Thiết bị chỉ gửi bản tin cảnh báo khi mô hình AI phát hiện sự cố bất thường (hoặc gửi nhịp tim định kỳ), tiết kiệm hơn 95% băng thông mạng và năng lượng.`,
+        code: `// Cấu hình MQTT Client và gửi bản tin cảnh báo sự cố AI:
+esp_mqtt_client_config_t mqtt_cfg = {
+    .broker.address.uri = "mqtt://broker.emqx.io:1883",
+};
+esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+esp_mqtt_client_start(client);
+
+// Gửi bản tin JSON nhỏ gọn khi AI phát hiện sự cố:
+char alert_json[128];
+snprintf(alert_json, sizeof(alert_json), 
+         "{\"event\":\"fault_bearing\",\"conf\":0.96,\"latency_ms\":38}");
+esp_mqtt_client_publish(client, "factory/machine_1/alert", alert_json, 0, 1, 0);`
     },
     "t19": {
         title: "Thiết lập phân vùng Flash ESP32 (Partition Table: ota_0, ota_1, nvs)",
         stageName: "Bước 5: Network & Nâng Cấp OTA",
         skill: "Dual OTA Partition Table Design",
-        content: `Để nâng cấp firmware từ xa mà không sợ bị biến vi điều khiển thành "cục gạch" (Bricking), ESP32 sử dụng bảng phân vùng Flash (Partition Table) chia thành 2 ngăn đối xứng:
-        - \`nvs\`: Lưu cấu hình Wi-Fi và key API (Non-volatile storage).
-        - \`otadata\`: 8KB lưu trạng thái ngăn boot hiện tại.
-        - \`ota_0\` (App A): Dung lượng 1.5 - 2MB.
-        - \`ota_1\` (App B): Dung lượng 1.5 - 2MB.
-        Firmware đang chạy ở App A sẽ tải bản cập nhật mới ghi vào App B, sau đó hoán đổi quyền boot.`,
-        code: `# Bảng phân vùng partitions.csv:\n# Name,   Type, SubType, Offset,  Size\nnvs,      data, nvs,     0x9000,  0x4000\notadata,  data, ota,     0xd000,  0x2000\nota_0,    app,  ota_0,   0x10000, 0x1E0000\nota_1,    app,  ota_1,   0x1F0000,0x1E0000`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: KIẾN TRÚC FLASH DUAL-BANK CHỐNG BIẾN THÀNH CỤC GẠCH
+Để nâng cấp firmware hoặc cập nhật mô hình AI từ xa an toàn tuyệt đối:
+Bảng phân vùng Flash (Partition Table) chia thành 2 ngăn đối xứng \`ota_0\` và \`ota_1\`:
+- Vi điều khiển đang chạy ở \`ota_0\`.
+- Khi tải bản cập nhật, file được ghi vào \`ota_1\`.
+- Nếu tải bị đứt cáp hoặc mất điện giữa chừng: Ngăn \`ota_0\` hoàn toàn nguyên vẹn, thiết bị vẫn khởi động bình thường!`,
+        code: `# File partitions.csv chuẩn Dual-Bank OTA cho chip Flash 4MB:
+# Name,   Type, SubType, Offset,  Size,   Flags
+nvs,      data, nvs,     0x9000,  0x4000,
+otadata,  data, ota,     0xd000,  0x2000,
+phy_init, data, phy,     0xf000,  0x1000,
+ota_0,    app,  ota_0,   0x10000, 0x1E0000,
+ota_1,    app,  ota_1,   0x1F0000,0x1E0000,`
     },
     "t20": {
         title: "Nâng cấp Firmware & Cập nhật trọng số Model AI từ xa qua Wi-Fi OTA an toàn",
         stageName: "Bước 5: Network & Nâng Cấp OTA",
         skill: "Over-The-Air (OTA) Model Updating",
-        content: `Quy trình nâng cấp OTA an toàn:
-        1. Tải bản cập nhật firmware mới qua HTTPS.
-        2. Ghi từng chunk dữ liệu vào ngăn OTA còn lại và kiểm tra mã băm SHA-256.
-        3. Cập nhật bootloader để thử boot vào firmware mới.
-        4. Trong firmware mới, sau khi khởi động thành công và tự kiểm tra (Self-test) các cảm biến và AI, gọi \`esp_ota_mark_app_valid_cancel_rollback()\`. Nếu firmware mới bị lỗi crash, hệ thống sẽ tự động Rollback về firmware cũ.`,
-        code: `esp_https_ota_config_t ota_config = {\n    .http_config = &http_config,\n};\nesp_https_ota_handle_t ota_handle = NULL;\nesp_https_ota_begin(&ota_config, &ota_handle);\n// Sau khi boot thành công:\nesp_ota_mark_app_valid_cancel_rollback();`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CƠ CHẾ ROLLBACK TỰ ĐỘNG KHI FIRMWARE LỖI
+Điều gì xảy ra nếu firmware mới nạp thành công nhưng có bug gây sụp nguồn (crash loop) khi khởi động?
+Hệ điều hành ESP-IDF tự động đánh dấu firmware mới là \`ESP_OTA_IMG_PENDING_VERIFY\`.
+Nếu firmware mới khởi động tốt và vượt qua bước kiểm tra tự động (Self-test), mã nguồn phải gọi:
+\`esp_ota_mark_app_valid_cancel_rollback();\`
+Nếu bị crash trước khi gọi hàm này, Bootloader phần cứng sẽ tự động **Rollback quay về firmware cũ** ngay lập tức!`,
+        code: `esp_https_ota_config_t ota_config = {
+    .http_config = &http_client_cfg,
+};
+// Bắt đầu tải và nạp OTA:
+esp_err_t ret = esp_https_ota(&ota_config);
+if (ret == ESP_OK) {
+    ESP_LOGI("OTA", "Nạp firmware mới thành công! Khởi động lại...");
+    esp_restart();
+}
+
+// Trong app_main của bản mới: Xác nhận hệ thống khỏe mạnh để hủy Rollback
+void confirm_ota_success(void) {
+    if (run_system_self_test()) {
+        esp_ota_mark_app_valid_cancel_rollback();
+        ESP_LOGI("OTA", "✅ Xác nhận Firmware mới hoạt động ổn định!");
+    }
+}`
     },
     "t21": {
         title: "Lượng tử hóa mô hình Deep Learning (INT8 Post-Training Quantization)",
         stageName: "Bước 6: Mô Hình AI Trên Edge (TinyML)",
         skill: "INT8 Model Quantization",
-        content: `Mô hình Deep Learning sau khi huấn luyện trên máy tính có trọng số dạng số thực Float32 (4 bytes).
-        
-        Quy trình Post-Training Quantization (PTQ):
-        Chuyển đổi trọng số và activations sang số nguyên có dấu INT8 (-128 đến 127).
-        Công thức ánh xạ: \`Real = Scale * (Quantized - Zero_Point)\`.
-        Giúp giảm dung lượng mô hình đúng 75% và tăng tốc độ suy luận gấp 3-5 lần nhờ tận dụng bộ tăng tốc số học nguyên của ESP32-S3.`,
-        code: `converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)\nconverter.optimizations = [tf.lite.Optimize.DEFAULT]\nconverter.representative_dataset = representative_data_gen\nconverter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]\ntflite_quant_model = converter.convert()`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI DÙNG LƯỢNG TỬ HÓA INT8?
+Trọng số Float32 chiếm 4 bytes. INT8 chỉ chiếm 1 byte:
+- Kích thước mô hình giảm đúng **75%** (từ 200KB xuống còn 50KB).
+- Tận dụng bộ nhân nguyên (Integer Multiply-Accumulate) của ESP32-S3, tốc độ suy luận tăng gấp **3 - 5 lần**.
+- Công thức ánh xạ tuyến tính chuẩn:
+$$RealValue = Scale \times (QuantizedInt8 - ZeroPoint)$$
+
+### 📌 2. BẪY LỖI KINH ĐIỂN
+❌ Quên cung cấp \`representative_dataset\` khi chuyển đổi bằng TFLite Converter: Bộ chuyển đổi sẽ không đo được phân bố giá trị kích hoạt thực tế, gây sụt giảm độ chính xác nghiêm trọng.`,
+        code: `import tensorflow as tf
+
+def representative_data_gen():
+    for input_value in tf.data.Dataset.from_tensor_slices(train_images).batch(1).take(100):
+        yield [tf.cast(input_value, tf.float32)]
+
+converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_data_gen
+# Ép kiểu toàn bộ tensor đầu vào, đầu ra và trọng số về INT8
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+tflite_quant_model = converter.convert()`
     },
     "t22": {
         title: "Tích hợp thư viện TensorFlow Lite for Microcontrollers (TFLite Micro) / ESP-DL",
         stageName: "Bước 6: Mô Hình AI Trên Edge (TinyML)",
         skill: "TFLite Micro & ESP-DL Integration",
-        content: `TFLite Micro được Google thiết kế riêng cho các bộ vi điều khiển chỉ có vài trăm KB RAM:
-        - Hoàn toàn không dùng cấp phát động malloc/new trong suốt quá trình suy luận.
-        - Không phụ thuộc vào hệ điều hành (Bare-metal compatible).
-        - Hỗ trợ thư viện ESP-NN / ESP-DL của Espressif: Tận dụng các tập lệnh vi mã vector SIMD tối ưu riêng cho nhân Xtensa LX7 của ESP32-S3.`,
-        code: `// Sử dụng MicroMutableOpResolver để chỉ nạp các toán tử cần dùng:\ntflite::MicroMutableOpResolver<4> micro_op_resolver;\nmicro_op_resolver.AddConv2D();\nmicro_op_resolver.AddDepthwiseConv2D();\nmicro_op_resolver.AddFullyConnected();\nmicro_op_resolver.AddSoftmax();`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TIẾT KIỆM FLASH VỚI MICROMUTABLEOPRESOLVER
+Nếu dùng \`AllOpsResolver\`, toàn bộ hơn 100 toán tử AI sẽ bị nạp vào firmware, ngốn hơn 100KB Flash vô ích.
+- Sử dụng \`MicroMutableOpResolver<N>\` chỉ đăng ký chính xác các toán tử mà mô hình của bạn sử dụng (ví dụ Conv2D, FullyConnected, Softmax).
+- Trình liên kết (Linker) sẽ tự động lược bỏ toàn bộ mã nguồn thừa.`,
+        code: `// Khai báo chính xác 4 toán tử cần thiết cho mô hình KWS:
+static tflite::MicroMutableOpResolver<4> micro_op_resolver;
+micro_op_resolver.AddConv2D();
+micro_op_resolver.AddFullyConnected();
+micro_op_resolver.AddReshape();
+micro_op_resolver.AddSoftmax();`
     },
     "t23": {
         title: "Khởi tạo Tensor Arena, nạp model flatbuffer và gọi invoke() suy luận",
         stageName: "Bước 6: Mô Hình AI Trên Edge (TinyML)",
         skill: "Model Invocation & Tensor Management",
-        content: `Vòng đời hoàn chỉnh của một lần suy luận AI trên vi điều khiển:
-        1. Nạp con trỏ mảng FlatBuffer từ Flash: \`tflite::GetModel(g_model_data)\`.
-        2. Khởi tạo Interpreter với Tensor Arena được căn lề 16-byte.
-        3. Cấp phát tensors: \`interpreter.AllocateTensors()\`.
-        4. Sao chép dữ liệu cảm biến đã tiền xử lý vào \`interpreter.input(0)->data.int8\`.
-        5. Gọi \`interpreter.Invoke()\` để thực hiện suy luận.
-        6. Đọc kết quả từ \`interpreter.output(0)->data.int8\`.`,
-        code: `TfLiteTensor* input = interpreter.input(0);\nmemcpy(input->data.int8, preprocessed_features, input->bytes);\n\nTfLiteStatus status = interpreter.Invoke();\nif (status == kTfLiteOk) {\n    TfLiteTensor* output = interpreter.output(0);\n    int8_t top_prediction = output->data.int8[0];\n}`
+        content: `### 📌 1. VÒNG ĐỜI SUY LUẬN HOÀN CHỈNH TRÊN ESP32
+1. Nạp con trỏ mảng FlatBuffer từ Flash: \`tflite::GetModel(g_model_data)\`.
+2. Khởi tạo Interpreter với Tensor Arena được căn lề 16-byte (\`alignas(16)\`).
+3. Cấp phát tensors: \`interpreter.AllocateTensors()\`.
+4. Lượng tử hóa đầu vào: Ép số thực cảm biến về \`int8\` bằng công thức \`real / scale + zero_point\`.
+5. Gọi \`interpreter.Invoke()\` để thực hiện suy luận.
+6. Đọc kết quả xác suất đầu ra và tìm nhãn lớn nhất (ArgMax).`,
+        code: `alignas(16) static uint8_t tensor_arena[40 * 1024]; // 40KB căn lề 16-byte
+
+const tflite::Model* model = tflite::GetModel(g_model_data);
+static tflite::MicroInterpreter static_interpreter(
+    model, micro_op_resolver, tensor_arena, sizeof(tensor_arena));
+
+TfLiteStatus alloc_status = static_interpreter.AllocateTensors();
+if (alloc_status == kTfLiteOk) {
+    // Nạp dữ liệu vào Tensor đầu vào:
+    TfLiteTensor* input = static_interpreter.input(0);
+    input->data.int8[0] = quant_val;
+
+    // Chạy suy luận:
+    static_interpreter.Invoke();
+
+    // Đọc kết quả:
+    TfLiteTensor* output = static_interpreter.output(0);
+    int8_t best_score = output->data.int8[0];
+}`
     },
     "t24": {
         title: "Dự án hoàn chỉnh: Nhận diện từ khóa giọng nói (KWS) hoặc phân loại rung động",
         stageName: "Bước 6: Mô Hình AI Trên Edge (TinyML)",
         skill: "Complete Edge AI Production Project",
-        content: `Một dự án Edge AI chuẩn sản phẩm kết hợp toàn bộ 6 bước lộ trình:
-        - Bước 1: Tensor Arena 64KB trong SRAM nội căn lề 16-byte.
-        - Bước 2: GPTimer nhịp chu kỳ lấy mẫu 16kHz chuẩn xác.
-        - Bước 3: I2S DMA thu âm và trích xuất 40 dải lọc Mel Spectrogram qua ESP-DSP.
-        - Bước 4: Core 0 gửi thông báo qua MQTT, Core 1 chạy suy luận TFLite Micro.
-        - Bước 5: Hỗ trợ OTA nâng cấp model mới từ xa.
-        - Bước 6: Model lượng tử hóa INT8 kích thước < 50KB, độ trễ < 30ms, độ chính xác > 92%.`,
-        code: `// Vòng lặp chính sản phẩm Edge AI:\nwhile(1) {\n    wait_for_audio_frame();\n    compute_mel_spectrogram();\n    interpreter.Invoke();\n    if (detect_keyword(threshold)) {\n        gpio_set_level(LED_ALERT, 1);\n        mqtt_publish_detection();\n    }\n}`
-    }
-,
-"t25": {
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: ĐÓNG GÓI SẢN PHẨM EDGE AI CHUẨN CÔNG NGHIỆP
+Một sản phẩm Edge AI hoàn chỉnh liên kết toàn bộ các mắt xích:
+- **Bước 1**: SRAM Tensor Arena căn lề 16-byte.
+- **Bước 2**: GPTimer lấy mẫu định thời chuẩn xác 16kHz.
+- **Bước 3**: I2S DMA thu âm và ESP-DSP trích xuất phổ FFT.
+- **Bước 4**: Dual-Core FreeRTOS (Core 0 mạng, Core 1 TinyML).
+- **Bước 5**: Báo cáo sự cố qua MQTT và hỗ trợ OTA từ xa.
+- **Bước 6**: Mô hình INT8 chạy trong < 35ms với độ chính xác > 92%.`,
+        code: `void app_main(void) {
+    init_tensor_arena();
+    init_dsp_fft_engine();
+    init_i2s_microphone_dma();
+    init_wifi_and_mqtt();
+
+    ESP_LOGI("APP", "🚀 Hệ thống Edge AI đã sẵn sàng hoạt động!");
+    // Vòng lặp chính thu nhận âm thanh, tính FFT và suy luận thời gian thực
+}`
+    },
+    "t25": {
         title: "Cấu hình chế độ Deep Sleep dòng rò micro-ampe (uA) duy trì nguồn pin nhiều tháng",
         stageName: "Bước 7: Tối Ưu Nguồn Cực Hạn (ULP & Deep Sleep)",
         skill: "Micro-Ampere Deep Sleep Optimization",
-        content: `Khi thiết bị Edge AI triển khai ngoài thực địa (ví dụ: cảm biến giám sát sạt lở hoặc cháy rừng), nguồn pin là tài nguyên quý giá nhất. Ở chế độ hoạt động bình thường với Wi-Fi bật, ESP32 tiêu thụ từ 100mA đến 240mA, làm cạn kiệt viên pin 18650 chỉ sau 1 ngày.
-        
-        Kỹ thuật Deep Sleep tắt nguồn toàn bộ 2 nhân CPU chính, bộ nhớ Flash ngoài và modem vô tuyến, đưa mức tiêu thụ giảm xuống < 10 uA. Thiết bị có thể hoạt động liên tục từ 1 đến 3 năm với cùng 1 viên pin.`,
-        code: `// Cấu hình ngủ sâu và tắt nguồn các rail ngoại vi:\\nesp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);\\nesp_sleep_enable_timer_wakeup(10 * 60 * 1000000ULL); // 10 phút\\nesp_deep_sleep_start();`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI DÙNG DEEP SLEEP?
+- Chế độ hoạt động bình thường (bật Wi-Fi): ESP32-S3 tiêu thụ 100mA - 240mA. Pin 18650 sẽ hết sạch sau 1 ngày!
+- **Chế độ Deep Sleep**: Tắt 2 nhân CPU chính, tắt Flash ngoài, tắt modem Wi-Fi/BT. Dòng điện tiêu thụ giảm xuống mức cực hạn: **chỉ từ 5uA đến 10uA**!
+- Pin 2500mAh có thể duy trì hoạt động từ 1 đến 3 năm nếu thiết bị chỉ thức dậy đo đạc rồi ngủ lại.`,
+        code: `// Cấu hình ngủ sâu 60 giây và tắt nguồn ngoại vi:
+esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+esp_sleep_enable_timer_wakeup(60ULL * 1000000ULL); // 60 giây
+ESP_LOGI("PWR", "Bắt đầu Deep Sleep...");
+esp_deep_sleep_start();`
     },
     "t26": {
         title: "Lập trình vi xử lý siêu tiết kiệm ULP Co-processor đọc cảm biến khi CPU chính ngủ",
         stageName: "Bước 7: Tối Ưu Nguồn Cực Hạn (ULP & Deep Sleep)",
         skill: "ULP FSM / RISC-V Co-processor Programming",
-        content: `Để không bỏ sót sự cố trong lúc CPU chính đang ngủ, ESP32 tích hợp vi xử lý phụ ULP (Ultra Low Power) chạy kiến trúc RISC-V 32-bit.
-        
-        ULP hoạt động độc lập ngay trong RTC Slow Memory với mức tiêu thụ chỉ ~150 uA, liên tục đọc giá trị ADC hoặc cảm biến I2C. Chỉ khi giá trị vượt ngưỡng nguy hiểm (Threshold Exceeded), ULP mới gửi tín hiệu ngắt đánh thức CPU chính dậy xử lý và gửi báo động.`,
-        code: `// Trong firmware ULP RISC-V (chạy khi CPU chính ngủ):\\nvoid ulp_riscv_main(void) {\\n    uint32_t val = ulp_riscv_adc_readChannel(ADC_CHANNEL_0);\\n    if (val > THRESHOLD_LIMIT) {\\n        ulp_riscv_wakeup_main_processor();\\n    }\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: BỘ ĐỒNG XỬ LÝ ULP RISC-V
+Làm thế nào để phát hiện động đất, cháy rừng hoặc rò rỉ khí gas mà không cần bật CPU chính thức 24/7?
+Bộ đồng xử lý **ULP (Ultra Low Power)** RISC-V 32-bit:
+- Nằm trong vùng nhớ RTC Slow Memory, dòng tiêu thụ chỉ **~150 uA**.
+- Tự động thức dậy đọc cảm biến ADC hoặc I2C định kỳ.
+- **Chỉ khi giá trị vượt ngưỡng nguy hiểm**, ULP mới gửi ngắt đánh thức 2 nhân CPU chính dậy để xử lý và phát cảnh báo.`,
+        code: `// Trong mã nguồn ULP RISC-V:
+void ulp_riscv_main(void) {
+    uint32_t sensor_val = ulp_riscv_adc_readChannel(ADC_CHANNEL_0);
+    if (sensor_val > THRESHOLD_DANGER) {
+        // Đánh thức CPU chính dậy xử lý khẩn cấp!
+        ulp_riscv_wakeup_main_processor();
+    }
+}`
     },
     "t27": {
         title: "Cơ chế đánh thức thông minh: EXT0/EXT1 ngắt GPIO & Timer RTC Wakeup",
         stageName: "Bước 7: Tối Ưu Nguồn Cực Hạn (ULP & Deep Sleep)",
         skill: "Event-Driven RTC Wakeup Triggers",
-        content: `ESP32 cung cấp các nguồn đánh thức đánh thức CPU từ Deep Sleep:
-        - **EXT0 (RTC IO)**: Giám sát 1 chân GPIO RTC duy nhất, đánh thức khi chân chuyển mức logic (High hoặc Low).
-        - **EXT1 (Pin Mask)**: Giám sát tổ hợp nhiều chân GPIO RTC bằng mặt nạ bit (Bitmask). Hỗ trợ logic ANY_HIGH (bất kỳ chân nào kích hoạt) hoặc ALL_LOW.
-        - **RTC Timer**: Đánh thức định kỳ theo thời gian chính xác từng micro-giây.
-        Sau khi thức dậy, gọi hàm \`esp_sleep_get_wakeup_cause()\` để biết lý do đánh thức.`,
-        code: `esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0); // Đánh thức khi bấm nút (mức 0)\\n// Kiểm tra lý do khi khởi động:\\nif (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {\\n    ESP_LOGI("WAKEUP", "Được đánh thức bởi nút nhấn khẩn cấp!");\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CÁC NGUỒN ĐÁNH THỨC DEEP SLEEP
+- **EXT0**: Giám sát 1 chân RTC GPIO duy nhất (ví dụ nút bấm báo động chuyển về 0V).
+- **EXT1**: Giám sát nhiều chân RTC GPIO thông qua mặt nạ bit (Bitmask), hỗ trợ logic ANY_HIGH hoặc ALL_LOW.
+- **Timer RTC**: Đánh thức định kỳ theo thời gian.
+Sau khi thức dậy, gọi hàm \`esp_sleep_get_wakeup_cause()\` để kiểm tra nguyên nhân khởi động.`,
+        code: `// Kích hoạt đánh thức từ nút nhấn GPIO0:
+esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
+
+// Kiểm tra nguyên nhân sau khi thức dậy:
+if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+    ESP_LOGW("WAKE", "Được đánh thức bởi nút bấm khẩn cấp!");
+}`
     },
     "t28": {
         title: "Tính toán ngân sách năng lượng (Power Budgeting) & Ước tính dung lượng Pin Lithium",
         stageName: "Bước 7: Tối Ưu Nguồn Cực Hạn (ULP & Deep Sleep)",
         skill: "Battery Life Mathematical Modeling",
-        content: `Mô hình toán học ước tính thời lượng pin kỹ sư cần trình bày trong đồ án tốt nghiệp:
-        Dòng trung bình: \`I_avg = (I_active * T_active + I_sleep * T_sleep) / (T_active + T_sleep)\`.
-        
-        Ví dụ: 
-        - CPU thức 0.5s thu thập và suy luận AI (120mA).
-        - Ngủ sâu 59.5s (0.01mA).
-        - \`I_avg = (120 * 0.5 + 0.01 * 59.5) / 60 = 1.01 mA\`.
-        Với pin dung lượng 2500mAh, thời gian hoạt động thực tế = \`2500 / 1.01 ≈ 2475 giờ (~103 ngày)\`.`,
-        code: `float calc_battery_days(float cap_mah, float i_active, float t_act_sec, float i_sleep, float t_sleep_sec) {\\n    float i_avg = (i_active * t_act_sec + i_sleep * t_sleep_sec) / (t_act_sec + t_sleep_sec);\\n    return (cap_mah / i_avg) / 24.0f; // Số ngày\\n}`
+        content: `### 📌 1. CÔNG THỨC TOÁN HỌC DÀNH CHO BÁO CÁO ĐỒ ÁN
+Dòng điện tiêu thụ trung bình ($I_{avg}$):
+$$I_{avg} = \frac{I_{active} \times T_{active} + I_{sleep} \times T_{sleep}}{T_{active} + T_{sleep}}$$
+Ví dụ thực tế:
+- Thức 0.5s chạy AI ($I_{active} = 120$ mA).
+- Ngủ 59.5s ($I_{sleep} = 0.01$ mA).
+- $I_{avg} = (120 \times 0.5 + 0.01 \times 59.5) / 60 \approx 1.01$ mA.
+Với viên pin 2500mAh, tuổi thọ pin thực tế = $2500 / 1.01 \approx 2475$ giờ (~103 ngày)!`,
+        code: `float calculate_battery_days(float battery_mah, float i_act_ma, float t_act_s, 
+                             float i_slp_ma, float t_slp_s) {
+    float i_avg = (i_act_ma * t_act_s + i_slp_ma * t_slp_s) / (t_act_s + t_slp_s);
+    return (battery_mah / i_avg) / 24.0f; // Số ngày sử dụng
+}`
     },
     "t29": {
         title: "Đo đạc chỉ số suy luận: Latency (ms), Throughput (FPS), Footprint RAM/Flash",
         stageName: "Bước 8: Đồ Án Điểm A+ & Benchmarking Khoa Học",
         skill: "Edge AI Hardware Benchmarking",
-        content: `Một đồ án tốt nghiệp điểm A+ bắt buộc phải có bảng Benchmarking định lượng chi tiết:
-        1. **Inference Latency (Độ trễ suy luận)**: Thời gian gọi hàm \`Invoke()\` tính bằng mili-giây (ms).
-        2. **Throughput (Tốc độ khung hình)**: Số lần suy luận trên giây (FPS hoặc Inferences/sec).
-        3. **Flash Footprint**: Dung lượng file nhị phân firmware và trọng số model (.tflite flatbuffer).
-        4. **Peak SRAM Consumption**: Lượng RAM lớn nhất mà Tensor Arena và Stack chiếm dụng.`,
-        code: `int64_t t0 = esp_timer_get_time();\\ninterpreter.Invoke();\\nint64_t t1 = esp_timer_get_time();\\nfloat latency_ms = (t1 - t0) / 1000.0f;\\nfloat fps = 1000.0f / latency_ms;\\nESP_LOGI("METRICS", "Latency: %.2f ms | Throughput: %.1f FPS", latency_ms, fps);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: ĐỊNH LƯỢNG KHOA HỌC THAY CHO CẢM TÍNH
+Hội đồng chấm đồ án tốt nghiệp luôn đòi hỏi số liệu kỹ thuật khách quan:
+1. **Inference Latency (Độ trễ suy luận)**: Thời gian hàm \`Invoke()\` tính toán ma trận (đo bằng µs).
+2. **Throughput (FPS)**: Số khung hình nhận diện được trong 1 giây ($FPS = 1000 / Latency_{ms}$).
+3. **RAM Footprint (High Watermark)**: Lượng SRAM đỉnh điểm mà hệ thống chiếm dụng.
+4. **Flash Footprint**: Kích thước nhị phân file firmware và model flatbuffer.`,
+        code: `int64_t t_start = esp_timer_get_time();
+TfLiteStatus status = interpreter.Invoke();
+int64_t t_latency_us = esp_timer_get_time() - t_start;
+
+float latency_ms = t_latency_us / 1000.0f;
+float fps = 1000.0f / latency_ms;
+ESP_LOGI("BENCHMARK", "Độ trễ AI: %.2f ms | Tốc độ: %.1f FPS", latency_ms, fps);`
     },
     "t30": {
         title: "Phân tích ma trận nhầm lẫn (Confusion Matrix), Accuracy, Precision & Recall",
         stageName: "Bước 8: Đồ Án Điểm A+ & Benchmarking Khoa Học",
         skill: "Scientific AI Model Validation",
-        content: `Khi bảo vệ trước hội đồng, chỉ báo cáo "Độ chính xác 95%" là chưa đủ và dễ bị phản biện. Kỹ sư phải chứng minh mô hình không bị thiên lệch (Class Imbalance) bằng các chỉ số:
-        - **Accuracy**: (TP + TN) / (TP + TN + FP + FN).
-        - **Precision (Độ chuẩn xác)**: Trong số những ca báo động, có bao nhiêu ca đúng thật.
-        - **Recall (Độ nhạy)**: Trong tất cả các sự cố xảy ra, mô hình bắt được bao nhiêu ca.
-        - **Confusion Matrix**: Ma trận đối chiếu nhãn thực tế và nhãn dự đoán.`,
-        code: `// Bảng Confusion Matrix mẫu trong báo cáo:\\n//          Pred_Normal  Pred_Fault\\n// Actual_Normal    980          20    (Precision: 97.5%)\\n// Actual_Fault       8         192    (Recall: 96.0%)`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: VÌ SAO CHỈ BÁO CÁO ACCURACY LÀ CHƯA ĐỦ?
+Trong bài toán nhận diện sự cố động cơ, 99% thời gian máy chạy bình thường, chỉ 1% là xảy ra cháy nổ.
+Nếu mô hình luôn đoán là "Bình thường", độ chính xác (Accuracy) vẫn đạt tới 99%, nhưng thiết bị bỏ sót 100% sự cố nguy hiểm!
+- **Precision (Độ chuẩn xác)**: $\frac{TP}{TP + FP}$ (Trong số những lần báo cháy, có bao nhiêu lần cháy thật).
+- **Recall (Độ nhạy)**: $\frac{TP}{TP + FN}$ (Trong tất cả các vụ cháy xảy ra, máy bắt được bao nhiêu vụ).
+- **Confusion Matrix**: Ma trận đối chiếu nhãn thực tế và nhãn dự đoán của toàn bộ tập dữ liệu kiểm thử.`,
+        code: `// Bảng đối chiếu Confusion Matrix mẫu trong báo cáo đồ án:
+//                   Dự đoán Bình Thường    Dự đoán Sự Cố
+// Thực tế Bình Thường:       980                  20   (Precision: 97.5%)
+// Thực tế Có Sự Cố:           8                  192   (Recall: 96.0%)
+// F1-Score đạt: 93.2%`
     },
     "t31": {
         title: "Kiểm thử độ ổn định 24/7 (Stress Test, Memory Leak Heap Tracing)",
         stageName: "Bước 8: Đồ Án Điểm A+ & Benchmarking Khoa Học",
         skill: "24/7 Stability & Heap Tracing",
-        content: `Thiết bị nhúng công nghiệp phải vượt qua bài kiểm tra Stress Test liên tục 24-72 giờ mà không bị treo hay tự khởi động lại (Reboot).
-        
-        Sử dụng công cụ Heap Memory Tracing của ESP-IDF (\`esp_heap_trace_start\`) để ghi lại toàn bộ các lần gọi malloc/free, đảm bảo Delta RAM sau mỗi chu kỳ suy luận luôn bằng đúng 0 (Không bị rò rỉ dù chỉ 1 byte).`,
-        code: `heap_trace_record_t records[100];\\nheap_trace_init_standalone(records, 100);\\nheap_trace_start(HEAP_TRACE_LEAKS);\\n// Chạy 100 chu kỳ suy luận...\\nrun_100_inferences();\\nheap_trace_stop();\\nheap_trace_dump(); // Phải không in ra bản ghi leak nào`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CHỨNG MINH THIẾT BỊ KHÔNG RÒ RỈ RAM
+Thiết bị nhúng công nghiệp phải vượt qua bài kiểm tra Stress Test liên tục 24-72 giờ mà không bị treo hay tự khởi động lại.
+Sử dụng công cụ **Heap Memory Tracing** của ESP-IDF để ghi lại toàn bộ các lần gọi \`malloc/free\`, đảm bảo lượng RAM tự do trước và sau 1,000 chu kỳ suy luận luôn bằng đúng nhau ($\Delta RAM = 0$).`,
+        code: `heap_trace_record_t records[100];
+heap_trace_init_standalone(records, 100);
+heap_trace_start(HEAP_TRACE_LEAKS);
+
+// Chạy 1000 chu kỳ suy luận liên tục:
+for (int i = 0; i < 1000; i++) {
+    run_ai_cycle();
+}
+
+heap_trace_stop();
+heap_trace_dump(); // Nếu không có rò rỉ, hàm sẽ không in ra bản ghi leak nào!`
     },
     "t32": {
         title: "Chuẩn bị Báo cáo Đồ án tốt nghiệp chuẩn IEEE & Slide bảo vệ tự tin",
         stageName: "Bước 8: Đồ Án Điểm A+ & Benchmarking Khoa Học",
         skill: "Technical Thesis Defense & Documentation",
-        content: `Cấu trúc slide bảo vệ đồ án tốt nghiệp chuẩn quốc tế:
-        1. **Đặt vấn đề & Thực trạng**: Vì sao cần Edge AI (Bảo mật, giảm độ trễ, không phụ thuộc đường truyền).
-        2. **Sơ đồ khối hệ thống (System Architecture)**: Phân tách rõ ràng Phần Cứng, Firmware và Model AI.
-        3. **Các thách thức kỹ thuật đã vượt qua**: Tối ưu bộ nhớ SRAM, căn lề 16-byte, Deep Sleep và ngắt thời gian thực.
-        4. **Kết quả định lượng & Video Demo thực tế**: Bảng đo đạc FPS, đồ thị tiêu thụ dòng điện, so sánh với các nghiên cứu trước đó.`,
-        code: `// Cấu trúc sơ đồ khối đồ án:\\n[Cảm biến IMU/Mic] ➔ (DMA/I2C) ➔ [ESP32-S3 Core 0 (Tiền xử lý FFT)]\\n                                         ↓ (FreeRTOS Queue)\\n[MQTT Cloud / Dashboard] ⇦ (Wi-Fi) ⇦ [ESP32-S3 Core 1 (TFLite Micro INT8)]`
+        content: `### 📌 1. CẤU TRÚC BẢO VỆ ĐỒ ÁN ĐẠT ĐIỂM TỐI ĐA
+1. **Tính cấp thiết**: Vì sao phải xử lý AI ngay tại biên (Edge) thay vì gửi toàn bộ lên Cloud? (Bảo mật dữ liệu, độ trễ thời gian thực < 50ms, không phụ thuộc đường truyền internet).
+2. **Sơ đồ khối kiến trúc phần cứng & phần mềm**: Phân tách rõ ràng luồng I2S/DMA, FreeRTOS Queue và TFLite Micro.
+3. **Bảng Benchmarking định lượng**: Tốc độ suy luận, dòng tiêu thụ Deep Sleep, tuổi thọ pin.
+4. **Video demo thực tế**: Minh họa thiết bị phát hiện sự cố trực quan ngoài đời thực.`,
+        code: `// Kiến trúc đồ án chuẩn IEEE:
+// [Cảm biến INMP441] ➔ I2S DMA ➔ [ESP32-S3 Core 0: DSP FFT] 
+//                                      ↓ (FreeRTOS Queue)
+// [MQTT Cloud / OLED] ⇦ Wi-Fi  ⇦ [ESP32-S3 Core 1: TFLite Micro INT8]`
     },
     "t33": {
         title: "Từ khóa volatile: Khi nào bắt buộc dùng (Thanh ghi phần cứng, biến dùng trong ISR)",
         stageName: "Bước 9: Bẫy C Kinh Điển Khi Phỏng Vấn Nhúng",
         skill: "Volatile Keyword Hardware Mechanics",
-        content: `Câu hỏi phỏng vấn quốc dân: "Từ khóa \`volatile\` trong C có tác dụng gì và khi nào BẮT BUỘC phải dùng?"
-        
-        Ý nghĩa: Báo cho trình biên dịch rằng giá trị của biến này có thể bị thay đổi bất ngờ bởi phần cứng bên ngoài mà không thông qua sự kiểm soát của luồng code hiện tại. Trình biên dịch sẽ KHÔNG ĐƯỢC phép tối ưu hóa biến này vào thanh ghi CPU cache mà mỗi lần đọc/ghi đều phải truy cập trực tiếp vào ô nhớ RAM.
-        3 trường hợp bắt buộc:
-        1. Thanh ghi I/O phần cứng (Memory-mapped peripheral registers).
-        2. Biến toàn cục được sửa đổi bên trong hàm ngắt ISR.
-        3. Biến cờ cờ chia sẻ giữa nhiều tác vụ trong hệ điều hành đa nhiệm (RTOS).`,
-        code: `volatile bool data_ready_flag = false;\\n\\nvoid IRAM_ATTR gpio_isr_handler(void* arg) {\\n    data_ready_flag = true; // Sửa trong ISR\\n}\\n\\nvoid main_task(void) {\\n    while(!data_ready_flag); // Nếu thiếu volatile, compiler sẽ tối ưu thành while(1) vô hạn!\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: Ý NGHĨA CỦA VOLATILE
+Từ khóa \`volatile\` báo cho trình biên dịch rằng: **Giá trị của biến này có thể bị thay đổi bất ngờ bởi phần cứng bên ngoài hoặc một luồng ngắt khác**.
+Trình biên dịch tối ưu hóa sẽ KHÔNG ĐƯỢC phép nạp biến này vào thanh ghi CPU cache, mà mỗi lần đọc/ghi đều phải truy cập trực tiếp vào ô nhớ RAM thật!
+
+### 📌 2. 3 TRƯỜNG HỢP BẮT BUỘC DÙNG
+1. Biến con trỏ trỏ tới thanh ghi phần cứng (Memory-Mapped I/O).
+2. Biến toàn cục được sửa đổi bên trong hàm ngắt ISR.
+3. Cờ chia sẻ giữa nhiều tác vụ trong FreeRTOS.`,
+        code: `// Khai báo biến cờ sửa trong ISR:
+volatile bool g_data_ready = false;
+
+void IRAM_ATTR timer_isr_handler(void* arg) {
+    g_data_ready = true; // Sửa trong ngắt
+}
+
+void main_task(void) {
+    // Nếu thiếu volatile, compiler với cờ -O2 sẽ tối ưu thành while(true) vô hạn!
+    while (!g_data_ready);
+    process_data();
+}`
     },
     "t34": {
         title: "Căn lề bộ nhớ Struct Padding & Memory Packing (#pragma pack, sizeof trap)",
         stageName: "Bước 9: Bẫy C Kinh Điển Khi Phỏng Vấn Nhúng",
         skill: "Structure Padding & Alignment Hazards",
-        content: `Bẫy phỏng vấn: "Cho struct sau, hàm \`sizeof()\` trả về bao nhiêu?"
-        \`struct Test { char a; int b; char c; };\`
-        Đáp án: 12 bytes chứ KHÔNG PHẢI 6 bytes! Vì CPU 32-bit căn lề tự nhiên theo bội số 4 bytes, compiler tự động chèn 3 bytes đệm (padding) sau biến a, và 3 bytes đệm sau biến c.
-        
-        Cách khắc phục: Sắp xếp lại thứ tự biến từ lớn đến nhỏ (int b; char a; char c;) để giảm xuống 8 bytes, hoặc dùng \`__attribute__((packed))\` khi đóng gói gói tin mạng.`,
-        code: `// Tối ưu thủ công (không tốn chu kỳ phạt căn lề của CPU):\\ntypedef struct {\\n    uint32_t b; // 4 bytes\\n    uint8_t a;  // 1 byte\\n    uint8_t c;  // 1 byte\\n    // Chỉ còn 2 bytes padding cuối -> Tổng: 8 bytes (Tiết kiệm 33% RAM)\\n} OptimizedStruct;`
+        content: `### 📌 1. BẢY PHỎNG VẤN QUỐC DÂN: SIZEOF(STRUCT)
+Cho struct: \`struct Test { char a; int b; char c; };\`
+Hàm \`sizeof()\` trả về bao nhiêu?
+👉 **Đáp án: 12 bytes chứ KHÔNG PHẢI 6 bytes!**
+Vì CPU 32-bit căn lề theo từng khối 4-byte:
+- Biến \`char a\` chiếm 1 byte + **3 bytes padding (byte rác)** để \`int b\` nằm ở địa chỉ chia hết cho 4.
+- Biến \`char c\` chiếm 1 byte + **3 bytes padding** cuối struct.
+- ✅ Khắc phục: Sắp xếp lại từ lớn đến nhỏ (\`int b; char a; char c;\`) để giảm về 8 bytes, hoặc dùng \`__attribute__((packed))\` khi truyền gói tin mạng.`,
+        code: `// Struct tối ưu sắp xếp lại thứ tự:
+typedef struct {
+    uint32_t b; // 4 bytes (offset 0)
+    uint8_t a;  // 1 byte  (offset 4)
+    uint8_t c;  // 1 byte  (offset 5)
+    // 2 bytes padding cuối -> Tổng đúng 8 bytes (Tiết kiệm 33% RAM)!
+} CompactStruct_t;`
     },
     "t35": {
         title: "Con trỏ nâng cao: Pointer to Pointer (**ptr), Function Pointer làm Callback",
         stageName: "Bước 9: Bẫy C Kinh Điển Khi Phỏng Vấn Nhúng",
         skill: "Advanced Pointers & Callback Architecture",
-        content: `Khi nào cần dùng con trỏ cấp 2 (\`void**\` hoặc \`int**\`)?
-        Khi muốn một hàm thay đổi địa chỉ mà con trỏ ở hàm gọi đang trỏ tới (ví dụ: hàm cấp phát bộ nhớ động \`esp_err_t allocate_buffer(uint8_t **buf, size_t size)\`).
-        
-        Con trỏ hàm (Function Pointer): Là con trỏ lưu địa chỉ của một đoạn mã thực thi, là nền tảng để viết Driver theo mô hình Callback bất đồng bộ và bảng phương thức ảo (Virtual Table) trong C.`,
-        code: `// Khai báo con trỏ hàm nhận uint8_t và trả về void:\\ntypedef void (*rx_callback_t)(uint8_t data);\\n\\nvoid uart_register_callback(rx_callback_t cb) {\\n    g_rx_cb = cb;\\n}\\n\\n// Khi có ngắt nhận dữ liệu:\\nvoid uart_isr() {\\n    if (g_rx_cb) g_rx_cb(U1RXREG);\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: CON TRỎ CẤP 2 (POINTER TO POINTER)
+Khi bạn muốn một hàm thay đổi địa chỉ mà con trỏ ở hàm gọi đang trỏ tới (ví dụ hàm cấp phát bộ nhớ động):
+\`\`\`c
+void allocate_buffer(uint8_t **buf, size_t size);
+\`\`\`
+### 📌 2. CON TRỎ HÀM (FUNCTION POINTER) LÀM BẢNG STATE MACHINE
+Là con trỏ lưu địa chỉ của hàm thực thi. Được dùng làm hàm Callback khi ngắt xảy ra hoặc làm bảng chuyển trạng thái (State Machine Table) thay thế chuỗi \`switch-case\` 50 nhánh cồng kềnh.`,
+        code: `typedef void (*SensorCallback_t)(float sensor_val);
+
+void register_sensor_callback(SensorCallback_t cb) {
+    g_callback = cb;
+}
+
+// Khi có dữ liệu mới, gọi con trỏ hàm:
+if (g_callback) {
+    g_callback(new_reading);
+}`
     },
     "t36": {
         title: "Phân biệt const int *p vs int * const p, Bitwise shift tricks & Macro bẫy",
         stageName: "Bước 9: Bẫy C Kinh Điển Khi Phỏng Vấn Nhúng",
         skill: "Const Pointers & Bit Manipulation",
-        content: `Mẹo nhớ quy tắc "Đọc từ phải sang trái" cho con trỏ const:
-        - \`const int *p\`: p là con trỏ trỏ tới số nguyên hằng số (Giá trị *p không sửa được, nhưng p có thể trỏ đi nơi khác).
-        - \`int * const p\`: p là con trỏ hằng trỏ tới số nguyên (Địa chỉ p không đổi được, nhưng giá trị *p có thể sửa).
-        - \`const int * const p\`: Cả con trỏ và giá trị trỏ tới đều bất biến.
-        
-        Bẫy Macro: Luôn bọc dấu ngoặc đơn quanh tham số \`#define SQUARE(x) ((x) * (x))\` để tránh lỗi tính toán sai khi truyền biểu thức.`,
-        code: `// Các phép thao tác bit kinh điển trong phỏng vấn:\\n#define SET_BIT(reg, bit)    ((reg) |= (1U << (bit)))\\n#define CLEAR_BIT(reg, bit)  ((reg) &= ~(1U << (bit)))\\n#define TOGGLE_BIT(reg, bit) ((reg) ^= (1U << (bit)))\\n#define CHECK_BIT(reg, bit)  (((reg) >> (bit)) & 1U)`
+        content: `### 📌 1. MẸO NHỚ THẦN TỐC: ĐỌC TỪ PHẢI SANG TRÁI
+- \`const int *p\`: Con trỏ trỏ tới số nguyên hằng (Dữ liệu bị khóa không sửa được qua \`*p\`, con trỏ \`p\` có thể trỏ đi nơi khác).
+- \`int * const p\`: Con trỏ hằng (Địa chỉ của \`p\` bị khóa cứng, giá trị \`*p\` sửa được).
+- \`const int * const p\`: Khóa cả địa chỉ lẫn dữ liệu.
+
+### 📌 2. BẪY MACRO TRONG PHỎNG VẤN
+Luôn bọc dấu ngoặc đơn quanh biến và toàn bộ biểu thức \`#define SQUARE(x) ((x) * (x))\` để tránh lỗi khi truyền \`SQUARE(2 + 3)\`.`,
+        code: `#define SET_BIT(reg, bit)    ((reg) |= (1U << (bit)))
+#define CLEAR_BIT(reg, bit)  ((reg) &= ~(1U << (bit)))
+#define TOGGLE_BIT(reg, bit) ((reg) ^= (1U << (bit)))
+#define CHECK_BIT(reg, bit)  (((reg) >> (bit)) & 1U)`
     },
     "t37": {
         title: "Đọc Datasheet & Lập trình ngoại vi trực tiếp qua Thanh ghi trần (Direct Register Access)",
         stageName: "Bước 10: Kiến Trúc Vi Xử Lý & Lập Trình Thanh Ghi",
         skill: "Bare-Metal Register-Level Programming",
-        content: `Lập trình viên giỏi khác người mới ở khả năng "nói chuyện trực tiếp với phần cứng". Thay vì dùng thư viện Arduino \`digitalWrite()\`, ta thao tác trực tiếp với thanh ghi điều khiển được định nghĩa trong Technical Reference Manual.
-        
-        Mỗi chân GPIO có thanh ghi Đặt (Set: W1TS) và Xóa (Clear: W1TC). Ghi 1 vào bit tương ứng sẽ thay đổi trạng thái chân trong đúng 1 chu kỳ xung nhịp (4 nano-giây ở 240MHz).`,
-        code: `// Cấu hình chân GPIO 4 làm Output và kéo lên High qua thanh ghi:\\n#define GPIO_ENABLE_REG   0x3FF44020\\n#define GPIO_OUT_W1TS_REG 0x3FF44008\\n\\n*((volatile uint32_t*)GPIO_ENABLE_REG)   |= (1U << 4); // Bật output\\n*((volatile uint32_t*)GPIO_OUT_W1TS_REG) =  (1U << 4); // Kéo High`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TỐC ĐỘ 1 CHU KỲ XUNG NHỊP
+Hàm \`digitalWrite()\` của Arduino tốn tới 35-50 chu kỳ lệnh vì phải kiểm tra chân hợp lệ và tra bảng.
+Lập trình thanh ghi trần (Bare-metal) ép kiểu địa chỉ vật lý thành con trỏ \`volatile uint32_t*\`:
+Thao tác bật/tắt chân GPIO được thực hiện trong **đúng 1 chu kỳ xung nhịp (~4 nano-giây)**!`,
+        code: `// Bật chân GPIO4 qua thanh ghi Set W1TS (Write 1 to Set):
+#define GPIO_OUT_W1TS_REG  0x3FF44008
+#define GPIO_OUT_W1TC_REG  0x3FF4400C
+
+// Kéo chân GPIO4 lên mức HIGH:
+*((volatile uint32_t *)GPIO_OUT_W1TS_REG) = (1U << 4);
+
+// Kéo chân GPIO4 xuống mức LOW:
+*((volatile uint32_t *)GPIO_OUT_W1TC_REG) = (1U << 4);`
     },
     "t38": {
         title: "Kiến trúc ngắt NVIC / Interrupt Vector Table, Priority Grouping & Nesting",
         stageName: "Bước 10: Kiến Trúc Vi Xử Lý & Lập Trình Thanh Ghi",
         skill: "Interrupt Vector Controller (NVIC)",
-        content: `Kiến trúc xử lý ngắt trong vi điều khiển ARM Cortex-M và Xtensa:
-        - **Interrupt Vector Table**: Mảng chứa địa chỉ các hàm xử lý ngắt, bắt đầu từ địa chỉ Reset Handler.
-        - **Preemption Priority (Độ ưu tiên chiếm quyền)**: Ngắt có độ ưu tiên cao hơn có thể chen ngang (Nest) ngắt đang chạy.
-        - **Sub-priority**: Dùng để phân xử thứ tự khi 2 ngắt cùng xảy ra đồng thời.
-        - **Tail-Chaining**: Tối ưu phần cứng giúp chuyển thẳng từ ISR này sang ISR khác mà không cần khôi phục rồi cất lại ngữ cảnh (Context Switch), tiết kiệm hàng chục chu kỳ máy.`,
-        code: `// Nguyên lý Nesting: Ngắt Timer (Priority 1) chen ngang ngắt UART (Priority 3)\\n// NVIC tự động đẩy các thanh ghi R0-R3, R12, LR, PC, xPSR lên Stack trong 12 chu kỳ`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: NGUYÊN LÝ LỒNG NGẮT (INTERRUPT NESTING)
+- **Interrupt Vector Table**: Bảng chứa con trỏ trỏ tới địa chỉ các hàm ISR trong bộ nhớ.
+- **Preemption Priority**: Ngắt có độ ưu tiên cao hơn có thể chen ngang (lồng vào) ngắt có độ ưu tiên thấp hơn đang thực thi.
+- **Tail-Chaining**: Cơ chế phần cứng thông minh chuyển thẳng từ ISR này sang ISR khác mà không cần cất/khôi phục lại thanh ghi CPU, tiết kiệm hàng chục chu kỳ máy.`,
+        code: `// Kiến trúc xử lý ngắt:
+// Ngắt Timer khẩn cấp (Priority 1) ──> Chen ngang ngắt UART (Priority 3)
+// NVIC tự động lưu trữ R0-R3, R12, LR, PC lên Stack phần cứng chỉ trong 12 chu kỳ`
     },
     "t39": {
         title: "Cơ chế Pipeline, Cache Hit/Miss, Bus Matrix và DMA Arbiter của vi điều khiển",
         stageName: "Bước 10: Kiến Trúc Vi Xử Lý & Lập Trình Thanh Ghi",
         skill: "MCU Internal Bus Matrix & Pipeline",
-        content: `Bên trong một vi điều khiển hiện đại:
-        - **Bus Matrix (Ma trận Bus)**: Cho phép nhiều Master (CPU Core 0, CPU Core 1, DMA Controller) truy cập đồng thời vào các Slave khác nhau (SRAM, Flash, Ngoại vi) mà không bị chờ đợi nhau.
-        - **DMA Arbiter**: Bộ phân xử quyền ưu tiên khi cả CPU và DMA cùng đòi đọc vào một khối RAM.
-        - **Flash Cache Miss**: Khi CPU cần lệnh tiếp theo nhưng chưa có trong Cache nội, CPU bị stall (khựng lại) hàng chục chu kỳ xung nhịp.`,
-        code: `// Tránh xung đột Bus giữa DMA và CPU:\\n// Đặt buffer DMA vào phân vùng RAM riêng biệt (Internal SRAM2) độc lập với Tensor Arena`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: MA TRẬN BUS VÀ TRÁNH XUNG ĐỘT
+- **Bus Matrix**: Cho phép nhiều Master (CPU Core 0, CPU Core 1, DMA) cùng truy cập đồng thời vào các phân vùng RAM/Flash khác nhau mà không làm nghẽn nhau.
+- **DMA Arbiter**: Bộ phân xử quyền ưu tiên khi cả CPU và DMA cùng đòi đọc vào một khối RAM.
+- ✅ Nguyên tắc vàng: Đặt bộ đệm DMA và Tensor Arena ở 2 phân vùng SRAM nội độc lập để tránh bị tranh chấp xung nhịp bus.`,
+        code: `// Cấp phát bộ đệm DMA trong SRAM chuyên dụng:
+uint8_t *dma_buf = (uint8_t *)heap_caps_malloc(512, MALLOC_CAP_DMA);`
     },
     "t40": {
         title: "Hiểu sâu quy trình khởi động MCU: Bootloader, Reset Handler, Startup ASM & Linker Script (.ld)",
         stageName: "Bước 10: Kiến Trúc Vi Xử Lý & Lập Trình Thanh Ghi",
         skill: "Startup Code & Linker Script Anatomy",
-        content: `Điều gì xảy ra từ lúc cắm nguồn đến khi chạy vào hàm \`main()\`?
-        1. CPU đọc vector khởi động tại địa chỉ 0x00000000 để lấy giá trị Initial Stack Pointer.
-        2. Nhảy vào **Reset_Handler** (viết bằng Assembly).
-        3. Sao chép dữ liệu khởi tạo từ Flash sang RAM (Phân vùng \`.data\`).
-        4. Xóa trắng toàn bộ phân vùng biến chưa khởi tạo về 0 (Phân vùng \`.bss\`).
-        5. Cấu hình xung nhịp hệ thống (System Clock PLL).
-        6. Gọi hàm \`main()\`. Toàn bộ cấu trúc này được chỉ huy bởi file kịch bản liên kết **Linker Script (.ld)**.`,
-        code: `/* Trích đoạn Linker Script .ld chuẩn */\\n.data : AT(_sidata) {\\n    _sdata = .;\\n    *(.data*)\\n    _edata = .;\\n} > RAM\\n.bss : {\\n    _sbss = .;\\n    *(.bss*)\\n    _ebss = .;\\n} > RAM`
+        content: `### 📌 1. QUY TRÌNH TỪ BẬT NGUỒN ĐẾN HÀM MAIN()
+1. Đọc vector khởi động tại 0x00000000 lấy con trỏ ngăn xếp Stack Top.
+2. Nhảy vào hàm Assembly \`Reset_Handler\`.
+3. Sao chép dữ liệu từ Flash sang RAM (Phân đoạn \`.data\`).
+4. Xóa trắng toàn bộ biến chưa gán giá trị về 0 (Phân đoạn \`.bss\`).
+5. Khởi tạo xung nhịp PLL và gọi hàm \`app_main()\`. File Linker Script (\`.ld\`) là người kiến trúc sư quy định toàn bộ bản đồ này.`,
+        code: `/* Trích đoạn Linker Script .ld chuẩn */
+.data : AT(_sidata) {
+    _sdata = .;
+    *(.data*)
+    _edata = .;
+} > RAM
+.bss : {
+    _sbss = .;
+    *(.bss*)
+    _ebss = .;
+} > RAM`
     },
     "t41": {
         title: "Sử dụng máy phân tích logic (Logic Analyzer) giải mã tín hiệu UART, I2C, SPI",
         stageName: "Bước 11: Debug Thực Tế & Thiết Bị Đo Kiểm Phòng Lab",
         skill: "Hardware Protocol Decoding with Logic Analyzer",
-        content: `Kỹ sư phần cứng không tin vào suy đoán, kỹ sư tin vào dạng sóng (Waveform).
-        Máy phân tích logic (Logic Analyzer) kết hợp phần mềm PulseView/Saleae cho phép bạn:
-        - Đo chính xác thời gian đáp ứng giữa tín hiệu ngắt và chân GPIO phản hồi (Interrupt Latency).
-        - Giải mã trực tiếp địa chỉ thiết bị I2C để kiểm tra xem cảm biến có gửi cờ ACK hay NACK.
-        - Phát hiện lỗi tràn dữ liệu (Buffer Overrun) hoặc sai định dạng baudrate/parity trên đường truyền UART.`,
-        code: `// Dấu hiệu I2C NACK trên Logic Analyzer:\\n// SDA ở mức cao (High) tại sườn lên thứ 9 của xung SCL -> Cảm biến không nhận địa chỉ!`
+        content: `### 📌 1. VŨ KHÍ BÍ MẬT CỦA KỸ SƯ PHẦN CỨNG
+Khi cảm biến không phản hồi:
+Kẹp máy phân tích logic (Logic Analyzer) vào chân SCL và SDA:
+- Kiểm tra xem dạng sóng có bị méo mó do thiếu **điện trở kéo lên (Pull-up 4.7k)** không.
+- Bắt gói tin và xem cảm biến trả về cờ **ACK** (Acknowledge) hay cờ **NACK** (Không nhận địa chỉ).`,
+        code: `// Cách nhận biết lỗi trên Logic Analyzer:
+// - SDA ở mức cao (High) tại sườn lên thứ 9 của xung SCL: Lỗi NACK (Sai địa chỉ I2C)!
+// - Đường truyền luôn ở mức 0V: Chân bị chập nguồn Mass (GND).`
     },
     "t42": {
         title: "Bắt lỗi Crash vi điều khiển: Đọc Crash Dump, Guru Meditation, Stack Trace với addr2line",
         stageName: "Bước 11: Debug Thực Tế & Thiết Bị Đo Kiểm Phòng Lab",
         skill: "Guru Meditation Crash & Stack Decoding",
-        content: `Khi vi điều khiển gặp lỗi nghiêm trọng (truy cập con trỏ NULL, chia cho 0, hoặc tràn Stack), hệ thống sẽ in ra màn hình thông báo: \`Guru Meditation Error: Core 1 panic'ed (LoadProhibited)\`.
-        
-        Kỹ năng chuyên nghiệp: Không đoán mò code. Hãy copy địa chỉ thanh ghi \`PC: 0x4200b21a\` và các địa chỉ trong danh sách \`Backtrace:\`, sau đó dùng công cụ \`addr2line\` để tìm ra chính xác tên file và số dòng code phát sinh lỗi.`,
-        code: `// Lệnh dòng lệnh giải mã địa chỉ crash:\\nxtensa-esp32s3-elf-addr2line -pfia -e build/firmware.elf 0x4200b21a\\n// Kết quả in ra:\\n// 0x4200b21a: process_sensor_frame at /home/user/edge_ai/main/main.c:142`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: ĐỊNH VỊ DÒNG CODE CRASH TRONG 5 GIÂY
+Khi vi điều khiển bị sụp nguồn, Serial in ra:
+\`Guru Meditation Error: Core 1 panic'ed (LoadProhibited). PC: 0x4200b21a\`
+- \`LoadProhibited\`: Đọc con trỏ NULL!
+- Dùng lệnh \`addr2line\` để dịch địa chỉ Hexa sang dòng code:
+\`xtensa-esp32s3-elf-addr2line -pfia -e build/firmware.elf 0x4200b21a\`
+Màn hình in ra chính xác: \`main/ai_engine.c:142\`.`,
+        code: `# Lệnh giải mã Crash Dump:
+xtensa-esp32s3-elf-addr2line -pfia -e build/firmware.elf 0x4200b21a
+# Kết quả in ra:
+# 0x4200b21a: process_frame at /project/main/audio_ai.c:142`
     },
     "t43": {
         title: "Debug phần cứng chuẩn JTAG với OpenOCD và GDB (Hardware Breakpoint, Watchpoint)",
         stageName: "Bước 11: Debug Thực Tế & Thiết Bị Đo Kiểm Phòng Lab",
         skill: "JTAG In-Circuit Debugging & GDB",
-        content: `Khi hàm gặp lỗi chạy sai ngẫu nhiên trong bộ nhớ RAM, in log \`printf\` sẽ làm thay đổi thời gian thực thi (Timing perturbation) và che giấu lỗi.
-        
-        Sử dụng mạch nạp JTAG (hoặc mạch tích hợp ESP32 USB-JTAG) kết hợp trình gỡ lỗi GDB:
-        - Đặt **Hardware Watchpoint**: Dừng ngay lập tức vi điều khiển khi có bất kỳ tác vụ nào ghi đè vào một ô nhớ cụ thể (Tìm ra thủ phạm Memory Corruption).
-        - Xem trực tiếp nội dung Call Stack và các thanh ghi của cả 2 nhân cùng lúc.`,
-        code: `(gdb) target remote :3333\\n(gdb) watch g_shared_counter // Đặt điểm canh giữ\\n(gdb) continue\\n// GDB sẽ dừng đúng dòng code ghi vào biến g_shared_counter!`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: HARDWARE WATCHPOINT BẮT MEMORY CORRUPTION
+Khi một ô nhớ RAM bị ghi đè ngẫu nhiên:
+In log \`printf\` sẽ làm thay đổi trật tự thời gian và giấu mất lỗi.
+Dùng JTAG đặt **Hardware Watchpoint**:
+CPU sẽ bị dừng ngay lập tức tại đúng dòng lệnh vừa ghi đè vào biến đó!`,
+        code: `(gdb) target remote :3333
+(gdb) watch g_tensor_arena[0] # Bắt kẻ ghi đè vào Tensor Arena
+(gdb) continue
+# CPU dừng ngay tại dòng code gây tràn bộ nhớ!`
     },
     "t44": {
         title: "Kỹ năng trả lời phỏng vấn kỹ thuật theo phương pháp STAR cho vị trí Intern Firmware",
         stageName: "Bước 11: Debug Thực Tế & Thiết Bị Đo Kiểm Phòng Lab",
         skill: "STAR Method Technical Interviewing",
-        content: `Khi nhà tuyển dụng yêu cầu: "Hãy kể về một lỗi phần cứng hoặc bug khó nhất mà bạn từng giải quyết?", hãy áp dụng cấu trúc **STAR**:
-        - **S (Situation)**: Đồ án Edge AI nhận diện từ khóa bị crash ngẫu nhiên sau khi chạy được 2-3 tiếng.
-        - **T (Task)**: Cần tìm ra nguyên nhân gốc rễ (Root Cause) mà không làm chậm tốc độ suy luận của mô hình.
-        - **A (Action)**: Kết nối Logic Analyzer kiểm tra bus I2S, bật tính năng Heap Tracing và phát hiện chuỗi sprintf trong task AI bị tràn Stack bộ nhớ. Đã chuyển sang cấp phát tĩnh và tăng kích thước Stack lên 4KB.
-        - **R (Result)**: Hệ thống chạy liên tục 48 giờ ổn định, độ trễ suy luận giảm xuống còn 35ms.`,
-        code: `// Bí quyết: Luôn nói về số liệu định lượng (ms, KB, % độ trễ) thay vì cảm tính chung chung`
+        content: `### 📌 1. CÔNG THỨC TRẢ LỜI PHỎNG VẤN STAR CHINH PHỤC NHÀ TUYỂN DỤNG
+- **S (Situation - Tình huống)**: Đồ án Edge AI bị reset ngẫu nhiên sau khi chạy 2 tiếng.
+- **T (Task - Nhiệm vụ)**: Cần tìm ra nguyên nhân gốc rễ mà không làm tăng độ trễ mô hình.
+- **A (Action - Hành động)**: Dùng Logic Analyzer kiểm tra DMA và bật Heap Tracing, phát hiện rò rỉ Stack trong task AI, tăng kích thước Stack lên 8KB và cấp phát tĩnh Tensor Arena.
+- **R (Result - Kết quả)**: Thiết bị chạy ổn định 72 giờ liên tục, độ trễ suy luận đạt 32ms.`,
+        code: `// Bí quyết phỏng vấn nhúng: Luôn trả lời bằng số liệu định lượng (ms, KB, % cải thiện)`
     },
     "t45": {
         title: "Nguyên tắc cốt lõi MISRA C:2012: Không cấp phát động trong runtime, giới hạn con trỏ",
         stageName: "Bước 12: Chuẩn An Toàn Phần Mềm Ô Tô MISRA C",
         skill: "MISRA C:2012 Automotive Compliance",
-        content: `MISRA C (Motor Industry Software Reliability Association) là bộ tiêu chuẩn lập trình C an toàn bắt buộc trong ngành ô tô, y tế và hàng không vũ trụ.
-        
-        Quy tắc tiêu biểu trong MISRA C:2012:
-        - **Rule 21.3**: Không sử dụng các hàm cấp phát động \`malloc\`, \`calloc\`, \`free\` sau giai đoạn khởi tạo hệ thống (Tránh rò rỉ và phân mảnh bộ nhớ).
-        - **Rule 17.2**: Không sử dụng đệ quy (Recursion) để đảm bảo không bao giờ bị tràn Stack.
-        - **Rule 11.4**: Cấm ép kiểu giữa con trỏ trỏ tới đối tượng và kiểu con trỏ khác.`,
-        code: `// Vi phạm MISRA C:\\nchar *buf = (char *)malloc(100); // LỖI: Cấp phát động\\n\\n// Tuân thủ MISRA C:\\nstatic uint8_t s_buffer[100U]; // Cấp phát tĩnh bộ nhớ cố định`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO NGÀNH Ô TÔ CẤM TUYỆT ĐỐI MALLOC/FREE?
+Trong các hệ thống nhúng quan trọng (Automotive ISO 26262, Y tế, Hàng không), phần mềm phải chạy 24/7 suốt 10-15 năm mà **không bao giờ được sập**.
+Cấp phát động (\`malloc\`, \`free\`, \`new\`) gây ra 2 hiểm họa chết người:
+1. **Phân mảnh bộ nhớ (Heap Fragmentation)**: Sau hàng triệu chu kỳ cấp phát/giải phóng, Heap bị chia cắt thành hàng nghìn mảnh vụn nhỏ rời rạc. Dù tổng RAM còn trống nhiều nhưng một lệnh \`malloc(500)\` sẽ lập tức trả về \`NULL\` vì không có khối nhớ liền mạch!
+2. **Hành vi không tiền định (Non-deterministic Timing)**: Thời gian thực thi của \`malloc()\` biến thiên ngẫu nhiên tùy thuộc vào độ dài chuỗi tìm kiếm khối nhớ trống.
+
+### 📌 2. CÁC QUY TẮC SINH TỬ TRONG MISRA C:2012
+- **Rule 21.3 (Mandatory)**: Không sử dụng các hàm cấp phát động \`malloc\`, \`calloc\`, \`realloc\`, \`free\` sau giai đoạn khởi động ban đầu. Mọi bộ đệm, hàng đợi và vùng nhớ suy luận AI phải được **cấp phát tĩnh (Static Allocation)** với kích thước cố định ở thời điểm biên dịch.
+- **Rule 17.2 (Required)**: Không sử dụng hàm đệ quy (Recursion) dưới bất kỳ hình thức nào. Phải tính toán được chặn trên tối đa của kích thước Stack trước khi nạp code vào MCU.
+- **Rule 11.4 & 11.8 (Advisory)**: Nghiêm cấm ép kiểu con trỏ tùy tiện làm mất tính an toàn kiểu hoặc làm mất từ khóa bảo vệ \`const\`.
+
+### 📌 3. BẪY LỖI & THỰC HÀNH CÔNG NGHIỆP: STATIC MEMORY POOL
+Khi cần cơ chế "mượn/trả" buffer cho các bản tin mạng hoặc khung hình cảm biến mà không vi phạm MISRA C, các kỹ sư sử dụng kỹ thuật **Memory Pool kích thước khối cố định (Fixed-Size Block Allocator)**: Toàn bộ mảng bộ nhớ được khai báo tĩnh, thời gian cấp phát và thu hồi luôn đạt $O(1)$ và hoàn toàn không bao giờ bị phân mảnh.`,
+        code: `// Triển khai Fixed-Size Block Memory Pool tuân thủ MISRA C:2012
+#define POOL_BLOCK_SIZE   64U
+#define POOL_BLOCK_COUNT  8U
+
+typedef struct {
+    uint8_t memory[POOL_BLOCK_COUNT][POOL_BLOCK_SIZE];
+    uint8_t free_mask; // Bit 1: Trống, Bit 0: Đang bận
+} static_memory_pool_t;
+
+static static_memory_pool_t s_pool = {
+    .free_mask = 0xFFU // Ban đầu cả 8 khối đều sẵn sàng
+};
+
+void* pool_allocate(void) {
+    for (uint8_t i = 0U; i < POOL_BLOCK_COUNT; i++) {
+        if ((s_pool.free_mask & (1U << i)) != 0U) {
+            s_pool.free_mask &= ~(1U << i); // Đánh dấu đã cấp phát
+            return (void*)s_pool.memory[i];
+        }
+    }
+    return NULL; // Hết khối trống (An toàn, không phân mảnh)
+}
+
+void pool_free(void *ptr) {
+    if (ptr == NULL) return;
+    for (uint8_t i = 0U; i < POOL_BLOCK_COUNT; i++) {
+        if (ptr == (void*)s_pool.memory[i]) {
+            s_pool.free_mask |= (1U << i); // Trả lại khối vào pool
+            return;
+        }
+    }
+}`
     },
     "t46": {
         title: "Phòng chống hành vi bất định (Undefined Behavior) và tràn số nguyên (Integer Overflow)",
         stageName: "Bước 12: Chuẩn An Toàn Phần Mềm Ô Tô MISRA C",
         skill: "Undefined Behavior Prevention",
-        content: `Hành vi bất định (Undefined Behavior - UB) là cơn ác mộng lớn nhất của phần mềm nhúng. Khi phát sinh UB (ví dụ: dịch bit số âm, tràn số nguyên có dấu, đọc biến chưa khởi tạo), trình biên dịch có thể sinh ra mã máy hoàn toàn sai lệch hoặc bỏ qua các điều kiện kiểm tra an toàn.
-        
-        Luôn kiểm tra giới hạn trước khi thực hiện phép tính số học: \`if (a > INT_MAX - b)\` trước khi thực hiện \`a + b\`. Luôn dùng hậu tố \`U\` cho số nguyên không dấu (\`100U\`).`,
-        code: `// Kiểm tra an toàn chống tràn số nguyên:\\nbool safe_add(uint32_t a, uint32_t b, uint32_t *res) {\\n    if (UINT32_MAX - a < b) return false; // Tràn số!\\n    *res = a + b;\\n    return true;\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: HIỂM HỌA TỐI ƯU HÓA CỦA TRÌNH BIÊN DỊCH
+Trong chuẩn C99/C11, tràn số nguyên có dấu (\`int32_t\`) là **Undefined Behavior (UB - Hành vi bất định)**.
+Khi bạn bật cờ tối ưu hóa \`-O2\` hoặc \`-O3\` của GCC/Clang:
+Trình biên dịch giả định rằng UB **không bao giờ xảy ra trong mã nguồn chuẩn**. Vì vậy, nếu bạn viết câu lệnh kiểm tra: \`if (x + 100 < x) { alert_error(); }\`, trình biên dịch sẽ xem đây là điều kiện vô lý và **tự ý xóa sổ toàn bộ đoạn if đó** khỏi mã máy! Thiết bị của bạn sẽ bị tràn số mà không có bất kỳ cảnh báo nào.
+
+### 📌 2. NGUYÊN TẮC PHÒNG CHỐNG TRÀN SỐ CHUẨN MISRA C
+1. **Kiểm tra biên TRƯỚC KHI thực hiện phép toán**:
+   - Phép cộng: Thay vì \`a + b > MAX\`, phải kiểm tra: \`if (a > MAX - b)\`.
+   - Phép nhân: Thay vì \`a * b > MAX\`, phải kiểm tra: \`if (a > 0 && b > MAX / a)\`.
+2. **Luôn sử dụng kiểu dữ liệu kích thước tường minh**:
+   - Sử dụng \`uint32_t\`, \`int32_t\`, \`uint8_t\` từ thư viện \`<stdint.h>\`. Tuyệt đối không dùng kiểu \`int\`, \`long\` mơ hồ vì kích thước phụ thuộc vào kiến trúc vi điều khiển (16-bit, 32-bit hay 64-bit).
+3. **Thêm hậu tố U (Unsigned Literal)**:
+   - Viết \`1000U\`, \`0xFFFFU\` thay vì \`1000\` để tránh việc số nguyên ngầm định bị chuyển thành kiểu có dấu gây lỗi dịch bit số âm.`,
+        code: `// Thư viện kiểm tra toán tử số học an toàn chống UB chuẩn MISRA C
+#include <stdint.h>
+#include <stdbool.h>
+
+bool safe_add_u32(uint32_t a, uint32_t b, uint32_t *result) {
+    if (result == NULL) {
+        return false;
+    }
+    // Kiểm tra trước: Liệu a có vượt quá khoảng cách còn lại tới trần?
+    if (a > (UINT32_MAX - b)) {
+        return false; // Ngăn chặn tràn số nguyên an toàn
+    }
+    *result = a + b;
+    return true;
+}
+
+bool safe_mul_u32(uint32_t a, uint32_t b, uint32_t *result) {
+    if (result == NULL) {
+        return false;
+    }
+    if ((a != 0U) && (b > (UINT32_MAX / a))) {
+        return false; // Phát hiện nguy cơ tràn số trước khi nhân
+    }
+    *result = a * b;
+    return true;
+}`
     },
     "t47": {
         title: "Tích hợp công cụ phân tích tĩnh (Static Code Analysis: Cppcheck, Clang-Tidy)",
         stageName: "Bước 12: Chuẩn An Toàn Phần Mềm Ô Tô MISRA C",
         skill: "Automated Static Code Linting",
-        content: `Thay vì để lỗi lọt vào thiết bị phần cứng, các công ty lớn sử dụng công cụ phân tích mã nguồn tĩnh (Static Analysis) quét tự động toàn bộ source code trước khi nạp.
-        
-        Công cụ **Cppcheck** và **Clang-Tidy** tự động phát hiện:
-        - Đọc ngoài biên mảng (Buffer Overflow).
-        - Sử dụng con trỏ sau khi đã giải phóng (Use-after-free).
-        - Biến chưa được khởi tạo (Uninitialized variables).
-        - Mã nguồn chết không bao giờ được thực thi (Dead code).`,
-        code: `// Chạy kiểm tra tĩnh toàn bộ dự án với Cppcheck:\\ncppcheck --enable=all --inconclusive --error-exitcode=1 main/`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: "BẮT LỖI TỪ KHI MÃ NGUỒN CHƯA BIÊN DỊCH"
+Chi phí sửa một con bug phần mềm khi đang viết code trên máy tính là **1 USD**.
+Nếu để lọt lỗi vào phòng thử nghiệm phần cứng, chi phí tăng lên **100 USD**.
+Nhưng nếu để lỗi rò rỉ bộ nhớ hoặc truy cập con trỏ NULL lọt vào chiếc xe ô tô đã bàn giao cho khách hàng ngoài đại lộ, chi phí thu hồi xe và bồi thường tính bằng **hàng triệu USD**.
+
+Công cụ **Static Code Analysis (Phân tích mã nguồn tĩnh)** sử dụng giải thuật *Biểu diễn hình thức (Abstract Interpretation)* và *Kiểm chứng ký hiệu (Symbolic Execution)* để quét toàn bộ luồng điều khiển của file C mà không cần cắm nạp vi điều khiển.
+
+### 📌 2. CÔNG CỤ VÀ NGUYÊN TẮC HOẠT ĐỘNG
+- **Compiler Warnings (GCC/Clang)**: Bật cờ \`-Wall -Wextra -Werror -Wconversion\` để biến toàn bộ cảnh báo thành lỗi biên dịch.
+- **Cppcheck**: Chuyên gia phát hiện rò rỉ con trỏ (Memory leak), truy cập mảng vượt biên (Buffer overflow), và sử dụng biến chưa khởi tạo (Uninitialized memory).
+- **Clang-Tidy**: Chuyên gia rà soát cấu trúc mã, tuân thủ tiêu chuẩn lập trình hiện đại và các quy tắc MISRA C.
+
+### 📌 3. BẪY LỖI & THỰC HÀNH CÔNG NGHIỆP
+Luôn tích hợp cờ \`--error-exitcode=1\` vào script kiểm tra tự động. Nếu Cppcheck phát hiện bất kỳ vi phạm nghiêm trọng nào, tiến trình build phải bị hủy ngay lập tức, ngăn chặn việc tạo ra firmware lỗi.`,
+        code: `# Script kiểm tra phân tích tĩnh toàn diện dự án nhúng:
+cppcheck --enable=all \\
+         --inconclusive \\
+         --std=c99 \\
+         --suppress=missingIncludeSystem \\
+         --inline-suppr \\
+         --error-exitcode=1 \\
+         main/
+
+# Kết quả mẫu khi phát hiện lỗi biến chưa khởi tạo:
+# [main/sensor_hub.c:45]: (error) Uninitialized variable: raw_accel_x`
     },
     "t48": {
         title: "Coding Convention chuẩn công nghiệp: Naming, Doxygen Documentation & File Structure",
         stageName: "Bước 12: Chuẩn An Toàn Phần Mềm Ô Tô MISRA C",
         skill: "Industrial Code Convention & Doxygen",
-        content: `Khi tham gia dự án lớn có hàng chục kỹ sư cùng làm, phong cách viết code quyết định tính duy trì (Maintainability) của sản phẩm:
-        - Tiền tố rõ ràng: \`s_\` cho biến tĩnh (static), \`g_\` cho toàn cục (global), \`p_\` cho con trỏ (pointer).
-        - Chú thích hàm chuẩn định dạng **Doxygen**: Mô tả mục đích, tham số \`@param[in]\`, \`@param[out]\` và giá trị trả về \`@return\`.
-        - Tách biệt rõ ràng file header \`.h\` (Public Interface) và file thực thi \`.c\` (Private Implementation).`,
-        code: `/**\\n * @brief Khởi tạo cảm biến gia tốc qua bus I2C\\n * @param[in] port Cổng I2C (I2C_NUM_0 hoặc I2C_NUM_1)\\n * @return esp_err_t ESP_OK nếu thành công, ESP_ERR_TIMEOUT nếu mất kết nối\\n */\\nesp_err_t imu_sensor_init(i2c_port_t port);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: MÃ NGUỒN VIẾT CHO ĐỒNG ĐỘI ĐỌC
+Trong dự án nhúng quy mô công nghiệp với hàng chục kỹ sư và hàng trăm nghìn dòng lệnh, mã nguồn không có quy ước đặt tên rõ ràng sẽ trở thành "mớ bòng bong" không thể bảo trì sau 6 tháng.
+Một module chuẩn mực phải phân định tuyệt đối giữa:
+- **Giao diện công khai (Public Interface - file \`.h\`)**: Nơi công bố các hàm API và kiểu dữ liệu mà các module khác được phép gọi.
+- **Hiện thực nội bộ (Private Implementation - file \`.c\`)**: Mọi hàm hỗ trợ và biến nội bộ phải được khai báo từ khóa \`static\` để ẩn hoàn toàn khỏi không gian tên toàn cục (Encapsulation).
+
+### 📌 2. QUY ƯỚC ĐẶT TÊN TIỀN TỐ (PREFIX CONVENTION)
+- \`g_\`: Biến toàn cục (Global - hạn chế tối đa).
+- \`s_\`: Biến tĩnh phạm vi file (Static file scope).
+- \`p_\`: Con trỏ (Pointer, ví dụ: \`p_buffer\`).
+- \`k_\`: Hằng số cấu hình (Constant).
+- Tên hàm: \`<module>_<chức_năng>()\`, ví dụ: \`imu_sensor_init()\`, \`imu_sensor_read_accel()\`.
+
+### 📌 3. TÀI LIỆU HÓA TỰ ĐỘNG VỚI DOXYGEN
+Sử dụng các thẻ định dạng chuẩn: \`@brief\`, \`@param[in]\`, \`@param[out]\`, \`@return\`, \`@note\`. Hệ thống CI sẽ tự động biên dịch các chú thích này thành trang tài liệu HTML chuyên nghiệp cho toàn bộ dự án.`,
+        code: `/**
+ * @file imu_driver.h
+ * @brief Giao tiếp điều khiển cảm biến gia tốc MPU6050
+ * @author Embedded Team
+ */
+
+#ifndef IMU_DRIVER_H
+#define IMU_DRIVER_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "esp_err.h"
+
+/**
+ * @brief Đọc giá trị gia tốc 3 trục từ cảm biến qua I2C
+ * @param[in]  dev_addr  Địa chỉ I2C của cảm biến (0x68 hoặc 0x69)
+ * @param[out] p_accel_x Con trỏ lưu giá trị trục X (đơn vị: m/s^2)
+ * @param[out] p_accel_y Con trỏ lưu giá trị trục Y (đơn vị: m/s^2)
+ * @param[out] p_accel_z Con trỏ lưu giá trị trục Z (đơn vị: m/s^2)
+ * @return esp_err_t 
+ *         - ESP_OK: Đọc dữ liệu thành công
+ *         - ESP_ERR_INVALID_ARG: Con trỏ đầu ra bị NULL
+ *         - ESP_ERR_TIMEOUT: Cảm biến không phản hồi trên đường truyền
+ */
+esp_err_t imu_driver_read_accel(uint8_t dev_addr, 
+                               float *p_accel_x, 
+                               float *p_accel_y, 
+                               float *p_accel_z);
+
+#endif /* IMU_DRIVER_H */`
     },
     "t49": {
         title: "Kiến trúc mạng CAN Bus (TWAI trên ESP32): Khung tin tiêu chuẩn, ID Arbitration",
         stageName: "Bước 13: Giao Tiếp Công Nghiệp (CAN Bus & Modbus)",
         skill: "CAN Bus 2.0B / TWAI Driver Architecture",
-        content: `CAN Bus (Controller Area Network) là chuẩn giao tiếp vi sai thống trị trong ô tô (Automotive) và robot tự hành.
-        - Kháng nhiễu cực mạnh nhờ tín hiệu truyền trên cặp dây xoắn CAN_H và CAN_L.
-        - Cơ chế phân xử bus (Arbitration): Khung tin có CAN ID nhỏ hơn sẽ có độ ưu tiên cao hơn và tự động chiếm quyền bus mà không làm hỏng dữ liệu của node khác (Non-destructive).
-        - Tích hợp sẵn cơ chế kiểm tra CRC 15-bit và tự động gửi lại tin nhắn khi lỗi.`,
-        code: `twai_message_t msg = {\\n    .identifier = 0x123, // CAN ID\\n    .data_length_code = 4,\\n    .data = {0x01, 0x02, 0x03, 0x04},\\n};\\ntwai_transmit(&msg, pdMS_TO_TICKS(100));`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: ÔNG VUA GIAO TIẾP TRÊN XE HƠI VÀ NHÀ MÁY
+CAN Bus (trên chip ESP32 được gọi là **TWAI - Two-Wire Automotive Interface**) là chuẩn giao tiếp vi sai thống trị tuyệt đối trong ngành công nghiệp ô tô (Automotive) và robot tự hành.
+- **Kháng nhiễu cực đại**: Truyền tín hiệu trên cặp dây xoắn \`CAN_H\` và \`CAN_L\`. Bất kỳ xung nhiễu điện từ nào từ bugi đánh lửa hay động cơ điện đều tác động bằng nhau lên cả hai dây, và mạch khuếch đại vi sai ở đầu thu sẽ triệt tiêu hoàn toàn nhiễu này (Common-Mode Rejection).
+- **Mức logic vi sai**:
+  - Mức Dominant (Bit 0): Điện áp vi sai $V_{CAN\_H} - V_{CAN\_L} \approx 2.0V$.
+  - Mức Recessive (Bit 1): Điện áp vi sai $V_{CAN\_H} - V_{CAN\_L} \approx 0.0V$.
+
+### 📌 2. CƠ CHẾ PHÂN XỬ BUS PHI HỦY DIỆT (NON-DESTRUCTIVE ARBITRATION)
+Khi nhiều ECU cùng phát tin cùng một micro-giây:
+Do mức **Bit 0 (Dominant)** luôn áp đảo và đè bẹp mức **Bit 1 (Recessive)**:
+Gói tin nào có **CAN ID nhỏ hơn** (chứa nhiều bit 0 ở phần đầu hơn) sẽ tự động chiếm quyền ưu tiên bus, trong khi node có CAN ID lớn hơn sẽ tự động rút lui về chế độ nghe mà không làm mất hay méo dữ liệu của node thắng cuộc!
+
+### 📌 3. BẪY LỖI CHẾT NGƯỜI PHẦN CỨNG
+Bắt buộc phải có **2 điện trở đầu cuối 120Ω** mắc song song ở 2 đầu xa nhất của đường bus (tổng trở kháng đo được giữa CAN_H và CAN_L khi tắt nguồn phải đúng **60Ω**). Nếu thiếu điện trở này, sóng tín hiệu cao tần sẽ bị dội ngược ở đầu dây (Signal Reflection) và làm tê liệt toàn bộ mạng CAN.`,
+        code: `#include "driver/twai.h"
+#include "esp_log.h"
+
+void twai_can_init(void) {
+    // 1. Cấu hình tốc độ mạng (500 Kbps chuẩn ô tô)
+    twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
+    
+    // 2. Cấu hình bộ lọc phần cứng (Chấp nhận tất cả bản tin)
+    twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+    
+    // 3. Cấu hình chân GPIO kết nối tới Transceiver (SN65HVD230)
+    twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(
+        GPIO_NUM_4, GPIO_NUM_5, TWAI_MODE_NORMAL
+    );
+    
+    ESP_ERROR_CHECK(twai_driver_install(&g_config, &t_config, &f_config));
+    ESP_ERROR_CHECK(twai_start());
+    ESP_LOGI("CAN", "TWAI Bus da khoi dong thanh cong!");
+}
+
+void twai_send_sensor_alert(uint16_t sensor_val) {
+    twai_message_t msg = {
+        .identifier = 0x120, // CAN ID ưu tiên cao
+        .extd = 0,           // Khung tin tiêu chuẩn 11-bit ID
+        .data_length_code = 2,
+        .data = { (uint8_t)(sensor_val >> 8), (uint8_t)(sensor_val & 0xFF) }
+    };
+    twai_transmit(&msg, pdMS_TO_TICKS(50));
+}`
     },
     "t50": {
         title: "Lọc gói tin phần cứng (Acceptance Filter) chống nghẽn CPU trên mạng ô tô",
         stageName: "Bước 13: Giao Tiếp Công Nghiệp (CAN Bus & Modbus)",
         skill: "Hardware CAN Acceptance Filtering",
-        content: `Trên một chiếc ô tô, mạng CAN Bus có thể truyền hàng nghìn gói tin mỗi giây từ động cơ, phanh ABS, điều hòa... Nếu vi điều khiển ESP32 phải nhận ngắt cho mọi gói tin, CPU sẽ bị quá tải (Bus Flooding) và không còn thời gian chạy TinyML.
-        
-        Giải pháp: Cấu hình bộ lọc phần cứng Acceptance Filter (Code và Mask). Bộ thu TWAI của ESP32 sẽ tự động lọc ở tầng mạch điện tử, chỉ chuyển vào bộ nhớ các gói tin có CAN ID thuộc nhóm mà hệ thống cần lắng nghe.`,
-        code: `twai_filter_config_t f_config = {\\n    .acceptance_code = (0x100 << 21), // Chỉ nghe các ID bắt đầu bằng 0x100\\n    .acceptance_mask = ~(0x100 << 21),\\n    .single_filter = true\\n};`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: GIẢI CỨU CPU KHỎI CƠN BÃO NGẮT (BUS FLOODING)
+Trên một chiếc xe hơi hoặc dây chuyền nhà máy, mạng CAN Bus có thể lưu thông hàng nghìn gói tin mỗi giây từ hộp số, túi khí, phanh ABS, máy lạnh...
+Nếu vi điều khiển ESP32 phải thức dậy xử lý ngắt (Interrupt Service Routine) cho từng gói tin xuất hiện trên đường dây, CPU sẽ bị tiêu tốn 40-60% năng lực chỉ để đọc rồi vứt bỏ các gói tin rác không liên quan!
+
+**Bộ lọc phần cứng Acceptance Filter (Code và Mask)** hoạt động ngay trên mạch điện tử silicon của bộ điều khiển CAN: Nó so sánh địa chỉ CAN ID của gói tin đến và tự động từ chối (Drop) ngay lập tức nếu không khớp mà không làm phiền CPU một chu kỳ xung nhịp nào.
+
+### 📌 2. NGUYÊN LÝ TOÁN HỌC CỦA CODE VÀ MASK
+Bộ lọc phần cứng quyết định gói tin có được nhận hay không theo công thức logic:
+$$\\text{Match} = (( \\text{Received\\_ID} \\oplus \\text{Acceptance\\_Code} ) \\& \\text{Acceptance\\_Mask}) == 0$$
+- **Vị trí bit trong Mask = 1**: Bắt buộc bit của ID nhận được phải **trùng khớp 100%** với bit tương ứng trong Acceptance Code.
+- **Vị trí bit trong Mask = 0**: "Don't care" (chấp nhận bất kỳ giá trị 0 hoặc 1).
+
+### 📌 3. BẪY LỖI DỊCH BIT 21-BIT TRÊN ESP32 TWAI
+Bộ điều khiển TWAI của ESP32 sử dụng thanh ghi 32-bit tương thích chip SJA1000. Đối với khung tin tiêu chuẩn 11-bit, 11 bit ID này nằm ở **11 bit cao nhất** của thanh ghi 32-bit (tức là phải dịch trái 21 bit: \`ID << 21\`). Nếu bạn quên dịch bit, bộ lọc sẽ nhận sai dải ID hoặc chặn nhầm toàn bộ bản tin!`,
+        code: `// Cấu hình bộ lọc phần cứng chỉ nhận các bản tin CAN ID từ 0x200 đến 0x20F
+// 0x200 = 0b010 0000 0000 -> Nhận dải 16 ID (4 bit cuối "don't care")
+
+twai_filter_config_t filter_config = {
+    // Acceptance Code: Khớp tiền tố 0x200 ở 11 bit cao
+    .acceptance_code = (0x200U << 21),
+    
+    // Acceptance Mask: 
+    // - 7 bit đầu phải khớp chính xác (bit = 1)
+    // - 4 bit cuối cho phép biến thiên từ 0x0 đến 0xF (bit = 0)
+    // - Các bit byte dữ liệu không quan tâm (bit = 0)
+    .acceptance_mask = ~((0x7F0U << 21)),
+    
+    .single_filter = true
+};
+
+// Cài đặt bộ lọc vào driver:
+// Mọi bản tin như 0x100 hay 0x300 sẽ bị phần cứng loại bỏ trong 0 nano-giây!`
     },
     "t51": {
         title: "Giao thức công nghiệp Modbus RTU qua chuẩn truyền thông vi sai RS485",
         stageName: "Bước 13: Giao Tiếp Công Nghiệp (CAN Bus & Modbus)",
         skill: "RS485 Modbus RTU Industrial Protocol",
-        content: `Trong các nhà máy thông minh (Smart Factory), PLC và các đồng hồ đo điện năng giao tiếp qua mạng Modbus RTU trên đường truyền vi sai RS485.
-        - Hoạt động theo mô hình Master-Slave bán song công (Half-Duplex).
-        - Master gửi bản tin yêu cầu: Địa chỉ Slave (1 byte) + Mã hàm Function Code (1 byte) + Địa chỉ thanh ghi (2 bytes) + Mã kiểm tra lỗi CRC-16 (2 bytes).
-        - Kỹ sư nhúng cần cấu hình chân GPIO điều khiển cờ RTS (Request To Send) để chuyển đổi giữa chế độ Thu và Phát của chip transceiver MAX485.`,
-        code: `// Cấu hình chân UART chuyển sang chế độ RS485 Half-Duplex:\\nuart_set_mode(UART_NUM_2, UART_MODE_RS485_HALF_DUPLEX);\\nuart_set_pin(UART_NUM_2, TX_PIN, RX_PIN, RTS_PIN, CTS_PIN);`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TIÊU CHUẨN THỐNG TRỊ NHÀ MÁY THÔNG MINH
+Modbus RTU chạy trên đường truyền vật lý vi sai **RS485** là giao thức công nghiệp phổ biến nhất thế giới dùng để giao tiếp giữa PLC, biến tần (Inverter), cảm biến quan trắc môi trường và đồng hồ đo năng lượng điện.
+- Khả năng truyền dẫn vi sai xa tới **1200 mét** với tốc độ ổn định (9600 - 115200 bps).
+- Hoạt động theo mô hình **Master-Slave Bán song công (Half-Duplex)**: Tại một thời điểm, đường dây chỉ có thể hoặc là Truyền, hoặc là Nhận.
+
+### 📌 2. NGUYÊN LÝ KHUNG TIN MODBUS RTU
+Bản tin Modbus RTU gồm các trường liên tục:
+\`[Slave Address: 1B] [Function Code: 1B] [Start Register: 2B] [Quantity: 2B] [CRC-16: 2B]\`
+- Mã hàm phổ biến: \`0x03\` (Read Holding Registers), \`0x06\` (Write Single Register), \`0x10\` (Write Multiple Registers).
+- **Mã kiểm tra CRC-16 Modbus**: Sử dụng đa thức \`0xA001\` để phát hiện lỗi đường truyền.
+
+### 📌 3. BẪY LỖI CHẾT NGƯỜI: ĐIỀU KHIỂN CHÂN RTS (DE/RE) VÀ THỜI GIAN IM LẶNG T3.5
+1. Chip chuyển đổi RS485 (MAX485/SP3485) yêu cầu chân GPIO kích hoạt chế độ Phát (DE) và Nhận (RE). Nếu tắt chân phát quá sớm trước khi byte cuối cùng truyền xong ra khỏi bộ đệm UART, byte cuối sẽ bị mất; nếu tắt quá trễ, chip sẽ chặn mất tín hiệu phản hồi từ Slave.
+2. ESP32 giải quyết triệt để vấn đề này bằng chế độ phần cứng \`UART_MODE_RS485_HALF_DUPLEX\` tự động quản lý chân RTS ở mức nano-giây.
+3. **Khoảng cách phân định khung tin T3.5**: Nếu khoảng cách nghỉ giữa hai byte vượt quá 3.5 lần thời gian truyền một ký tự, Slave sẽ xem bản tin bị đứt đoạn và hủy bỏ.`,
+        code: `#include "driver/uart.h"
+
+#define RS485_UART_PORT   UART_NUM_2
+#define RS485_TX_PIN      17
+#define RS485_RX_PIN      16
+#define RS485_RTS_PIN     18 // Nối vào chân DE/RE của MAX485
+
+void rs485_hardware_init(void) {
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
+    };
+    uart_param_config(RS485_UART_PORT, &uart_config);
+    uart_set_pin(RS485_UART_PORT, RS485_TX_PIN, RS485_RX_PIN, RS485_RTS_PIN, UART_PIN_NO_CHANGE);
+    uart_driver_install(RS485_UART_PORT, 256, 256, 0, NULL, 0);
+    
+    // Kích hoạt chế độ phần cứng RS485 Half-Duplex độc quyền của ESP32:
+    uart_set_mode(RS485_UART_PORT, UART_MODE_RS485_HALF_DUPLEX);
+}
+
+// Thuật toán tính CRC-16 Modbus chuẩn công nghiệp
+uint16_t modbus_crc16(const uint8_t *buffer, uint16_t len) {
+    uint16_t crc = 0xFFFFU;
+    for (uint16_t pos = 0; pos < len; pos++) {
+        crc ^= (uint16_t)buffer[pos];
+        for (int i = 8; i != 0; i--) {
+            if ((crc & 0x0001U) != 0U) {
+                crc >>= 1;
+                crc ^= 0xA001U;
+            } else {
+                crc >>= 1;
+            }
+        }
+    }
+    return crc;
+}`
     },
     "t52": {
         title: "Thiết kế Driver thiết bị ngoại vi chuẩn Module hóa (Layered HAL/Driver Pattern)",
         stageName: "Bước 13: Giao Tiếp Công Nghiệp (CAN Bus & Modbus)",
         skill: "Layered Device Driver Architecture",
-        content: `Thiết kế Driver theo kiến trúc phân lớp (Layered Architecture):
-        1. **Hardware Abstraction Layer (HAL)**: Các hàm đọc ghi thanh ghi thô (i2c_write, gpio_set).
-        2. **Device Driver Layer**: Triển khai logic điều khiển cảm biến (mpu6050_read_accel).
-        3. **Application Layer**: Tác vụ thuật toán xử lý dữ liệu và AI.
-        
-        Lợi ích: Khi công ty đổi sang dòng vi điều khiển khác (từ ESP32 sang STM32 hoặc NXP), kỹ sư chỉ cần viết lại tầng HAL mà giữ nguyên 100% logic thuật toán của Driver.`,
-        code: `typedef struct {\\n    esp_err_t (*init)(void);\\n    esp_err_t (*read)(float *out_val);\\n} Sensor_Interface_t;\\n\\n// Dễ dàng hoán đổi phần cứng thông qua interface chung`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: NGHỆ THUẬT KIẾN TRÚC DRIVER DI ĐỘNG (PORTABLE DRIVER)
+Lỗi phổ biến của các lập trình viên nghiệp dư là viết code điều khiển cảm biến gắn chặt (Hard-coded) vào thư viện của vi điều khiển (ví dụ: gọi trực tiếp \`i2c_master_write_to_device\` của ESP-IDF bên trong thuật toán đọc MPU6050).
+Hậu quả: Khi công ty chuyển dự án sang dòng vi điều khiển khác như STM32, Texas Instruments hoặc NXP, toàn bộ mã nguồn cảm biến và thuật toán AI phải đập đi viết lại từ đầu!
+
+Kỹ sư nhúng chuyên nghiệp tổ chức driver theo **Kiến trúc phân lớp (Layered Pattern)**:
+- **Tầng 1 - HAL (Hardware Abstraction Layer)**: Định nghĩa interface con trỏ hàm thuần túy để đọc/ghi mảng byte qua bus.
+- **Tầng 2 - Device Driver**: Xử lý logic giải mã thanh ghi và công thức chuyển đổi vật lý (gia tốc g, nhiệt độ °C). Tầng này **hoàn toàn không chứa bất kỳ header nào của ESP-IDF**.
+- **Tầng 3 - Application Layer**: Ứng dụng nghiệp vụ và mô hình TinyML.
+
+### 📌 2. NGUYÊN LÝ DEPENDENCY INJECTION BẰNG CON TRỎ HÀM
+Device Driver nhận một struct chứa con trỏ hàm giao tiếp bus khi khởi tạo. Driver chỉ cần gọi hàm qua interface mà không cần quan tâm bên dưới là ESP32 phần cứng thật, STM32 hay hàm Mock chạy trên máy tính PC!`,
+        code: `// Tệp tin: sensor_interface.h (Thuần C, tương thích mọi vi điều khiển)
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct {
+    // Con trỏ hàm đọc ghi qua bus trừu tượng:
+    bool (*bus_read)(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint16_t len);
+    bool (*bus_write)(uint8_t dev_addr, uint8_t reg_addr, const uint8_t *data, uint16_t len);
+    void (*delay_ms)(uint32_t ms);
+} sensor_bus_interface_t;
+
+typedef struct {
+    uint8_t dev_addr;
+    sensor_bus_interface_t bus;
+} temp_sensor_t;
+
+// Khởi tạo Driver bằng kỹ thuật Dependency Injection:
+void temp_sensor_init(temp_sensor_t *sensor, uint8_t addr, sensor_bus_interface_t bus_ops) {
+    sensor->dev_addr = addr;
+    sensor->bus = bus_ops;
+}
+
+bool temp_sensor_get_celsius(temp_sensor_t *sensor, float *out_temp) {
+    uint8_t raw[2];
+    // Gọi hàm đọc thông qua interface trừu tượng:
+    if (!sensor->bus.bus_read(sensor->dev_addr, 0x00, raw, 2)) {
+        return false;
+    }
+    int16_t raw_val = (int16_t)((raw[0] << 8) | raw[1]);
+    *out_temp = (float)raw_val * 0.0625f;
+    return true;
+}`
     },
     "t53": {
         title: "Viết Unit Test cho mã nguồn C nhúng bằng framework Unity & CMock",
         stageName: "Bước 14: Unit Test Tự Động & CI/CD Firmware",
         skill: "Embedded Unit Testing with Unity & CMock",
-        content: `Unit Test giúp chứng minh từng hàm logic trong firmware hoạt động đúng với mọi trường hợp biên (Corner Cases).
-        - Framework **Unity**: Cung cấp các macro kiểm tra (\`TEST_ASSERT_EQUAL\`, \`TEST_ASSERT_NOT_NULL\`).
-        - Framework **CMock**: Tự động sinh ra các hàm giả lập từ file header để test hàm logic mà không cần kết nối phần cứng.
-        Chạy Unit Test trên PC giúp bạn kiểm thử được hàng trăm ca kiểm thử chỉ trong 1 giây, nhanh hơn hàng nghìn lần so với nạp vào mạch rồi dùng tay bấm nút.`,
-        code: `#include "unity.h"\\n\\nvoid test_moving_average_filter_smooth(void) {\\n    float raw_samples[] = {10.0f, 20.0f, 30.0f};\\n    float filtered = moving_average_calculate(raw_samples, 3);\\n    TEST_ASSERT_EQUAL_FLOAT(20.0f, filtered);\\n}`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: TẠI SAO PHẢI UNIT TEST MÃ C TRÊN MÁY TÍNH?
+Phương pháp thử nghiệm truyền thống của sinh viên: Viết code -> Nạp vào board ESP32 -> Dùng tay bấm nút hoặc hơ lửa vào cảm biến -> Nhìn Serial in ra.
+Phương pháp này tốn hàng giờ đồng hồ, không thể lặp lại tự động và hoàn toàn bất lực trong việc kiểm thử hàng trăm kịch bản góc (Corner Cases) như: cảm biến gửi số âm cực lớn, tràn mảng, hoặc đứt cáp giữa chừng.
+
+**Unit Testing** cho phép chạy toàn bộ logic thuật toán của firmware trực tiếp trên máy tính cá nhân (Host PC bằng GCC/Clang) chỉ trong **0.2 giây**!
+
+### 📌 2. FRAMEWORK UNITY DÀNH RIÊNG CHO MÔI TRƯỜNG NHÚNG
+Framework **Unity** là chuẩn mực xUnit siêu nhẹ được thiết kế chuyên biệt cho C nhúng:
+- Không cấp phát động (Zero dynamic memory).
+- Cung cấp các macro kiểm thử phong phú:
+  - \`TEST_ASSERT_EQUAL_INT32(expected, actual)\`
+  - \`TEST_ASSERT_FLOAT_WITHIN(delta, expected, actual)\`
+  - \`TEST_ASSERT_NULL(pointer)\`
+- Cặp hàm chu kỳ sống:
+  - \`setUp()\`: Tự động chạy trước mỗi ca test (Dùng để reset biến static về trạng thái ban đầu).
+  - \`tearDown()\`: Tự động chạy sau mỗi ca test.
+
+### 📌 3. BẪY LỖI NHIỄM ĐỘC CA KIỂM THỬ (TEST POLLUTION)
+Nếu module của bạn sử dụng biến tĩnh nội bộ (\`static int s_counter = 0;\`), giá trị thay đổi từ ca test 1 sẽ còn lưu lại và làm sai lệch kết quả của ca test 2. Luôn luôn viết một hàm \`module_reset_state()\` và gọi nó bên trong hàm \`setUp()\` của Unity.`,
+        code: `#include "unity.h"
+#include "anomaly_filter.h"
+
+void setUp(void) {
+    // Reset toàn bộ bộ đệm trung bình động trước mỗi ca test
+    anomaly_filter_reset();
+}
+
+void tearDown(void) {
+    // Dọn dẹp sau khi kết thúc ca test
+}
+
+void test_moving_average_smooth_normal_signal(void) {
+    float samples[] = { 10.0f, 20.0f, 30.0f };
+    float result = 0.0f;
+    for (int i = 0; i < 3; i++) {
+        result = anomaly_filter_push(samples[i]);
+    }
+    // Giá trị trung bình kỳ vọng: (10 + 20 + 30) / 3 = 20.0
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 20.0f, result);
+}
+
+void test_anomaly_detection_triggers_on_spike(void) {
+    // Nạp tín hiệu nền ổn định 10.0
+    for (int i = 0; i < 10; i++) {
+        anomaly_filter_push(10.0f);
+    }
+    // Đột ngột xuất hiện xung va đập cực lớn (Rung chấn vòng bi hư hỏng)
+    bool is_anomaly = anomaly_filter_check_spike(85.0f);
+    TEST_ASSERT_TRUE_MESSAGE(is_anomaly, "He thong phai phat hien ra xung rung bat thuong!");
+}`
     },
     "t54": {
         title: "Giả lập phần cứng (Hardware Mocking) để chạy Unit Test trên máy tính CI mà không cần mạch thật",
         stageName: "Bước 14: Unit Test Tự Động & CI/CD Firmware",
         skill: "Hardware Abstraction Layer Mocking",
-        content: `Làm sao chạy được Unit Test trên máy chủ tự động (GitHub Actions) khi máy chủ trên đám mây không cắm vi điều khiển ESP32 thật?
-        
-        Kỹ thuật Hardware Mocking: Tạo ra các hàm giả lập có cùng tên và chữ ký hàm với hàm phần cứng. Trong kịch bản test, ta chỉ định hàm giả lập trả về mảng dữ liệu mẫu (ví dụ: chuỗi rung chấn mô phỏng động cơ hỏng) để kiểm tra xem thuật toán AI có phát hiện đúng lỗi hay không.`,
-        code: `// Giả lập hàm đọc cảm biến I2C trả về lỗi Timeout:\\ni2c_master_read_from_device_fake.return_val = ESP_ERR_TIMEOUT;\\nesp_err_t err = read_sensor_temperature(&temp);\\nTEST_ASSERT_EQUAL(ESP_ERR_TIMEOUT, err); // Kiểm tra khả năng bắt lỗi`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: LÀM SAO TEST CODE GỌI PHẦN CỨNG TRÊN SERVER CI?
+Khi thuật toán phân tích rung chấn AI của bạn gọi hàm \`i2c_master_read_from_device()\` hoặc đọc chân ngắt GPIO:
+Làm sao chạy được bài test đó trên máy chủ đám mây (GitHub Actions runner) khi máy chủ hoàn toàn không cắm vi điều khiển ESP32 thật?
+Câu trả lời: **Kỹ thuật Hardware Mocking (Giả lập phần cứng)**.
+
+Ta tạo ra một hàm giả lập có tên hàm và kiểu tham số giống hệt hàm phần cứng thật. Trong kịch bản test:
+1. Ta lập trình trước cho hàm Mock: Trả về mảng dữ liệu mẫu (ví dụ: mảng rung chấn động cơ hỏng).
+2. Hoặc kiểm tra xem: Liệu module của ta có gửi đúng địa chỉ thanh ghi \`0x3B\` qua I2C hay không.
+3. Giả lập kịch bản sự cố: Cho hàm Mock trả về mã lỗi \`ESP_ERR_TIMEOUT\` để xem firmware có tự động kích hoạt chế độ an toàn hay bị treo vĩnh viễn.
+
+### 📌 2. KỸ THUẬT STUB/MOCK THỦ CÔNG
+Khi không muốn cài đặt phức tạp, ta có thể dùng kỹ thuật Fake Object: Khai báo struct chứa giá trị trả về mong muốn và số lần hàm được gọi.
+
+### 📌 3. BẪY LỖI GIẢ LẬP QUÁ ĐÀ (OVER-MOCKING)
+Không nên mock những hàm tính toán logic thuần túy (như hàm tính CRC, hàm giải mã byte). Chỉ mock các hàm nằm ở ranh giới giao tiếp phần cứng (I2C, SPI, UART, Flash Storage).`,
+        code: `// Tệp tin: test_sensor_monitor.c (Chạy hoàn toàn trên máy tính Ubuntu/Windows)
+#include "unity.h"
+#include "esp_err.h"
+
+// Biến trạng thái để điều khiển hành vi của hàm Fake:
+static esp_err_t s_fake_i2c_return_val = ESP_OK;
+static uint8_t   s_fake_sensor_data[6] = {0};
+static uint32_t  s_i2c_read_call_count = 0;
+
+// Hàm Mock giả lập hàm đọc I2C của ESP-IDF:
+esp_err_t i2c_master_read_from_device(int port, uint8_t addr, uint8_t *data, size_t len, int timeout) {
+    s_i2c_read_call_count++;
+    if (s_fake_i2c_return_val == ESP_OK) {
+        for (size_t i = 0; i < len; i++) {
+            data[i] = s_fake_sensor_data[i];
+        }
+    }
+    return s_fake_i2c_return_val;
+}
+
+void test_system_handles_sensor_disconnect_gracefully(void) {
+    // Kịch bản: Cảm biến bị đứt cáp, đường truyền I2C bị Timeout
+    s_fake_i2c_return_val = ESP_ERR_TIMEOUT;
+    
+    bool system_healthy = monitor_poll_sensor_health();
+    
+    // Khẳng định: Firmware phải bắt được lỗi và chuyển sang trạng thái cảnh báo
+    TEST_ASSERT_FALSE(system_healthy);
+    TEST_ASSERT_EQUAL_UINT32(1, s_i2c_read_call_count);
+}`
     },
     "t55": {
         title: "Xây dựng luồng CI/CD với GitHub Actions: Tự động kiểm tra lint và build firmware khi Push",
         stageName: "Bước 14: Unit Test Tự Động & CI/CD Firmware",
         skill: "Automated Firmware CI/CD Pipelines",
-        content: `Thiết lập tệp tin kịch bản \`.github/workflows/firmware_ci.yml\`:
-        Mỗi khi bạn đẩy (push) một commit mới hoặc tạo Pull Request:
-        1. Máy chủ đám mây tự động kéo mã nguồn về container Linux.
-        2. Chạy kiểm tra định dạng code và phân tích tĩnh MISRA C.
-        3. Chạy toàn bộ các bài Unit Test.
-        4. Biên dịch thử firmware với bộ công cụ ESP-IDF.
-        5. Nếu có bất kỳ lỗi nào, GitHub sẽ đánh dấu X đỏ và từ chối hợp nhất code, bảo vệ firmware chính luôn trong trạng thái ổn định.`,
-        code: `name: Firmware CI\\non: [push, pull_request]\\njobs:\\n  build:\\n    runs-on: ubuntu-latest\\n    steps:\\n      - uses: actions/checkout@v3\\n      - name: Build with ESP-IDF\\n        uses: espressif/esp-idf-ci-action@v1`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: "NGƯỜI GÁC CỔNG" TỰ ĐỘNG 24/7
+Trong các công ty công nghệ lớn, không có bất kỳ dòng code nào được phép nhập vào sản phẩm mà không vượt qua hệ thống **CI/CD (Continuous Integration / Continuous Deployment)**.
+Mỗi khi bạn thực hiện lệnh \`git push\` hoặc mở một Pull Request:
+Máy chủ đám mây của GitHub (GitHub Actions Runner) sẽ tự động khởi động một máy ảo Linux độc lập và thực hiện tuần tự các bước kiểm thử khắt khe:
+1. **Kiểm tra chuẩn mã (Lint & Format)**: Dùng \`clang-format\` đảm bảo code sạch sẽ, thụt dòng nhất quán.
+2. **Quét lỗi bảo mật tĩnh (Static Analysis)**: Chạy \`cppcheck\` quét lỗi phân mảnh và MISRA C.
+3. **Chạy toàn bộ Unit Test**: Thực thi hàng trăm bài test Unity trong 5 giây.
+4. **Biên dịch Firmware thực tế**: Dùng Docker Image chính thức của Espressif (\`espressif/idf\`) để build file nhị phân \`firmware.bin\`.
+
+### 📌 2. NGUYÊN TẮC "ĐÁNH DẤU X ĐỎ" BẢO VỆ NHÁNH CHÍNH
+Nếu chỉ cần một bài test bị trượt (Fail) hoặc có một cảnh báo MISRA nghiêm trọng:
+Hệ thống CI sẽ đánh dấu **X Đỏ** và tự động **Khóa chức năng Merge**. Điều này đảm bảo nhánh chính (\`main\`) luôn luôn ở trạng thái sẵn sàng xuất xưởng (Production-Ready).
+
+### 📌 3. THIẾT KẾ FILE KỊCH BẢN WORKFLOW (.github/workflows/firmware_ci.yml)`,
+        code: `name: Edge AI Firmware CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    name: Run Native Host Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+        
+      - name: Install Host Build Tools
+        run: sudo apt-get update && sudo apt-get install -y gcc cppcheck
+        
+      - name: Run Cppcheck Static Analysis
+        run: cppcheck --enable=all --error-exitcode=1 main/
+        
+      - name: Execute Unity Test Suite
+        run: |
+          gcc -I./include -I./test/unity test/test_main.c test/unity/unity.c -o test_runner
+          ./test_runner
+
+  esp32-build:
+    name: Build ESP-IDF Firmware Binary
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    container: espressif/idf:release-v5.1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Firmware with idf.py
+        run: |
+          idf.py set-target esp32s3
+          idf.py build
+      - name: Upload Firmware Binary Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: esp32s3-firmware-bin
+          path: build/firmware.bin`
     },
     "t56": {
         title: "Quy trình làm việc nhóm chuyên nghiệp: Git Flow, Code Review & Release Management",
         stageName: "Bước 14: Unit Test Tự Động & CI/CD Firmware",
         skill: "Professional Git Flow & Firmware Release",
-        content: `Trong môi trường doanh nghiệp:
-        - **Nhánh main**: Chỉ chứa các bản firmware ổn định đã nghiệm thu thực tế.
-        - **Nhánh develop**: Nhánh tích hợp các tính năng mới của cả nhóm.
-        - **Nhánh feature/xyz**: Nhánh riêng của từng kỹ sư khi phát triển một module Driver hoặc chức năng mới.
-        
-        Quy trình Code Review: Mọi thay đổi đều phải tạo Pull Request (PR) và được ít nhất một kỹ sư khác duyệt (Approve) trước khi nhập vào nhánh chính. Đánh số phiên bản Firmware chuẩn ngữ nghĩa Semantic Versioning: \`v1.2.0\` (MAJOR.MINOR.PATCH).`,
-        code: `# Quy trình Git chuyên nghiệp:\\ngit checkout -b feature/canbus-driver\\n# Code và commit...\\ngit push origin feature/canbus-driver\\n# Tạo Pull Request trên GitHub để đồng đội Review`
+        content: `### 📌 1. BẢN CHẤT CỐT LÕI: NGUYÊN TẮC LÀM VIỆC NHÓM CỦA KỸ SƯ DOANH NGHIỆP
+Kỹ năng phân biệt rõ nhất giữa một "thợ code một mình" và một "Kỹ sư phần mềm nhúng chuyên nghiệp" là khả năng làm việc theo quy trình **Git Flow** và **Code Review**.
+Tuyệt đối không bao giờ được phép dùng lệnh \`git push origin main\` trực tiếp!
+Mọi tính năng mới (Driver CAN Bus, mô hình TinyML nhận diện âm thanh...) đều phải được phát triển trên một nhánh riêng biệt (Feature Branch) và trải qua quá trình phản biện mã nguồn (Code Review) từ ít nhất 1 kỹ sư Senior trước khi hòa nhập vào sản phẩm.
+
+### 📌 2. QUY ƯỚC CÁC NHÁNH TRONG MÔ HÌNH GIT FLOW
+- **\`main\`**: Nhánh thiêng liêng nhất, chỉ chứa các phiên bản firmware hoàn thiện đã qua kiểm thử trên dây chuyền sản xuất thật.
+- **\`develop\`**: Nhánh tích hợp trung tâm của toàn đội dự án.
+- **\`feature/tên-tính-năng\`**: Nhánh tạm thời tạo ra từ \`develop\` để phát triển một module độc lập. Xong tính năng thì tạo Pull Request (PR) để merge trở lại \`develop\`.
+- **\`release/vX.Y.Z\`**: Nhánh đóng băng tính năng để QA/QC thử nghiệm nghiệm thu trước khi xuất xưởng.
+
+### 📌 3. ĐÁNH SỐ PHIÊN BẢN CHUẨN NGỮ NGHĨA (SEMANTIC VERSIONING - SEMVER)
+Định dạng phiên bản: \`vMAJOR.MINOR.PATCH\` (ví dụ: \`v2.4.1\`):
+- **MAJOR**: Tăng khi thay đổi kiến trúc lớn, không tương thích ngược (ví dụ: đổi chip vi điều khiển hoặc đổi giao thức truyền thông).
+- **MINOR**: Tăng khi bổ sung tính năng ngoại vi mới nhưng vẫn tương thích ngược với hệ thống cũ.
+- **PATCH**: Tăng khi sửa lỗi nhỏ (Bug fix), không làm thay đổi giao diện API.`,
+        code: `# QUY TRÌNH THỰC CHIẾN HÀNG NGÀY CỦA KỸ SƯ NHÚNG:
+
+# 1. Kéo mã nguồn mới nhất từ nhánh phát triển
+git checkout develop
+git pull origin develop
+
+# 2. Tạo nhánh tính năng mới theo chuẩn đặt tên
+git checkout -b feature/canbus-twai-driver
+
+# 3. Viết code, chạy test và tạo commit với thông điệp rõ ràng
+git add main/can_driver.c
+git commit -m "feat(can): implement hardware acceptance filter for 0x200 range"
+
+# 4. Đẩy nhánh lên remote repository
+git push origin feature/canbus-twai-driver
+
+# 5. Mở Pull Request trên GitHub / GitLab
+# - Gán người review (Reviewers)
+# - Đợi máy chủ CI kiểm tra toàn bộ Unit Test và báo Xanh (Pass)
+# - Nhận phản hồi, sửa code và hoàn tất quá trình Squash & Merge!`
     }
 };
 
