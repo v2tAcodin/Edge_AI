@@ -614,10 +614,13 @@
                                 Phòng Thí Nghiệm & Mô Phỏng Phần Cứng Edge AI
                             </h2>
                             <p class="sim-cockpit-desc">
-                                Môi trường mô phỏng trực quan 4 trụ cột kỹ thuật phần cứng nhúng: Cấp phát Tensor Arena trong SRAM, Tiền xử lý tín hiệu DSP & Phổ FFT, Lập lịch FreeRTOS Đa nhân, và Trình soi ô nhớ Hex Memory / Stack Frame.
+                                Môi trường thực nghiệm trực quan 4 trụ cột kỹ thuật phần cứng nhúng: Cấp phát Tensor Arena trong SRAM, Tiền xử lý tín hiệu DSP & Phổ FFT, Lập lịch FreeRTOS Đa nhân, và Trình soi ô nhớ Hex Memory / Stack Frame.
                             </p>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-secondary" id="btn-toggle-lab-manual" style="font-size: 11px; padding: 6px 14px; font-weight: 700;" onclick="toggleLabManual()">
+                                📖 Sổ Tay Hướng Dẫn Thí Nghiệm ▾
+                            </button>
                             <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px;" onclick="copyCurrentSimulatorCode()">
                                 📋 Sao Chép Code C Mô Phỏng
                             </button>
@@ -645,6 +648,413 @@
                         <div class="sim-telemetry-item">
                             <span class="sim-telem-lbl">Trạng Thái Bộ Nhớ:</span>
                             <span class="sim-telem-val" id="telem-sram-status" style="color: var(--gold);">Đang theo dõi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- SỔ TAY HƯỚNG DẪN THÍ NGHIỆM & THAO TÁC (LAB MANUAL) -->
+                <!-- ============================================== -->
+                <div id="sim-lab-manual-drawer" class="sim-lab-manual-drawer" style="display: none;">
+                    <div class="sim-manual-header">
+                        <div>
+                            <div class="sim-manual-title">
+                                <span>📖</span> SỔ TAY THÍ NGHIỆM & HƯỚNG DẪN THAO TÁC PHÒNG LAB ẢO
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                Cẩm nang thực hành kỹ thuật vi điều khiển Edge AI: Quy trình từng bước, tiêu chí quan sát chuẩn công nghiệp và các bài tập mô phỏng 1-chạm.
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="toggleLabManual()">
+                            ✕ Đóng Sổ Tay
+                        </button>
+                    </div>
+
+                    <!-- Manual Navigation Tabs -->
+                    <div class="sim-manual-tabs">
+                        <button type="button" class="sim-manual-tab-btn active" id="manual-tab-btn-sram" onclick="selectLabManualTab('sram')">
+                            🧠 1. Sổ Tay Tensor Arena & SRAM
+                        </button>
+                        <button type="button" class="sim-manual-tab-btn" id="manual-tab-btn-dsp" onclick="selectLabManualTab('dsp')">
+                            📡 2. Sổ Tay Tiền Xử Lý DSP & FFT
+                        </button>
+                        <button type="button" class="sim-manual-tab-btn" id="manual-tab-btn-rtos" onclick="selectLabManualTab('rtos')">
+                            ⚡ 3. Sổ Tay Lập Lịch FreeRTOS Đa Nhân
+                        </button>
+                        <button type="button" class="sim-manual-tab-btn" id="manual-tab-btn-hexmem" onclick="selectLabManualTab('hexmem')">
+                            🔍 4. Sổ Tay Hex Memory & Stack Frame
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: SRAM & TENSOR ARENA MANUAL -->
+                    <div id="manual-panel-sram" class="sim-manual-content-panel">
+                        <div style="background: rgba(0, 240, 255, 0.04); border-left: 3px solid var(--cyan); padding: 10px 14px; border-radius: 6px; font-size: 12.5px; color: #e2e8f0;">
+                            <strong>🎯 Mục tiêu thí nghiệm:</strong> Hiểu rõ cơ chế cấp phát tĩnh <code>kTensorArenaSize</code> của TensorFlow Lite for Microcontrollers (TFLite Micro). Đánh giá tác động của kỹ thuật <strong>Lượng tử hóa (Quantization FP32 → INT8 → INT4)</strong> đến dung lượng SRAM và phương án cứu trợ bằng <strong>Octal SPI External PSRAM</strong> khi mô hình thị giác bị tràn RAM (OOM).
+                        </div>
+
+                        <!-- 4 Bước Thực Hiện -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                📋 QUY TRÌNH THAO TÁC 4 BƯỚC:
+                            </div>
+                            <div class="sim-manual-step-grid">
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">1</span>
+                                        <span class="sim-step-title">Chọn Chip MCU</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Click chọn vi điều khiển mục tiêu: ESP32-S3 (320KB), STM32F401 (96KB), nRF52840 (256KB), RP2040 (264KB). Quan sát trần SRAM khả dụng.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">2</span>
+                                        <span class="sim-step-title">Chọn Lượng Tử Hóa</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Thử nghiệm các chế độ: <strong>Float32</strong> (4x RAM - không nén), <strong>INT8</strong> (chuẩn công nghiệp 1x), hoặc <strong>INT4</strong> (0.5x).
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">3</span>
+                                        <span class="sim-step-title">Kéo Sliders Kích Thước</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Tinh chỉnh Weights, Input Tensor, Activations và Output. Quan sát biểu đồ phân bổ SRAM và mã C <code>aligned(16)</code> đồng bộ tự động.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">4</span>
+                                        <span class="sim-step-title">Kích Hoạt PSRAM</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Nếu chọn ESP32-S3 và mô hình vượt 320KB, bật checkbox <strong>+8MB External PSRAM</strong> để chuyển Tensor Arena sang bộ nhớ ngoài an toàn.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tiêu Chí Quan Sát -->
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; font-size: 12px; line-height: 1.6;">
+                            <strong style="color: #38bdf8;">🔬 Tiêu Chuẩn Đánh Giá Kỹ Thuật (Observation Checkpoints):</strong><br>
+                            • <strong>Vùng An Toàn (&lt; 50% SRAM):</strong> Hệ thống đủ RAM cho Wi-Fi Stack (~45KB), FreeRTOS Task Stacks, và hàng đợi dữ liệu.<br>
+                            • <strong>Vùng Cảnh Báo (50% - 85% SRAM):</strong> Nguy cơ phân mảnh khi chạy song song các tính năng truyền thông không dây.<br>
+                            • <strong>Lỗi OOM (&gt; 100% SRAM):</strong> Hàm <code>AllocateTensors()</code> trả về <code>kTfLiteError</code>, vi điều khiển bị panic crash!
+                        </div>
+
+                        <!-- Executable Challenges -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                🧪 KỊCH BẢN THỰC HÀNH 1-CHẠM (CHALLENGES):
+                            </div>
+                            <div class="sim-challenges-grid">
+                                <div class="sim-challenge-card ch-oom">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 1: Gây Lỗi Tràn RAM (OOM Crash)</span>
+                                        <span class="badge badge-danger">Tràn 178% SRAM</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Nạp mô hình MobileNet Vision dạng FP32 vào STM32F401 (chỉ có 96KB SRAM). Quan sát cảnh báo OOM và kích thước Arena quá tải.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_sram_mobilenet_oom')">
+                                        ⚡ Thực Hiện Kịch Bản 1
+                                    </button>
+                                </div>
+
+                                <div class="sim-challenge-card ch-safe">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 2: Giải Cứu Bằng Quantization INT8</span>
+                                        <span class="badge badge-ai">Tiết Kiệm 75% RAM</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Giữ nguyên STM32F401 nhưng chuyển sang lượng tử hóa INT8. Dung lượng Arena giảm từ 172KB xuống chỉ còn 48KB, đưa chip về trạng thái An Toàn!
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_sram_quant_int8')">
+                                        ⚡ Thực Hiện Kịch Bản 2
+                                    </button>
+                                </div>
+
+                                <div class="sim-challenge-card ch-psram">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 3: Cứu Mô Hình Lớn Bằng Octal PSRAM</span>
+                                        <span class="badge" style="background: rgba(168,85,247,0.2); color: #c084fc;">ESP32-S3 +8MB</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Chuyển sang ESP32-S3 và kích hoạt giao tiếp Octal SPI PSRAM. Tensor Arena được ánh xạ sang 8MB PSRAM ngoài, giải quyết bài toán thị giác máy tính.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_sram_psram_rescue')">
+                                        ⚡ Thực Hiện Kịch Bản 3
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: DSP & FFT MANUAL -->
+                    <div id="manual-panel-dsp" class="sim-manual-content-panel" style="display: none;">
+                        <div style="background: rgba(56, 189, 248, 0.04); border-left: 3px solid #38bdf8; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; color: #e2e8f0;">
+                            <strong>🎯 Mục tiêu thí nghiệm:</strong> Nắm vững quy trình chuyển đổi tín hiệu cảm biến từ miền thời gian $x(t)$ sang miền tần số $X(f)$ bằng biến đổi Fourier (FFT), hiểu định lý lấy mẫu Nyquist-Shannon ($f_s \ge 2 \cdot f_{max}$), và thực hành thiết kế bộ lọc số thông thấp IIR (Digital Low-Pass Filter) để triệt tiêu sóng hài nhiễu điện lưới 50Hz trước khi nạp vào mạng nơ-ron.
+                        </div>
+
+                        <!-- 4 Bước Thực Hiện -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                📋 QUY TRÌNH THAO TÁC 4 BƯỚC:
+                            </div>
+                            <div class="sim-manual-step-grid">
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">1</span>
+                                        <span class="sim-step-title">Chọn Nguồn Tín Hiệu</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Chọn các dạng tín hiệu cảm biến: Giọng nói (16kHz), Rung động động cơ IMU (100Hz), Sóng điện tim ECG (250Hz), hoặc Nhiễu điện lưới (50Hz).
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">2</span>
+                                        <span class="sim-step-title">Bật Micro Thật (Live)</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bấm nút <strong>🎙️ Bật Micro Thật</strong> để truyền trực tiếp âm thanh từ microphone máy tính của bạn vào bộ phân tích FFT thời gian thực!
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">3</span>
+                                        <span class="sim-step-title">Chỉnh Tần Số Cắt Fc</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Kéo thanh trượt <strong>Tần số cắt bộ lọc (Cutoff Fc)</strong> từ 50Hz đến 2500Hz để quan sát hiệu ứng suy hao các cột phổ cao tần.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">4</span>
+                                        <span class="sim-step-title">Bật / Tắt Bộ Lọc Số</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bật/tắt nút <strong>🛡️ Bộ Lọc Số IIR</strong> để so sánh dạng sóng thời gian $x(t)$ (trở nên mượt mà) và phổ FFT $X(f)$ (triệt tiêu gai nhiễu).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tiêu Chí Quan Sát -->
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px; font-size: 12px; line-height: 1.6;">
+                            <strong style="color: #a78bfa;">🔬 Tiêu Chuẩn Đánh Giá Kỹ Thuật:</strong><br>
+                            • <strong>Định lý Lấy Mẫu Nyquist:</strong> Với $f_s = 16,000\text{ Hz}$, tần số cao nhất tái tạo được là $8,000\text{ Hz}$. Mọi tần số cao hơn sẽ bị gấp phổ (Aliasing) làm sai lệch đặc trưng AI.<br>
+                            • <strong>Đỉnh Phổ Tự Động:</strong> Hệ thống tự động quét và gắn nhãn tần số có biên độ lớn nhất (Detected Peak Hz) trên đầu biểu đồ FFT.
+                        </div>
+
+                        <!-- Executable Challenges -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                🧪 KỊCH BẢN THỰC HÀNH 1-CHẠM (CHALLENGES):
+                            </div>
+                            <div class="sim-challenges-grid">
+                                <div class="sim-challenge-card ch-dsp">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 4: Triệt Tiêu Nhiễu Sóng Điện Lưới 50Hz</span>
+                                        <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">Low-pass Filter 120Hz</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Tự động nạp tín hiệu nhiễu điện lưới 50Hz với sóng hài bậc cao, kích hoạt bộ lọc thông thấp với $F_c = 120\text{ Hz}$ để lọc sạch dạng sóng.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_dsp_noise_filter')">
+                                        ⚡ Thực Hiện Kịch Bản 4
+                                    </button>
+                                </div>
+
+                                <div class="sim-challenge-card ch-safe">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 5: Khảo Sát Âm Thanh Micro Thật (Live Speech)</span>
+                                        <span class="badge badge-live">Web Audio API</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Kích hoạt Microphone thực của trình duyệt, nói các từ như "Hello ESP32" để quan sát các vệt formant đặc trưng âm sắc trên phổ FFT.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_dsp_live_mic')">
+                                        ⚡ Thực Hiện Kịch Bản 5
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: FREERTOS DUAL-CORE MANUAL -->
+                    <div id="manual-panel-rtos" class="sim-manual-content-panel" style="display: none;">
+                        <div style="background: rgba(52, 211, 153, 0.04); border-left: 3px solid #34d399; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; color: #e2e8f0;">
+                            <strong>🎯 Mục tiêu thí nghiệm:</strong> Trực quan hóa sự khác biệt sống còn giữa kiến trúc <strong>Đơn Nhân (Single-Core Blocking)</strong> và <strong>Hệ điều hành thời gian thực FreeRTOS Đa Nhân (Dual-Core Pinned Pipeline)</strong>. Thấy rõ nguyên nhân gây trễ (Jitter), rơi mẫu cảm biến (Dropped Samples), và kích hoạt Task Watchdog Timer (TWDT) khi mô hình AI ngốn CPU.
+                        </div>
+
+                        <!-- 4 Bước Thực Hiện -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                📋 QUY TRÌNH THAO TÁC 4 BƯỚC:
+                            </div>
+                            <div class="sim-manual-step-grid">
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">1</span>
+                                        <span class="sim-step-title">Quan Sát Gantt Timeline</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Theo dõi 2 luồng thời gian thực: Core 0 (đọc cảm biến chu kỳ 10ms - xanh lá) và Core 1 (chạy hàm AI Invoke - tím).
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">2</span>
+                                        <span class="sim-step-title">Tăng Độ Trễ AI (Latency)</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Kéo thanh trượt <strong>Thời gian chạy AI (10ms - 200ms)</strong> để mô phỏng mô hình mạng nơ-ron nặng tính toán.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">3</span>
+                                        <span class="sim-step-title">Chuyển Sang Single-Core</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bấm nút <strong>🔄 Đổi Chế Độ</strong> sang Đơn nhân. Chứng kiến Core 0 bị khóa cứng (đỏ rực) trong suốt thời gian AI suy luận!
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">4</span>
+                                        <span class="sim-step-title">Theo Dõi Mẫu Rơi & WDT</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Quan sát <strong>Hàng đợi Queue bị tràn (5/5 gói)</strong>, bộ đếm <strong>Mẫu Cảm Biến Bị Rơi</strong> tăng vọt, và Watchdog báo động khẩn cấp.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Executable Challenges -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                🧪 KỊCH BẢN THỰC HÀNH 1-CHẠM (CHALLENGES):
+                            </div>
+                            <div class="sim-challenges-grid">
+                                <div class="sim-challenge-card ch-oom">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 6: Mô Phỏng Nghẽn CPU Đơn Nhân & Tràn Queue</span>
+                                        <span class="badge badge-danger">Lỗi Khóa CPU 110ms</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Chuyển sang Single-Core với thời gian Invoke 110ms. Cảm biến bị bỏ rơi mẫu liên tục, Task Watchdog Timer cảnh báo vi phạm Deadline.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_rtos_single_freeze')">
+                                        ⚡ Thực Hiện Kịch Bản 6
+                                    </button>
+                                </div>
+
+                                <div class="sim-challenge-card ch-safe">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 7: FreeRTOS Đa Nhân Ghim Task Chống Nghẽn 0-Jitter</span>
+                                        <span class="badge badge-live">Deterministic RTOS</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Kích hoạt FreeRTOS Dual-Core với <code>xTaskCreatePinnedToCore()</code>. Core 0 đọc cảm biến mượt 100%, Core 1 chạy AI không gây ảnh hưởng.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_rtos_dual_parallel')">
+                                        ⚡ Thực Hiện Kịch Bản 7
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: HEX MEMORY & CALL STACK MANUAL -->
+                    <div id="manual-panel-hexmem" class="sim-manual-content-panel" style="display: none;">
+                        <div style="background: rgba(251, 191, 36, 0.04); border-left: 3px solid #fbbf24; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; color: #e2e8f0;">
+                            <strong>🎯 Mục tiêu thí nghiệm:</strong> Nghiên cứu cấu trúc ô nhớ vật lý SRAM cấp thấp của ESP32-S3 tại địa chỉ <code>0x3FFB0000</code>, nguyên lý lưu trữ <strong>Little-Endian</strong>, cơ chế <strong>Stack Pointer (SP)</strong>, phân mảnh Heap khi dùng <code>malloc/free</code>, và cơ chế phát hiện phá hủy <strong>Stack Canary</strong> trong hệ thống nhúng quan trọng.
+                        </div>
+
+                        <!-- 4 Bước Thực Hiện -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                📋 QUY TRÌNH THAO TÁC 4 BƯỚC:
+                            </div>
+                            <div class="sim-manual-step-grid">
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">1</span>
+                                        <span class="sim-step-title">Soi Ô Nhớ Hex & Endian</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Click vào byte bất kỳ trên bảng RAM để xem Bộ giải mã dữ liệu thời gian thực: Hex, Binary, uint16, uint32, float IEEE-754 và thứ tự byte Little-Endian.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">2</span>
+                                        <span class="sim-step-title">Thao Tác Call Stack</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bấm nút <strong>+ Gọi filter_imu_data()</strong> và <strong>+ Gọi compute_fft_peak()</strong> để quan sát con trỏ SP dịch chuyển xuống theo cơ chế Full Descending.
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">3</span>
+                                        <span class="sim-step-title">Khảo Sát Phân Mảnh Heap</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bấm <strong>free(Block B 128B)</strong> để tạo lỗ thủng bộ nhớ, sau đó bấm <strong>Thử malloc(160B)</strong> để chứng kiến lỗi cấp phát thất bại dù tổng RAM còn trống đủ!
+                                    </div>
+                                </div>
+                                <div class="sim-manual-step-box">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="sim-step-num">4</span>
+                                        <span class="sim-step-title">Kích Hoạt Stack Overflow</span>
+                                    </div>
+                                    <div class="sim-step-desc">
+                                        Bấm nút <strong>💥 Mô Phỏng Tràn Ngăn Xếp</strong> để ghi đè vượt đáy Stack, phá hủy Stack Canary và kích hoạt <code>vApplicationStackOverflowHook()</code>.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Executable Challenges -->
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">
+                                🧪 KỊCH BẢN THỰC HÀNH 1-CHẠM (CHALLENGES):
+                            </div>
+                            <div class="sim-challenges-grid">
+                                <div class="sim-challenge-card ch-dsp">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 8: Soi Giá Trị Magic Header 0xDEADBEEF & Little-Endian</span>
+                                        <span class="badge" style="background: rgba(56,189,248,0.2); color: #38bdf8;">0x3FFB0000</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Nhảy trực tiếp vào ô nhớ đầu tiên của vùng .data, quan sát chuỗi byte <code>EF BE AD DE</code> được lưu trữ theo quy tắc LSB ở địa chỉ thấp.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_hex_endian_inspect')">
+                                        ⚡ Thực Hiện Kịch Bản 8
+                                    </button>
+                                </div>
+
+                                <div class="sim-challenge-card ch-oom">
+                                    <div class="sim-challenge-top">
+                                        <span class="sim-challenge-title">Kịch bản 9: Kích Hoạt Tràn Ngăn Xếp & Phá Hủy Stack Canary</span>
+                                        <span class="badge badge-danger">Guru Meditation Panic</span>
+                                    </div>
+                                    <div class="sim-challenge-desc">
+                                        Mô phỏng hàm đệ quy không điểm dừng làm tràn Stack, phá vỡ giá trị Canary chuẩn <code>0xCAFEBABE</code> thành <code>0x0055AAFF</code>, kích hoạt hook khẩn cấp.
+                                    </div>
+                                    <button type="button" class="btn btn-secondary sim-challenge-btn" onclick="applyLabExperiment('exp_hex_stack_overflow')">
+                                        ⚡ Thực Hiện Kịch Bản 9
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -744,25 +1154,38 @@
                     </div>
 
                     <!-- 2 Cột: Sliders Điều Chỉnh & Biểu Đồ SRAM -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 14px;">
                         
-                        <!-- Cột Trái: Sliders -->
+                        <!-- Cột Trái: Sliders & Quantization Controls -->
                         <div>
+                            <!-- Lượng Tử Hóa & External PSRAM -->
+                            <div class="sim-quant-row">
+                                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Lượng tử hóa:</span>
+                                <button type="button" class="sim-quant-btn" id="btn-quant-fp32" onclick="setQuantMode('fp32')">FP32 (4x RAM)</button>
+                                <button type="button" class="sim-quant-btn active" id="btn-quant-int8" onclick="setQuantMode('int8')">INT8 (Chuẩn 1x)</button>
+                                <button type="button" class="sim-quant-btn" id="btn-quant-int4" onclick="setQuantMode('int4')">INT4 (Ultra 0.5x)</button>
+                                
+                                <div class="sim-psram-toggle-wrap" id="sim-psram-toggle-wrap">
+                                    <input type="checkbox" id="cb-spiram" onchange="toggleSpiram()">
+                                    <label for="cb-spiram" style="cursor: pointer; font-weight: 600;">+8MB Octal PSRAM</label>
+                                </div>
+                            </div>
+
                             <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 12px;">
                                 🎚️ 2. THÀNH PHẦN KÍCH THƯỚC MÔ HÌNH:
                             </div>
 
                             <div class="sim-slider-row">
                                 <div class="sim-slider-label">
-                                    <span>📦 Trọng số mô hình (Model Weights / Flatbuffer):</span>
-                                    <span class="sim-slider-val" id="val-weights">45 KB</span>
+                                    <span>📦 Trọng số mô hình (Weights / Flatbuffer):</span>
+                                    <span class="sim-slider-val" id="val-weights">45 KB (INT8)</span>
                                 </div>
                                 <input type="range" class="sim-range" id="slider-weights" min="5" max="220" value="45" oninput="updateSramSimulation()">
                             </div>
 
                             <div class="sim-slider-row">
                                 <div class="sim-slider-label">
-                                    <span>📥 Input Tensor (Ảnh 28x28 hoặc Audio Spectrogram):</span>
+                                    <span>📥 Input Tensor (Ảnh hoặc Audio Spectrogram):</span>
                                     <span class="sim-slider-val" id="val-input">8 KB</span>
                                 </div>
                                 <input type="range" class="sim-range" id="slider-input" min="1" max="50" value="8" oninput="updateSramSimulation()">
@@ -770,7 +1193,7 @@
 
                             <div class="sim-slider-row">
                                 <div class="sim-slider-label">
-                                    <span>🔄 Intermediate Activation Buffers (Lớp Conv/Dense):</span>
+                                    <span>🔄 Intermediate Activations (Lớp Conv/Dense):</span>
                                     <span class="sim-slider-val" id="val-act">32 KB</span>
                                 </div>
                                 <input type="range" class="sim-range" id="slider-act" min="4" max="150" value="32" oninput="updateSramSimulation()">
@@ -778,7 +1201,7 @@
 
                             <div class="sim-slider-row">
                                 <div class="sim-slider-label">
-                                    <span>📤 Output Tensor (Xác suất các phân lớp):</span>
+                                    <span>📤 Output Tensor (Xác suất phân lớp):</span>
                                     <span class="sim-slider-val" id="val-output">2 KB</span>
                                 </div>
                                 <input type="range" class="sim-range" id="slider-output" min="1" max="15" value="2" oninput="updateSramSimulation()">
@@ -872,7 +1295,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                         Mô hình AI trên Edge không nhận tín hiệu vật lý trực tiếp. Dữ liệu sóng thời gian phải qua <strong>Bộ lọc số</strong> và <strong>Biến đổi Fourier (FFT)</strong> để chuyển sang miền tần số trước khi đưa vào Tensor đầu vào.
                     </p>
 
-                                        <!-- Chọn Dạng Tín Hiệu Mẫu -->
+                    <!-- Chọn Dạng Tín Hiệu Mẫu -->
                     <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
                         <span style="font-size: 12px; font-weight: 700;">Nguồn tín hiệu:</span>
                         <button class="btn btn-secondary" id="btn-live-mic" onclick="toggleLiveMicrophone()">🎙️ Bật Micro Thật (Live Audio Stream)</button>
@@ -895,7 +1318,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                         <div class="canvas-card">
                             <div class="canvas-title">
                                 <span>📊 2. PHỔ TẦN SỐ FFT X(f) (INPUT TENSOR)</span>
-                                <span id="dsp-fft-status" style="color: #c084fc;">64 Tần Số Đặc Trưng</span>
+                                <span id="dsp-fft-status" style="color: #c084fc;">Đỉnh Phổ: ~440 Hz</span>
                             </div>
                             <canvas id="canvas-fft" width="500" height="180"></canvas>
                         </div>
@@ -921,8 +1344,16 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
 
                         <div class="sim-slider-row">
                             <div class="sim-slider-label">
+                                <span>Tần số cắt bộ lọc (Cutoff Fc):</span>
+                                <span class="sim-slider-val" id="val-dsp-cutoff">1200 Hz</span>
+                            </div>
+                            <input type="range" class="sim-range" id="slider-dsp-cutoff" min="50" max="2500" value="1200" oninput="updateDspParams()">
+                        </div>
+
+                        <div class="sim-slider-row">
+                            <div class="sim-slider-label">
                                 <span>Bộ lọc số (Digital Low-Pass Filter):</span>
-                                <span class="sim-slider-val" id="val-dsp-filter">BẬT (Fc = 1.2 kHz)</span>
+                                <span class="sim-slider-val" id="val-dsp-filter">BẬT (Fc = 1200 Hz)</span>
                             </div>
                             <button class="btn btn-secondary" style="font-size: 11px; padding: 6px;" onclick="toggleDspFilter()" id="btn-toggle-filter">
                                 🛡️ Bật / Tắt Bộ Lọc Số
@@ -950,7 +1381,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                         <span class="card-title-text">⚡ Mô Phỏng Lập Lịch Đa Nhiệm FreeRTOS (Dual-Core vs Single-Core)</span>
                         <div style="display: flex; gap: 8px;">
                             <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="toggleRtosMode()" id="btn-rtos-mode">
-                                🔄 Đổi: Chế độ FreeRTOS Song Song
+                                🔄 Đổi Sang: Chế Độ Đơn Nhân (Single-Core)
                             </button>
                         </div>
                     </div>
@@ -967,8 +1398,17 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                         <canvas id="canvas-rtos" width="900" height="200"></canvas>
                     </div>
 
+                    <!-- Latency Slider Control -->
+                    <div class="sim-slider-row" style="margin-top: 14px; background: rgba(15, 23, 42, 0.4); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div class="sim-slider-label">
+                            <span>⏱️ Thời gian chạy suy luận AI (Inference Latency):</span>
+                            <span class="sim-slider-val" id="val-rtos-latency" style="color: #a855f7;">70 ms</span>
+                        </div>
+                        <input type="range" class="sim-range" id="slider-rtos-latency" min="10" max="200" value="70" oninput="setRtosLatency(this.value)">
+                    </div>
+
                     <!-- Queue Buffer Indicator & Controls -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px;">
                         <div style="background: #060a15; border: 1px solid var(--card-border); border-radius: 10px; padding: 14px;">
                             <div style="font-size: 12px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">
                                 📥 HÀNG ĐỢI DỮ LIỆU (FREERTOS QUEUE):
@@ -995,6 +1435,23 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                             </div>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;" id="rtos-wdt-desc">
                                 CPU không bị giữ độc quyền quá 300ms, hệ thống chạy ổn định 24/7.
+                            </div>
+                        </div>
+
+                        <div style="background: #060a15; border: 1px solid var(--card-border); border-radius: 10px; padding: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div style="font-size: 12px; font-weight: 700; color: #f8fafc;">
+                                    📉 MẪU CẢM BIẾN BỊ RƠI:
+                                </div>
+                                <button type="button" class="btn btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="resetRtosDroppedSamples()">↺ Reset</button>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span id="rtos-dropped-samples" style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800; color: #10b981;">
+                                    0 Mẫu Bị Mất
+                                </span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                                Xảy ra khi CPU bị nghẽn trong chế độ Đơn Nhân làm mất ngắt cảm biến.
                             </div>
                         </div>
                     </div>
@@ -1032,12 +1489,18 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                             <span class="badge" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); font-size: 11px;">Heap malloc (0x50 - 0x9F)</span>
                             <span class="badge" style="background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); font-size: 11px;">Stack & SP (0xA0 - 0xFF)</span>
                         </div>
-                        <div style="display: flex; gap: 6px;">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                             <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0)">Jump .data</button>
                             <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0x50)">Jump Heap</button>
                             <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="selectHexByte(0xF0)">Jump Stack</button>
+                            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="simulateStackOverflow()">
+                                💥 Mô Phỏng Tràn Ngăn Xếp
+                            </button>
                         </div>
                     </div>
+
+                    <!-- Alert Container for Stack Overflow -->
+                    <div id="hex-overflow-alert" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;"></div>
 
                     <!-- Main Hex Dump Table -->
                     <div class="hex-dump-panel">
@@ -1141,7 +1604,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
 
                                 <div id="heap-malloc-result" style="margin-bottom: 10px;"></div>
 
-                                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
                                     <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 10px;" onclick="freeHeapBlockB()">🗑️ free(Block B 128B) [Tạo lỗ hổng]</button>
                                     <button type="button" class="btn btn-accent" style="font-size: 11px; padding: 5px 10px;" onclick="tryMallocFail()">⚠️ Thử malloc(160B) liên tục</button>
                                 </div>
@@ -1179,12 +1642,12 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                         <div class="struct-byte-slot field-u8">c (1B)</div>
                                         <div class="struct-byte-slot padding">PAD (1B)</div>
                                         <div class="struct-byte-slot padding">PAD (1B)</div>
+                                        <div class="struct-byte-slot padding">PAD (1B)</div>
                                     </div>
                                 </div>
 
-                                </div>
-
                             </div>
+
                         </div>
                     </div>
 
