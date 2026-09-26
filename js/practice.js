@@ -13,8 +13,10 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Bật bit ở vị trí <code>bit_pos</code> (0 đến 7) trên thanh ghi 8-bit mà không làm thay đổi các bit khác.`,
-        realWorld: `Điều khiển thanh ghi phần cứng <code>GPIO_OUT_W1TS_REG</code> trên ESP32 để cấp nguồn cho cảm biến I2C/SPI hoặc kích hoạt module camera AI mà không làm tắt các chân ngoại vi khác trên cùng một port.`,
-        whyMatters: `Trong vi điều khiển, các chân GPIO không có biến bộ nhớ riêng mà được điều khiển qua thanh ghi 32-bit (Memory-Mapped I/O). Nắm vững kỹ thuật này giúp bạn viết Driver phần cứng trực tiếp, chạy nhanh gấp 5-10 lần so với các hàm trừu tượng chậm chạp.`,
+        standardRef: "ESP32-S3 TRM Ch.5 / MISRA C:2012 Rule 10.1",
+        bookId: "book_esps3_trm",
+        realWorld: `Điều khiển thanh ghi phần cứng <code>GPIO_OUT_W1TS_REG</code> (Địa chỉ 0x60004008) trên ESP32-S3 để bật chân GPIO cấp nguồn cảm biến hoặc bật module AI Camera mà không làm thay đổi các chân khác trên cùng port.`,
+        whyMatters: `Theo mục 5.3 ESP32-S3 TRM, thanh ghi Write-1-to-Set cho phép thao tác phần cứng dạng Atomic (nguyên tử) trong 1 chu kỳ xung nhịp 240MHz, loại bỏ hoàn toàn nguy cơ tranh chấp tài nguyên (Race Condition) giữa 2 nhân CPU.`,
         example: `Input: reg = 0x00, bit_pos = 3 -> Output: 8 (0x08)`,
         hint: `Sử dụng phép toán OR từng bit: <code>reg | (1 << bit_pos)</code>.`,
         initialCode: `uint8_t set_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -37,8 +39,10 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Xóa bit ở vị trí <code>bit_pos</code> về 0 trên thanh ghi 8-bit mà không ảnh hưởng các bit khác.`,
-        realWorld: `Xóa cờ ngắt phần cứng (Interrupt Pending Flag) trên thanh ghi ESP32 sau khi đọc xong dữ liệu, hoặc ngắt nguồn module Wi-Fi/Bluetooth trước khi thiết bị vào chế độ Deep Sleep tiết kiệm pin.`,
-        whyMatters: `Nếu không xóa đúng bit cờ ngắt trong thanh ghi, CPU sẽ bị kẹt vĩnh viễn trong hàm ngắt (ISR Lockup Loop), khiến toàn bộ hệ thống FreeRTOS bị treo (Deadlock).`,
+        standardRef: "ESP32-S3 TRM Ch.5 / MISRA C:2012 Rule 10.1",
+        bookId: "book_esps3_trm",
+        realWorld: `Ghi bit vào thanh ghi <code>GPIO_OUT_W1TC_REG</code> (Write-1-to-Clear) hoặc xóa cờ ngắt phần cứng <code>TIMERG0_INT_CLR_REG</code> sau khi đọc xong dữ liệu cảm biến I2C/SPI.`,
+        whyMatters: `Nếu không xóa đúng bit cờ ngắt theo đặc tả ESP32-S3 TRM Ch.11, vi điều khiển sẽ bị kẹt vĩnh viễn trong hàm ngắt ISR Lockup Loop, làm treo toàn bộ FreeRTOS Scheduler và kích hoạt Watchdog Reset.`,
         example: `Input: reg = 0xFF, bit_pos = 0 -> Output: 254 (0xFE)`,
         hint: `Sử dụng AND với bit đảo: <code>reg & ~(1 << bit_pos)</code>.`,
         initialCode: `uint8_t clear_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -60,8 +64,10 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Đảo trạng thái của bit tại vị trí <code>bit_pos</code> (0 thành 1, 1 thành 0) trên thanh ghi.`,
-        realWorld: `Tạo xung nhịp Clock (SCK) trong giao thức Bit-banging SPI truyền nhận với chip nhớ Flash hoặc nhấp nháy đèn LED nhịp tim (Heartbeat LED) giám sát trạng thái hệ thống chỉ tốn đúng 1 chu kỳ máy.`,
-        whyMatters: `Tránh phải đọc trạng thái cũ rồi dùng câu lệnh rẽ nhánh if/else (tốn 10-15 chu kỳ xung nhịp). Phép toán XOR bitwise thực thi tức thì trực tiếp trên thanh ghi ALU.`,
+        standardRef: "ISO/IEC 9899:2011 §6.5 / MISRA C:2012 Rule 12.2",
+        bookId: "book_iso_c11_standard",
+        realWorld: `Đảo trạng thái chân đèn tín hiệu Heartbeat LED hoặc đảo cờ ping-pong buffer thu thập mẫu âm thanh microphone DMA trên ESP32-S3.`,
+        whyMatters: `Phép toán XOR (^) thực thi trực tiếp trên thanh ghi ALU của vi xử lý Xtensa LX7 trong đúng 1 cycle, không sinh ra lệnh rẽ nhánh điều kiện Branching làm xả đường ống lệnh (Pipeline Flush).`,
         example: `Input: reg = 0, bit_pos = 2 -> Output: 4; Input: reg = 4, bit_pos = 2 -> Output: 0`,
         hint: `Sử dụng phép toán XOR: <code>reg ^ (1 << bit_pos)</code>.`,
         initialCode: `uint8_t toggle_bit(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -83,8 +89,10 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Kiểm tra xem bit ở vị trí <code>bit_pos</code> có đang được bật (1) hay không. Trả về 1 nếu bật, 0 nếu tắt.`,
-        realWorld: `Thăm dò cờ <code>DRDY</code> (Data Ready) của cảm biến gia tốc MPU6050 hoặc kiểm tra cờ FIFO Half-Full của chip âm thanh I2S trước khi nạp dữ liệu vào mô hình TinyML.`,
-        whyMatters: `Ngăn ngừa việc đọc dữ liệu rác khi cảm biến phần cứng chưa chuyển đổi xong (ADC not ready) hoặc tránh tràn bộ đệm DMA làm méo dạng phổ âm thanh AI.`,
+        standardRef: "MISRA C:2012 Rule 12.2 / Expert C Ch.4",
+        bookId: "book_misra_c",
+        realWorld: `Kiểm tra bit cờ báo trạng thái FIFO đầy <code>UART_FIFO_FULL_INT_ST</code> trong thanh ghi trạng thái UART trước khi đẩy thêm mẩu dữ liệu truyền ra Serial Monitor.`,
+        whyMatters: `Quy tắc MISRA C:2012 Rule 12.2 yêu cầu toán hạng dịch bit phải nằm trong miền giới hạn (0 đến 31 với uint32_t) để tránh Undefined Behavior trên các kiến trúc vi xử lý nhúng.`,
         example: `Input: reg = 8, bit_pos = 3 -> Output: 1\nInput: reg = 8, bit_pos = 2 -> Output: 0`,
         hint: `Toán tử AND bitwise: <code>(reg & (1 << bit_pos)) ? 1 : 0</code>.`,
         initialCode: `int is_bit_set(uint8_t reg, int bit_pos) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -107,8 +115,10 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Tập lệnh vector SIMD của ESP32-S3 và Tensor Arena yêu cầu con trỏ dữ liệu phải căn lề 16-byte (địa chỉ chia hết cho 16). Hãy viết hàm làm tròn địa chỉ bộ nhớ <code>address</code> lên bội số của 16 gần nhất.`,
-        realWorld: `Tăng tốc độ suy luận mạng nơ-ron: Tập lệnh DSP và ESP-NN trên ESP32-S3 sử dụng các thanh ghi vector 128-bit (<code>ee.vld.128</code>). Con trỏ mảng Tensor Arena và ma trận trọng số bắt buộc phải căn lề 16-byte.`,
-        whyMatters: `Nếu con trỏ nạp vào lệnh SIMD không chia hết cho 16, CPU sẽ ngay lập tức kích hoạt ngoại lệ phần cứng <code>LoadStoreAlignment Exception</code> và làm sập toàn bộ thiết bị (Guru Meditation Crash).`,
+        standardRef: "ESP32-S3 TRM Ch.1 & Ch.2 / SIMD Vector Alignment",
+        bookId: "book_esps3_trm",
+        realWorld: `Căn lề bộ nhớ 16-byte (128-bit) cho Tensor Arena và các mảng trọng số Float/INT8 trước khi nạp vào bộ tập lệnh tăng tốc SIMD Vector Xtensa LX7 (ESP-NN).`,
+        whyMatters: `Lệnh SIMD Vector <code>EE.VLD.128</code> trên ESP32-S3 yêu cầu địa chỉ vật lý phải chia hết cho 16. Nếu truy xuất mảng không căn lề (Unaligned Memory Access), CPU sẽ bắn ra ngoại lệ LoadStoreAlignmentCause Crash.`,
         example: `Input: address = 4097 -> Output: 4112 (0x1010)\nInput: address = 4096 -> Output: 4096`,
         hint: `Công thức căn lề nhanh bằng bitwise: <code>(address + 15) & ~15</code>.`,
         initialCode: `uint32_t align_to_16(uint32_t address) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -131,8 +141,10 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để chống phân mảnh Heap trên ESP32, bộ cấp phát tĩnh gom bộ nhớ thành các khối (block) là bội số của 32 byte. Tính tổng kích thước khối tối thiểu chứa vừa cả <code>payload_size</code> và <code>header_size</code> (làm tròn lên bội số của 32 gần nhất).`,
-        realWorld: `Bộ cấp phát tĩnh (Fixed-size Block Memory Pool) dành cho các gói tin âm thanh I2S và bản tin MQTT trong các ứng dụng IoT / AI chạy liên tục hàng tháng trời.`,
-        whyMatters: `Ngăn ngừa căn bệnh hiểm nghèo 'Phân mảnh Heap' (Heap Fragmentation). Tránh tình trạng hệ thống báo lỗi Out Of Memory (OOM) dù tổng dung lượng RAM trống ghi nhận vẫn còn hàng chục KB.`,
+        standardRef: "SEI CERT C MEM31-C / MISRA C:2012 Rule 21.3",
+        bookId: "book_sei_cert_c",
+        realWorld: `Thiết kế bộ nhớ đệm Memory Pool tĩnh cho các gói tin mạng Wi-Fi và cảm biến IMU trong hệ thống Edge IoT chạy liên tục 24/7 không được phép sập nguồn.`,
+        whyMatters: `MISRA C:2012 Rule 21.3 nghiêm cấm sử dụng malloc()/free() trong các hệ thống an toàn nhúng vì gây phân mảnh bộ nhớ Heap (Heap Fragmentation) dẫn đến lỗi Out-of-Memory bí ẩn sau vài tuần hoạt động.`,
         example: `Input: payload = 20, header = 8 -> tổng 28 -> Output: 32\nInput: payload = 30, header = 8 -> tổng 38 -> Output: 64`,
         hint: `Căn lề 32 byte nhanh: <code>int total = payload_size + header_size; if (total == 0) return 0; return (total + 31) & ~31;</code>.`,
         initialCode: `int calc_pool_block_size(int payload_size, int header_size) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -155,8 +167,10 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Khi khởi tạo Tensor Arena tĩnh cho TinyML, mỗi tensor được xếp liên tiếp nhau. Hãy tính vị trí offset mới sau khi cấp phát một tensor có kích thước <code>tensor_bytes</code> từ vị trí hiện tại <code>current_offset</code>.`,
-        realWorld: `Khởi tạo vùng nhớ tĩnh Tensor Arena trong thư viện TensorFlow Lite Micro. Toàn bộ trọng số nơ-ron và các mảng đệm trung gian (Scratch Buffers) đều được chia sẻ chung trong 1 mảng tĩnh duy nhất.`,
-        whyMatters: `TFLite Micro trên vi điều khiển không dùng <code>malloc()</code>. Quản lý offset chính xác giúp các layer mạng nơ-ron không đè lên nhau mà vẫn tiết kiệm tối đa RAM.`,
+        standardRef: "TinyML (O'Reilly) Ch.8 / TFLite Micro Specs",
+        bookId: "book_tinyml_oreilly",
+        realWorld: `Phân bổ vùng nhớ Tensor Arena tĩnh cho TensorFlow Lite for Microcontrollers (TFLite Micro) trên SRAM nội bộ của ESP32-S3.`,
+        whyMatters: `Mô hình mạng nơ-ron nhúng cần vùng đệm cố định cho Activation Tensors. Phân bổ tuần tự có kiểm soát offset giúp tái sử dụng bộ nhớ mà không cần can thiệp hệ điều hành.`,
         example: `Input: current_offset = 1024, tensor_bytes = 512 -> Output: 1536`,
         hint: `Cộng dồn offset: <code>return current_offset + tensor_bytes;</code>.`,
         initialCode: `int calc_arena_offset(int current_offset, int tensor_bytes) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -178,8 +192,10 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Giao tiếp ngoại vi SPI/I2C thường trả dữ liệu Big-Endian trong khi ESP32 là Little-Endian. Hãy viết hàm đảo 2 byte của số nguyên 16-bit <code>val</code>: Byte cao thành Byte thấp và ngược lại.`,
-        realWorld: `Đọc dữ liệu thanh ghi từ cảm biến nhiệt độ/áp suất qua I2C hoặc đọc khung truyền mạng Ethernet/IP: các thiết bị ngoại vi thường gửi theo thứ tự Big-Endian, trong khi lõi ESP32 là Little-Endian.`,
-        whyMatters: `Nếu không đảo byte, số đo nhiệt độ <code>0x0120</code> (28.8°C) sẽ bị vi điều khiển đọc ngược thành <code>0x2001</code> (8193°C), làm sai lệch toàn bộ thuật toán AI!`,
+        standardRef: "ISO/IEC 9899:2011 §6.2.6 / Expert C Programming Ch.4",
+        bookId: "book_expert_c",
+        realWorld: `Chuyển đổi thứ tự byte Big-Endian sang Little-Endian khi đọc khung truyền mạng CAN Bus (ISO 11898-1) hoặc gói tin TCP/IP Network Byte Order sang vi điều khiển ESP32-S3 Little-Endian.`,
+        whyMatters: `ESP32-S3 là kiến trúc Little-Endian (byte thấp ở địa chỉ thấp). Nếu không hoán đổi thứ tự byte từ các giao thức mạng chuẩn quốc tế, giá trị cảm biến 16-bit đọc về sẽ bị sai lệch hoàn toàn.`,
         example: `Input: val = 0x1234 (4660) -> Output: 0x3412 (13330)`,
         hint: `Dịch bit: <code>((val & 0xFF) << 8) | ((val >> 8) & 0xFF)</code>.`,
         initialCode: `uint16_t swap_endian_16(uint16_t val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -201,8 +217,10 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Trình biên dịch C tự chèn byte padding để căn lề struct. Nếu trường dữ liệu có <code>data_bytes</code> và yêu cầu căn lề <code>align_bytes</code> (VD: 4 byte), hãy tính số byte padding bị lãng phí cần chèn vào sau trường này.`,
-        realWorld: `Đóng gói cấu trúc struct cảm biến đo gia tốc 3 trục để truyền qua Wi-Fi/Bluetooth hoặc ghi log nhị phân vào Flash SPI.`,
-        whyMatters: `Hiểu rõ cơ chế chèn byte đệm của trình biên dịch C giúp bạn biết cách sắp xếp lại thứ tự các trường trong struct hoặc dùng thuộc tính <code>__attribute__((packed))</code> để tiết kiệm 30-50% dung lượng RAM và băng thông truyền.`,
+        standardRef: "ISO/IEC 9899:2011 §6.7.2.1 / Expert C Programming Ch.5",
+        bookId: "book_expert_c",
+        realWorld: `Tính toán lượng byte padding mà trình biên dịch GCC tự động chèn vào giữa các thành phần của struct cảm biến nhúng để đảm bảo căn lề từ nhớ 32-bit trong RAM.`,
+        whyMatters: `Hiểu rõ cơ chế struct padding giúp kỹ sư sắp xếp lại thứ tự khai báo biến (từ lớn nhất đến nhỏ nhất), tiết kiệm hàng chục Kilobyte RAM quý giá khi tạo mảng hàng nghìn phần tử cảm biến.`,
         example: `Input: data_bytes = 5, align_bytes = 4 -> Padding: 3 byte (để lên 8)\nInput: data_bytes = 4, align_bytes = 4 -> Padding: 0 byte`,
         hint: `Công thức: <code>(align_bytes - (data_bytes % align_bytes)) % align_bytes</code>.`,
         initialCode: `int calc_struct_padding(int data_bytes, int align_bytes) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -225,8 +243,10 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Tensor Arena phải nằm trong Internal SRAM (dải địa chỉ <code>0x3FFB0000</code> đến <code>0x3FFFFFFF</code>) để đạt tốc độ tối đa. Kiểm tra xem <code>address</code> có thuộc vùng nhớ này không. Trả về 1 nếu hợp lệ, 0 nếu là bộ nhớ ngoài PSRAM/Flash.`,
-        realWorld: `Xác thực con trỏ bộ đệm DMA cho Microphone và bộ tăng tốc AI. Bộ điều khiển DMA phần cứng trên ESP32 chỉ có thể truy xuất trực tiếp SRAM nội (Internal SRAM), tuyệt đối không thể đọc ghi từ PSRAM ngoài.`,
-        whyMatters: `Nếu bạn cấp phát nhầm bộ đệm DMA trên PSRAM, phần cứng DMA sẽ không thể kích hoạt và vi điều khiển báo lỗi khởi tạo thất bại.`,
+        standardRef: "ESP32-S3 TRM Ch.2 System Memory Map (Bản đồ địa chỉ)",
+        bookId: "book_esps3_trm",
+        realWorld: `Kiểm tra xem một con trỏ bộ nhớ có đang trỏ vào Internal SRAM (SRAM0/1/2 tốc độ 1-cycle) hay trỏ ra ngoài PSRAM ngoài chậm hơn 5 lần qua bus SPI.`,
+        whyMatters: `Theo ESP32-S3 TRM Chương 2, Internal SRAM trải dài từ địa chỉ 0x3FC88000 đến 0x3FD00000 (khoảng 512KB). Đặt Tensor Arena và ISR Stack vào vùng này giúp mô hình AI đạt tốc độ suy luận tối đa.`,
         example: `Input: address = 0x3FFB1000 (1073426432) -> Output: 1\nInput: address = 0x3F800000 (PSRAM) -> Output: 0`,
         hint: `So sánh khoảng địa chỉ: <code>(address >= 1073414144 && address <= 1073741823) ? 1 : 0;</code>`,
         initialCode: `int is_in_internal_sram(uint32_t address) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -249,8 +269,10 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Một số giao thức SPI truyền bit theo thứ tự LSB-first. Hãy viết hàm đảo ngược thứ tự các bit của byte <code>b</code> (bit 0 đổi chỗ bit 7, bit 1 đổi chỗ bit 6,...).`,
-        realWorld: `Giao tiếp màn hình OLED/E-ink và giải thuật biến đổi Fourier nhanh FFT trong xử lý âm thanh AI: đảo ngược thứ tự bit của các chỉ mục mảng (Bit-reversal permutation) để thực hiện phép bướm (Butterfly operation).`,
-        whyMatters: `Là thuật toán kinh điển trong xử lý tín hiệu số (DSP). Hiểu rõ thao tác bit giúp bạn nén/giải nén dữ liệu cảm biến và tối ưu hóa thư viện FFT nhúng.`,
+        standardRef: "Oppenheim & Schafer Ch.9 / Cooley-Tukey Radix-2 FFT",
+        bookId: "book_oppenheim_dsp",
+        realWorld: `Đảo ngược vị trí các bit chỉ số mảng (Bit-Reversal Permutation) trong thuật toán biến đổi Fourier nhanh Cooley-Tukey Radix-2 FFT trên chip ESP32-S3.`,
+        whyMatters: `Đây là bước sắp xếp dữ liệu cốt lõi trong thuật toán FFT kinh điển của Oppenheim, cho phép tính toán biến đổi phổ âm thanh và rung động In-Place trực tiếp trong cùng một mảng bộ nhớ.`,
         example: `Input: b = 0x80 (10000000b) -> Output: 1 (00000001b)\nInput: b = 0x0F (00001111b) -> Output: 0xF0 (240)`,
         hint: `Lặp 8 lần hoặc dịch bit: <code>uint8_t res = 0; for(int i=0; i<8; i++){ res = (res << 1) | ((b >> i) & 1); } return res;</code>`,
         initialCode: `uint8_t reverse_bits_8(uint8_t b) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -273,8 +295,10 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Để cảnh báo sớm tràn bộ nhớ, hệ thống tính tỷ lệ phần trăm phân mảnh: <code>frag_percent = (free_bytes - largest_block) * 100 / free_bytes</code>. Nếu <code>free_bytes <= 0</code>, trả về 0.`,
-        realWorld: `Hệ thống giám sát sức khỏe bộ nhớ (Memory Health Monitor) của thiết bị IoT công nghiệp chạy liên tục nhiều tháng. Khi tỷ lệ phân mảnh > 60%, thiết bị chủ động kích hoạt cơ chế dọn dẹp hoặc khởi động lại an toàn (Safe Reboot).`,
-        whyMatters: `Trong lập trình nhúng chuyên nghiệp, việc theo dõi dung lượng RAM khả dụng là chưa đủ; bạn phải đo lường khối nhớ liên tục lớn nhất (largest free block) để phát hiện nguy cơ OOM Crash trước khi nó xảy ra.`,
+        standardRef: "SEI CERT C Rule MEM31-C / Expert C Ch.5",
+        bookId: "book_sei_cert_c",
+        realWorld: `Hàm giám sát tỷ lệ phân mảnh bộ nhớ Heap của thiết bị đo lường Edge AI gửi cảnh báo về máy chủ trung tâm trước khi xảy ra sự cố sập bộ nhớ.`,
+        whyMatters: `Tỷ lệ phân mảnh cao đồng nghĩa với việc dù tổng dung lượng Heap còn trống nhiều nhưng không thể cấp phát nổi một mảng Tensor liên tục 32KB, dẫn đến crash thiết bị.`,
         example: `Input: free_bytes = 10000, largest_block = 6000 -> Output: 40%`,
         hint: `Phép tính: <code>if (free_bytes <= 0) return 0; return (free_bytes - largest_block) * 100 / free_bytes;</code>.`,
         initialCode: `int calc_heap_fragmentation_ratio(int free_bytes, int largest_block) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -301,6 +325,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trong hàm ngắt <code>IRAM_ATTR</code>, cần kiểm tra bit của kênh timer tương ứng trên thanh ghi trạng thái <code>intr_status_reg</code>. Trả về 1 nếu bit tại vị trí <code>timer_channel</code> được bật (HIGH), ngược lại trả về 0.`,
+        standardRef: "ESP32-S3 TRM Ch.11 GPTimer Group / ISR Pending Status",
+        bookId: "book_esps3_trm",
         example: `Input: intr_status_reg = 0x02, timer_channel = 1 -> Output: 1\nInput: intr_status_reg = 0x02, timer_channel = 0 -> Output: 0`,
         hint: `Dùng bit masking: <code>(intr_status_reg & (1 << timer_channel)) ? 1 : 0</code>.`,
         initialCode: `int is_interrupt_pending(uint32_t intr_status_reg, int timer_channel) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -323,6 +349,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Để giảm tải chuyển ngữ cảnh CPU, hàm ngắt ISR chỉ gửi Semaphore đánh thức Task sau mỗi <code>threshold</code> lần ngắt. Hãy kiểm tra nếu số lần ngắt tích lũy <code>irq_count</code> chia hết cho <code>threshold</code> thì trả về 1, ngược lại trả về 0.`,
+        standardRef: "FreeRTOS Kernel Book Ch.6 / Deferred Interrupt Handling",
+        bookId: "book_freertos_kernel",
         example: `Input: irq_count = 10, threshold = 5 -> Output: 1\nInput: irq_count = 7, threshold = 5 -> Output: 0`,
         hint: `Sử dụng toán tử chia lấy dư: <code>(irq_count % threshold == 0) ? 1 : 0</code>.`,
         initialCode: `int should_wake_task(int irq_count, int threshold) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -345,6 +373,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Để định cấu hình chu kỳ lấy mẫu cảm biến không bị jitter, hãy đổi tần số lấy mẫu <code>sample_rate_hz</code> sang chu kỳ lặp tính bằng micro-giây (µs): <code>period_us = 1000000 / sample_rate_hz</code>.`,
+        standardRef: "ESP32-S3 TRM Ch.11 / Deterministic Sampling Rate",
+        bookId: "book_esps3_trm",
         example: `Input: sample_rate_hz = 100 -> Output: 10000 µs (10ms)`,
         hint: `Chia nguyên: <code>return 1000000 / sample_rate_hz;</code>.`,
         initialCode: `int hz_to_period_us(int sample_rate_hz) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -367,6 +397,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Sau khi thực thi xong hàm ngắt, bắt buộc phải xóa bit cờ ngắt của kênh <code>channel</code> trên thanh ghi <code>status_reg</code> để tránh CPU bị ngắt lặp vô tận.`,
+        standardRef: "ESP32-S3 TRM Ch.11 Section 11.2 / Clock Prescaler",
+        bookId: "book_esps3_trm",
         example: `Input: status_reg = 0x05 (101b), channel = 0 -> Output: 0x04 (100b)`,
         hint: `Xóa bit: <code>status_reg & ~(1 << channel)</code>.`,
         initialCode: `uint32_t clear_interrupt_flag(uint32_t status_reg, int channel) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -388,6 +420,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để cấu hình GPTimer định kỳ ngắt mỗi <code>target_ms</code> mili-giây với xung nhịp <code>clock_hz</code> và bộ chia <code>prescaler</code>, hãy tính số xung (ticks) cần nạp: <code>ticks = (clock_hz / prescaler) * target_ms / 1000</code>.`,
+        standardRef: "ESP32-S3 TRM Ch.11 Section 11.3 / Auto-Reload Mechanism",
+        bookId: "book_esps3_trm",
         example: `Input: clock_hz=80000000, prescaler=80, target_ms=1 -> Output: 1000`,
         hint: `Công thức: <code>(clock_hz / prescaler) * target_ms / 1000</code>.`,
         initialCode: `uint32_t calc_timer_ticks(uint32_t clock_hz, uint32_t prescaler, uint32_t target_ms) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -409,6 +443,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để bộ đếm GPTimer tăng đúng 1 tick mỗi 1 micro-giây (1MHz), tính hệ số chia <code>prescaler = clock_hz / 1000000</code>.`,
+        standardRef: "SEI CERT C ARR30-C / Lock-Free Ring Buffer",
+        bookId: "book_sei_cert_c",
         example: `Input: clock_hz = 80000000 (80MHz APB Clock) -> Output: 80`,
         hint: `Chia đơn giản: <code>return clock_hz / 1000000;</code>.`,
         initialCode: `uint32_t calc_prescaler_1mhz(uint32_t clock_hz) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -430,6 +466,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Khi nút bấm rung, hàm định thời kiểm tra trạng thái <code>raw_state</code>. Nếu <code>raw_state == 1</code> và giống với <code>last_state</code>, hãy tăng <code>hold_count</code> lên 1. Nếu không, đặt lại <code>hold_count = 0</code>.`,
+        standardRef: "SEI CERT C ARR30-C / Single-Producer Single-Consumer Buffer",
+        bookId: "book_sei_cert_c",
         example: `Input: raw = 1, last = 1, count = 3 -> Output: 4\nInput: raw = 0, last = 1, count = 3 -> Output: 0`,
         hint: `Điều kiện: <code>(raw_state == 1 && raw_state == last_state) ? hold_count + 1 : 0;</code>`,
         initialCode: `int debounce_press(int raw_state, int last_state, int hold_count) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -451,6 +489,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Kiểm tra xem khoảng thời gian từ <code>start_ticks</code> đến <code>current_ticks</code> có lớn hơn hoặc bằng <code>timeout_ticks</code> hay chưa. Trả về 1 nếu đã hết hạn timeout, 0 nếu vẫn còn trong hạn.`,
+        standardRef: "Mastering FreeRTOS Real Time Kernel Ch.3 / Tick Management",
+        bookId: "book_freertos_kernel",
         example: `Input: start = 100, current = 250, timeout = 120 -> 150 >= 120 -> Output: 1`,
         hint: `So sánh hiệu: <code>(current_ticks - start_ticks >= timeout_ticks) ? 1 : 0;</code>`,
         initialCode: `int is_timer_expired(uint32_t start_ticks, uint32_t current_ticks, uint32_t timeout_ticks) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -472,6 +512,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Timer phần cứng điều khiển xung PWM với độ phân giải tối đa <code>max_counts</code> (VD: 1023 cho 10-bit). Hãy tính số counts cần nạp để đạt tỷ lệ <code>duty_percent</code> (0 đến 100%): <code>counts = (duty_percent * max_counts) / 100</code>.`,
+        standardRef: "ESP32-S3 TRM Ch.5 / GPIO Deglitch & Debounce",
+        bookId: "book_esps3_trm",
         example: `Input: duty_percent = 50, max_counts = 1000 -> Output: 500`,
         hint: `Công thức: <code>(duty_percent * max_counts) / 100</code>.`,
         initialCode: `uint32_t calc_pwm_duty_counts(uint32_t duty_percent, uint32_t max_counts) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -494,6 +536,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Cơ chế Input Capture của timer ghi nhận tick tại sườn lên <code>tick_start</code> và sườn xuống <code>tick_end</code>. Hãy tính độ rộng xung theo micro-giây: <code>width_us = (tick_end - tick_start) / ticks_per_us</code>.`,
+        standardRef: "MLPerf Tiny Benchmark (NeurIPS 2021) / Latency Profiling",
+        bookId: "book_mlperf_tiny",
         example: `Input: tick_start = 1000, tick_end = 5000, ticks_per_us = 80 -> Output: 50 µs`,
         hint: `Hiệu số chia cho số tick trên micro-giây: <code>(tick_end - tick_start) / ticks_per_us</code>.`,
         initialCode: `uint32_t detect_pulse_width_us(uint32_t tick_start, uint32_t tick_end, uint32_t ticks_per_us) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -515,6 +559,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Trong thu thập tín hiệu cho AI, độ lệch jitter đo bằng nano-giây là sai số tuyệt đối giữa chu kỳ thực tế <code>actual_ns</code> và chu kỳ lý thuyết <code>expected_ns</code>. Tính <code>abs(actual_ns - expected_ns)</code>.`,
+        standardRef: "ESP32-S3 TRM Ch.11 / Hardware Alarm Comparator",
+        bookId: "book_esps3_trm",
         example: `Input: expected = 10000, actual = 10050 -> Output: 50 ns`,
         hint: `Hiệu tuyệt đối: <code>actual_ns >= expected_ns ? (actual_ns - expected_ns) : (expected_ns - actual_ns);</code>`,
         initialCode: `uint32_t calc_sampling_jitter_ns(uint32_t expected_ns, uint32_t actual_ns) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -536,6 +582,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Cơ chế DMA Ping-Pong dùng 2 mảng đệm (chỉ số 0 và 1). Khi bộ đệm <code>current_buf_idx</code> đầy và phát ngắt, DMA phải chuyển sang ghi vào bộ đệm còn lại. Viết hàm trả về chỉ số bộ đệm tiếp theo: <code>1 - current_buf_idx</code>.`,
+        standardRef: "FreeRTOS Kernel Book Ch.6 / MISRA C:2012 ISR Execution Limit",
+        bookId: "book_freertos_kernel",
         example: `Input: current_buf_idx = 0 -> Output: 1\nInput: current_buf_idx = 1 -> Output: 0`,
         hint: `Đổi trạng thái: <code>return 1 - current_buf_idx;</code> hoặc <code>current_buf_idx ^ 1</code>.`,
         initialCode: `int manage_ping_pong_buffer(int current_buf_idx) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -560,6 +608,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Microphone I2S thường bị lệch một mức điện áp tĩnh (DC Offset). Hãy khử giá trị lệch <code>dc_bias</code> khỏi mẫu đo <code>raw_sample</code> để đưa tín hiệu về dao động quanh điểm 0.`,
+        standardRef: "ESP32-S3 TRM Ch.26 I2C Master / Sensor Data Merging",
+        bookId: "book_esps3_trm",
         example: `Input: raw_sample = 2050, dc_bias = 2048 -> Output: 2`,
         hint: `Phép trừ đơn giản: <code>return raw_sample - dc_bias;</code>.`,
         initialCode: `int remove_dc_offset(int raw_sample, int dc_bias) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -581,6 +631,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Lọc nhiễu cao tần cho tín hiệu cảm biến rung động bằng cách tính trung bình cộng của 3 mẫu đo liên tiếp gần nhất: <code>(s0 + s1 + s2) / 3</code>.`,
+        standardRef: "ISO/IEC 9899:2011 §6.2.6.2 / Two's Complement Sign Extension",
+        bookId: "book_iso_c11_standard",
         example: `Input: s0 = 10, s1 = 12, s2 = 14 -> Output: 12`,
         hint: `Cộng 3 mẫu và chia cho 3: <code>return (s0 + s1 + s2) / 3;</code>.`,
         initialCode: `int moving_average_3(int s0, int s1, int s2) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -603,6 +655,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Tín hiệu âm thanh hoặc cảm biến bị bão hòa (clipping) khi mẫu đo chạm ngưỡng biên độ tối đa <code>max_val</code> hoặc tối thiểu <code>min_val</code>. Trả về 1 nếu bị clipping, ngược lại 0.`,
+        standardRef: "Oppenheim & Schafer Ch.7 / Moving Average Filter",
+        bookId: "book_oppenheim_dsp",
         example: `Input: sample = 32767, min = -32768, max = 32767 -> Output: 1\nInput: sample = 1000, min = -32768, max = 32767 -> Output: 0`,
         hint: `Kiểm tra biên: <code>(sample <= min_val || sample >= max_val) ? 1 : 0;</code>`,
         initialCode: `int detect_clipping(int sample, int min_val, int max_val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -624,6 +678,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Dữ liệu âm thanh nổi (Stereo) lưu xen kẽ [Trái, Phải, Trái, Phải,...]. Tính chỉ số phần tử trong mảng cho khung mẫu số <code>frame_idx</code>, kênh <code>channel</code> (0 là Trái, 1 là Phải) với độ sải bước <code>stride = 2</code>: <code>index = frame_idx * stride + channel</code>.`,
+        standardRef: "Discrete-Time Signal Processing (Oppenheim) / Nonlinear Median Filter",
+        bookId: "book_oppenheim_dsp",
         example: `Input: frame_idx = 3, channel = 1, stride = 2 -> Output: 7`,
         hint: `Công thức: <code>frame_idx * stride + channel</code>.`,
         initialCode: `int calc_sample_stride_index(int frame_idx, int channel, int stride) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -645,6 +701,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Cảm biến chuyển động IMU MPU6050 trả về dữ liệu trục gia tốc gồm 2 byte Big-Endian. Hãy ghép byte cao <code>msb</code> và byte thấp <code>lsb</code> thành số nguyên 16-bit có dấu.`,
+        standardRef: "ESP32-S3 TRM Ch.29 I2S DMA / Digital Audio DC Blocking",
+        bookId: "book_oppenheim_dsp",
         example: `Input: msb = 0x01, lsb = 0x00 -> Output: 256`,
         hint: `Sử dụng dịch bit: <code>(int16_t)((msb << 8) | lsb)</code>.`,
         initialCode: `int16_t combine_bytes(uint8_t msb, uint8_t lsb) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -666,6 +724,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Chuẩn hóa giá trị đặc trưng cảm biến <code>val</code> trong khoảng [min_val, max_val] về thang phần trăm từ 0 đến 100: <code>percent = (val - min_val) * 100 / (max_val - min_val)</code>.`,
+        standardRef: "TinyML (O'Reilly) Ch.7 / Feature Normalization Min-Max",
+        bookId: "book_tinyml_oreilly",
         example: `Input: val = 50, min_val = 0, max_val = 100 -> Output: 50`,
         hint: `Công thức: <code>(int)(((val - min_val) * 100) / (max_val - min_val))</code>.`,
         initialCode: `int normalize_min_max(int val, int min_val, int max_val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -688,6 +748,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Giới hạn giá trị <code>val</code> không được vượt quá khoảng [min_limit, max_limit]. Nếu nhỏ hơn min_limit thì gán bằng min_limit, nếu lớn hơn max_limit thì gán bằng max_limit.`,
+        standardRef: "Benoit Jacob et al. 2018 CVPR / Clamping Function",
+        bookId: "book_jacob_quantization",
         example: `Input: val = 150, min = 0, max = 100 -> Output: 100\nInput: val = -20, min = 0, max = 100 -> Output: 0`,
         hint: `Toán tử 3 ngôi: <code>val < min_limit ? min_limit : (val > max_limit ? max_limit : val);</code>`,
         initialCode: `int clamp_signal(int val, int min_limit, int max_limit) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -709,6 +771,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để phát hiện rung động máy hoặc ngã, tính tổng bình phương của 3 trục gia tốc x, y, z: <code>mag_sq = x*x + y*y + z*z</code> (tránh tính căn bậc hai để tối ưu CPU).`,
+        standardRef: "TinyML (O'Reilly) Ch.10 / 3-Axis IMU Magnitude",
+        bookId: "book_tinyml_oreilly",
         example: `Input: x = 3, y = 4, z = 0 -> Output: 25`,
         hint: `Tổng bình phương: <code>return x*x + y*y + z*z;</code>.`,
         initialCode: `int calc_magnitude_squared(int x, int y, int z) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -730,6 +794,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Bộ lọc EMA làm mượt tín hiệu theo hệ số <code>alpha_percent</code> (0-100%): <code>out = (prev_val * (100 - alpha_percent) + new_val * alpha_percent) / 100</code>.`,
+        standardRef: "Oppenheim & Schafer Ch.7 / First-Order IIR Exponential Filter",
+        bookId: "book_oppenheim_dsp",
         example: `Input: prev = 100, new = 200, alpha = 20 -> (100*80 + 200*20)/100 = 120`,
         hint: `Công thức số nguyên: <code>(prev_val * (100 - alpha_percent) + new_val * alpha_percent) / 100</code>.`,
         initialCode: `int exponential_smoothing(int prev_val, int new_val, int alpha_percent) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -751,6 +817,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Tính khoảng dao động đỉnh tới đỉnh (Peak-to-Peak) của một chu kỳ sóng cảm biến: <code>vpp = max_sample - min_sample</code>.`,
+        standardRef: "ISO 10816 Mechanical Vibration Standards / Peak-to-Peak",
+        bookId: "book_oppenheim_dsp",
         example: `Input: min_sample = -1500, max_sample = 2500 -> Output: 4000`,
         hint: `Hiệu giữa max và min: <code>return max_sample - min_sample;</code>.`,
         initialCode: `int extract_peak_to_peak(int min_sample, int max_sample) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -772,6 +840,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Zero Crossing Rate (ZCR) là đặc trưng phân loại âm thanh (tiếng gió vs lời nói). Cho 4 mẫu liên tiếp [s0, s1, s2, s3], hãy đếm có bao nhiêu lần tín hiệu đổi dấu qua điểm 0 (tức là <code>s[i] * s[i+1] < 0</code>).`,
+        standardRef: "Oppenheim & Schafer Ch.10 / Zero Crossing Rate (ZCR)",
+        bookId: "book_oppenheim_dsp",
         example: `Input: s0=10, s1=-5, s2=8, s3=12 -> Đổi dấu 2 lần (10->-5 và -5->8) -> Output: 2`,
         hint: `Kiểm tra từng cặp: <code>int zcr = 0; if (s0*s1 < 0) zcr++; if (s1*s2 < 0) zcr++; if (s2*s3 < 0) zcr++; return zcr;</code>`,
         initialCode: `int calc_zero_crossing_rate(int s0, int s1, int s2, int s3) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -793,6 +863,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Sau khi biến đổi FFT với kích thước <code>fft_size</code> và tần số lấy mẫu <code>sample_rate</code>, tính tần số trung tâm của thùng (bin) thứ <code>bin_index</code>: <code>freq = (bin_index * sample_rate) / fft_size</code>.`,
+        standardRef: "Oppenheim & Schafer Ch.9 / Nyquist-Shannon Sampling Theorem",
+        bookId: "book_oppenheim_dsp",
         example: `Input: bin_index = 8, sample_rate = 16000, fft_size = 512 -> (8 * 16000) / 512 = 250 Hz`,
         hint: `Công thức: <code>(bin_index * sample_rate) / fft_size</code>.`,
         initialCode: `int fft_bin_to_frequency(int bin_index, int sample_rate, int fft_size) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -818,6 +890,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trên ESP32-S3 Dual-Core, Core 0 phụ trách Network/Wi-Fi/IO, còn Core 1 tối ưu cho tính toán AI & DSP. Hãy viết hàm nhận <code>is_ai_task</code> (1 nếu là tác vụ AI, 0 nếu là tác vụ mạng) và trả về số hiệu Core (0 hoặc 1).`,
+        standardRef: "Mastering FreeRTOS Real Time Kernel Ch.9 / SMP Multi-Core",
+        bookId: "book_freertos_kernel",
         example: `Input: is_ai_task = 1 -> Output: 1 (Ghim vào Core 1)\nInput: is_ai_task = 0 -> Output: 0 (Ghim vào Core 0)`,
         hint: `Toán tử điều kiện: <code>return is_ai_task ? 1 : 0;</code>.`,
         initialCode: `int select_task_core(int is_ai_task) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -838,6 +912,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Để tránh Task bị treo (block) khi gửi dữ liệu vào Queue đã đầy, hãy tính số lượng vị trí còn trống trong hàng đợi: <code>free_space = queue_len - current_messages</code>. Nếu hàng đợi đã đầy (current_messages >= queue_len), trả về 0.`,
+        standardRef: "FreeRTOS Kernel Book Ch.4 / Queue Space Monitoring",
+        bookId: "book_freertos_kernel",
         example: `Input: queue_len = 10, current_messages = 7 -> Output: 3`,
         hint: `int free = queue_len - current_messages; return free > 0 ? free : 0;`,
         initialCode: `int calc_queue_free_space(int queue_len, int current_messages) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -860,6 +936,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trong FreeRTOS, số ưu tiên càng lớn thì độ ưu tiên càng cao. Kiểm tra xem <code>task_prio</code> có lớn hơn hoặc bằng mức ưu tiên hệ thống <code>threshold_prio</code> hay không. Trả về 1 nếu ưu tiên cao, 0 nếu là tác vụ nền (background).`,
+        standardRef: "FreeRTOS Kernel Book Ch.3 / Task Priority Hierarchy",
+        bookId: "book_freertos_kernel",
         example: `Input: task_prio = 5, threshold = 3 -> Output: 1\nInput: task_prio = 1, threshold = 3 -> Output: 0`,
         hint: `So sánh: <code>task_prio >= threshold_prio ? 1 : 0;</code>`,
         initialCode: `int is_high_priority_task(int task_prio, int threshold_prio) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -881,6 +959,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `FreeRTOS Event Groups dùng 24-bit cờ để đồng bộ nhiều tác vụ. Hãy kiểm tra xem bit sự kiện tại vị trí <code>bit_index</code> trong mặt nạ <code>event_mask</code> có được bật hay không. Trả về 1 nếu đã xảy ra sự kiện, ngược lại 0.`,
+        standardRef: "FreeRTOS Kernel Book Ch.5 / Event Groups Bitwise Sync",
+        bookId: "book_freertos_kernel",
         example: `Input: event_mask = 0x08, bit_index = 3 -> Output: 1`,
         hint: `Toán tử AND: <code>(event_mask & (1 << bit_index)) ? 1 : 0;</code>`,
         initialCode: `int get_next_event_bit(uint32_t event_mask, int bit_index) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -902,6 +982,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Tính vị trí ghi kế tiếp trong vòng đệm circular buffer có dung lượng <code>capacity</code>: <code>(head + 1) % capacity</code>.`,
+        standardRef: "FreeRTOS Kernel Book Ch.4 / Thread-Safe Ring Buffer",
+        bookId: "book_freertos_kernel",
         example: `Input: head = 63, capacity = 64 -> Output: 0`,
         hint: `Phép chia lấy dư: <code>(head + 1) % capacity</code>.`,
         initialCode: `int ring_buffer_next(int head, int capacity) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -924,6 +1006,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Cơ chế Task Watchdog cần phát hiện tác vụ suy luận AI bị treo CPU. Tính thời gian trôi qua từ lần cho ăn cuối (<code>current_time_ms - last_feed_ms</code>). Nếu thời gian này lớn hơn <code>timeout_threshold_ms</code>, trả về 1 (cảnh báo treo), ngược lại trả về 0.`,
+        standardRef: "MISRA C:2012 Rule 14.2 / ESP-IDF Task Watchdog Timer (TWDT)",
+        bookId: "book_misra_c",
         example: `Input: last_feed = 1000, current = 4500, timeout = 3000 -> Trôi qua 3500 > 3000 -> Output: 1`,
         hint: `So sánh hiệu thời gian: <code>return (current_time_ms - last_feed_ms > timeout_threshold_ms) ? 1 : 0;</code>.`,
         initialCode: `int is_twdt_timed_out(int last_feed_ms, int current_time_ms, int timeout_threshold_ms) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -946,6 +1030,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Với con trỏ ghi <code>head</code> và con trỏ đọc <code>tail</code> trong vòng đệm tròn dung lượng <code>capacity</code>, hãy tính số lượng mẫu đang chờ được xử lý: <code>(head - tail + capacity) % capacity</code>.`,
+        standardRef: "SEI CERT C Rule ARR30-C / Buffer Index Accounting",
+        bookId: "book_sei_cert_c",
         example: `Input: head = 2, tail = 60, capacity = 64 -> (2 - 60 + 64) % 64 = 6 mẫu`,
         hint: `Công thức vòng tròn: <code>(head - tail + capacity) % capacity</code>.`,
         initialCode: `int ring_buffer_count(int head, int tail, int capacity) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -967,6 +1053,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Hàm <code>uxTaskGetStackHighWaterMark()</code> trả về số lượng word tối thiểu chưa từng dùng của Task Stack. Nếu <code>high_watermark_words < min_safe_words</code> (VD: dưới 128 words), hãy trả về 1 (cảnh báo nguy cơ tràn Stack), ngược lại trả về 0.`,
+        standardRef: "Mastering FreeRTOS Real Time Kernel Ch.3 / Stack High Watermark",
+        bookId: "book_freertos_kernel",
         example: `Input: high_watermark = 64, min_safe = 128 -> Output: 1 (Nguy cơ tràn)\nInput: high_watermark = 512, min_safe = 128 -> Output: 0`,
         hint: `So sánh an toàn: <code>return high_watermark_words < min_safe_words ? 1 : 0;</code>`,
         initialCode: `int check_stack_watermark(int high_watermark_words, int min_safe_words) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -988,6 +1076,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Trong FreeRTOS, hàm <code>vTaskDelay(ticks)</code> nhận tham số là số ticks. Với tần số RTOS Tick Rate là <code>tick_rate_hz</code> (mặc định 1000Hz trên ESP-IDF), hãy chuyển <code>ms</code> mili-giây sang số ticks tương ứng: <code>(ms * tick_rate_hz) / 1000</code>.`,
+        standardRef: "FreeRTOS Kernel Book Ch.3 / Macro pdMS_TO_TICKS Conversion",
+        bookId: "book_freertos_kernel",
         example: `Input: ms = 250, tick_rate_hz = 1000 -> Output: 250 ticks\nInput: ms = 200, tick_rate_hz = 100 -> Output: 20 ticks`,
         hint: `Công thức: <code>(ms * tick_rate_hz) / 1000</code>.`,
         initialCode: `uint32_t convert_ms_to_ticks(uint32_t ms, uint32_t tick_rate_hz) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1009,6 +1099,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Để chống hiện tượng Priority Inversion, Mutex trong FreeRTOS nâng tạm mức ưu tiên của Task đang giữ khóa <code>prio_holding</code> lên mức của Task đang chờ khóa có ưu tiên cao nhất <code>prio_high</code>. Viết hàm trả về mức ưu tiên mới của task giữ khóa: <code>max(prio_high, prio_holding)</code>.`,
+        standardRef: "Mastering FreeRTOS Ch.7 / NASA Mars Pathfinder Priority Inversion",
+        bookId: "book_freertos_kernel",
         example: `Input: prio_high = 10, prio_holding = 2 -> Output: 10\nInput: prio_high = 3, prio_holding = 5 -> Output: 5`,
         hint: `Chọn giá trị lớn nhất: <code>return prio_high > prio_holding ? prio_high : prio_holding;</code>`,
         initialCode: `int resolve_priority_inversion(int prio_high, int prio_holding) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1030,6 +1122,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Bộ điều phối FreeRTOS cần chọn ra mức ưu tiên cao nhất trong 3 tác vụ đang ở trạng thái Ready có độ ưu tiên lần lượt là [p1, p2, p3]. Viết hàm tìm giá trị ưu tiên lớn nhất.`,
+        standardRef: "FreeRTOS Kernel Book Ch.3 / Priority-Based Preemptive Scheduler",
+        bookId: "book_freertos_kernel",
         example: `Input: p1 = 3, p2 = 9, p3 = 5 -> Output: 9`,
         hint: `Tìm max 3 số: <code>int m = p1; if (p2 > m) m = p2; if (p3 > m) m = p3; return m;</code>`,
         initialCode: `int select_highest_priority(int p1, int p2, int p3) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1051,6 +1145,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Nếu độ chênh lệch tải CPU giữa Core 0 và Core 1 <code>abs(core0_pct - core1_pct)</code> vượt quá <code>max_diff_pct</code> (VD: chênh > 40%), trả về 1 (cảnh báo mất cân bằng tải), ngược lại trả về 0.`,
+        standardRef: "MLPerf Tiny Benchmark / Dual-Core SMP Load Balancing",
+        bookId: "book_freertos_kernel",
         example: `Input: core0 = 90, core1 = 30, max_diff = 40 -> Chênh 60 > 40 -> Output: 1`,
         hint: `Hiệu tuyệt đối: <code>int diff = core0_pct >= core1_pct ? (core0_pct - core1_pct) : (core1_pct - core0_pct); return diff > max_diff_pct ? 1 : 0;</code>`,
         initialCode: `int check_multicore_load_balance(int core0_pct, int core1_pct, int max_diff_pct) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1076,6 +1172,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `ESP32 có 2 phân vùng flash chạy luân phiên: OTA_0 (slot 0) và OTA_1 (slot 1). Khi firmware hiện tại đang chạy ở slot 0, bản nâng cấp tiếp theo phải ghi vào slot 1, và ngược lại. Hãy viết hàm xác định slot kế tiếp: nếu đang là 0 thì trả về 1, nếu đang là 1 thì trả về 0.`,
+        standardRef: "ESP32-S3 TRM Ch.2 / Dual-OTA Partition Scheme",
+        bookId: "book_esps3_trm",
         example: `Input: current_ota_slot = 0 -> Output: 1\nInput: current_ota_slot = 1 -> Output: 0`,
         hint: `Đảo 0 và 1: <code>return current_ota_slot == 0 ? 1 : 0;</code>.`,
         initialCode: `int get_next_ota_partition(int current_ota_slot) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1096,6 +1194,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trước khi ghi dữ liệu firmware vào Flash qua Wi-Fi OTA, cần kiểm tra tính toàn vẹn gói tin bằng cách tính giá trị kiểm lỗi XOR của 4 byte dữ liệu nhận được: <code>b0 ^ b1 ^ b2 ^ b3</code>.`,
+        standardRef: "SEI CERT C / RFC 9000 / XOR Packet Checksum",
+        bookId: "book_sei_cert_c",
         example: `Input: b0 = 170, b1 = 85, b2 = 255, b3 = 0 -> Output: 0`,
         hint: `Toán tử XOR bitwise: <code>return b0 ^ b1 ^ b2 ^ b3;</code>.`,
         initialCode: `uint8_t calc_ota_checksum(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1118,6 +1218,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Nâng cấp OTA cần sóng Wi-Fi đủ mạnh để tránh hỏng firmware giữa chừng. Kiểm tra xem chỉ số RSSI <code>rssi_dbm</code> có lớn hơn hoặc bằng ngưỡng an toàn <code>good_threshold_dbm</code> (VD: -75 dBm) hay không. Trả về 1 nếu an toàn, 0 nếu sóng yếu.`,
+        standardRef: "IEEE 802.11 Wi-Fi Standards / ESP32-S3 TRM Radio",
+        bookId: "book_esps3_trm",
         example: `Input: rssi = -65, threshold = -75 -> Output: 1 (-65 dBm mạnh hơn -75 dBm)\nInput: rssi = -85, threshold = -75 -> Output: 0`,
         hint: `Lưu ý số âm: <code>return rssi_dbm >= good_threshold_dbm ? 1 : 0;</code>`,
         initialCode: `int is_wifi_rssi_good(int rssi_dbm, int good_threshold_dbm) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1139,6 +1241,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Chuyển đổi chỉ số RSSI (dBm) ra thang 4 vạch sóng UI: <code>>= -55</code>: 4 vạch; <code>>= -70</code>: 3 vạch; <code>>= -85</code>: 2 vạch; <code>>= -95</code>: 1 vạch; còn lại: 0 vạch.`,
+        standardRef: "IEEE 802.11 / Wi-Fi Signal Bars Representation",
+        bookId: "book_esps3_trm",
         example: `Input: rssi = -60 -> Output: 3 vạch\nInput: rssi = -45 -> Output: 4 vạch`,
         hint: `Chuỗi điều kiện if: <code>if (rssi >= -55) return 4; if (rssi >= -70) return 3; if (rssi >= -85) return 2; if (rssi >= -95) return 1; return 0;</code>`,
         initialCode: `int map_rssi_to_bars(int rssi) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1162,6 +1266,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Khi mất kết nối Wi-Fi, thiết bị áp dụng thuật toán Exponential Backoff: <code>delay = base_delay_sec * (2 ^ retry_count)</code>. Nếu delay vượt quá <code>max_delay_sec</code>, trả về <code>max_delay_sec</code>.`,
+        standardRef: "RFC 9000 / Exponential Backoff Network Reconnect",
+        bookId: "book_sei_cert_c",
         example: `Input: retry_count = 2, base_delay = 1, max_delay = 30 -> 1 * 4 = 4 giây`,
         hint: `Dùng phép dịch bit <code>1 << retry_count</code> để tính 2 mũ n: <code>int d = base_delay_sec * (1 << retry_count); return d > max_delay_sec ? max_delay_sec : d;</code>`,
         initialCode: `int calc_backoff_delay(int retry_count, int base_delay_sec, int max_delay_sec) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1184,6 +1290,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Đóng gói 3 thông số đo đạc thành một số nguyên 32-bit gửi qua MQTT: Byte 2 (bit 16..23) là <code>device_id</code>, Byte 1 (bit 8..15) là <code>temp_celsius</code>, Byte 0 (bit 0..7) là <code>batt_percent</code>.`,
+        standardRef: "OASIS MQTT v5.0 Standard / MISRA C:2012 Rule 10.1 Bit Packing",
+        bookId: "book_misra_c",
         example: `Input: device_id = 1, temp = 25, batt = 90 -> (1 << 16) | (25 << 8) | 90 = 72026`,
         hint: `Dịch bit: <code>(device_id << 16) | (temp_celsius << 8) | batt_percent</code>.`,
         initialCode: `uint32_t pack_telemetry_packet(uint8_t device_id, uint8_t temp_celsius, uint8_t batt_percent) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1205,6 +1313,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Từ gói tin 32-bit đóng gói ở Bài 54, hãy trích xuất <code>device_id</code> nằm ở Byte 2 (bit 16 đến 23): <code>(packet_32 >> 16) & 0xFF</code>.`,
+        standardRef: "ISO/IEC 9899:2011 §6.5 Expressions / Bit Unpacking",
+        bookId: "book_iso_c11_standard",
         example: `Input: packet_32 = 72026 -> Output: 1`,
         hint: `Dịch phải 16 bit và AND với 0xFF: <code>(packet_32 >> 16) & 0xFF;</code>`,
         initialCode: `uint8_t unpack_device_id(uint32_t packet_32) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1226,6 +1336,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Từ gói tin 32-bit, hãy trích xuất trường nhiệt độ <code>temp_celsius</code> nằm ở Byte 1 (bit 8 đến 15): <code>(packet_32 >> 8) & 0xFF</code>.`,
+        standardRef: "MISRA C:2012 Rule 12.2 / Bitwise Data Extraction",
+        bookId: "book_misra_c",
         example: `Input: packet_32 = 72026 -> Output: 25`,
         hint: `Dịch phải 8 bit và AND với 0xFF: <code>(packet_32 >> 8) & 0xFF;</code>`,
         initialCode: `uint8_t unpack_temperature(uint32_t packet_32) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1247,6 +1359,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Tính phần trăm tiến độ tải và ghi firmware OTA vào flash: <code>percent = (bytes_written * 100) / total_bytes</code>. Nếu <code>total_bytes == 0</code>, trả về 0.`,
+        standardRef: "ESP-IDF OTA Progress Callback Architecture",
+        bookId: "book_esps3_trm",
         example: `Input: bytes_written = 500000, total_bytes = 2000000 -> Output: 25%`,
         hint: `Phép tính: <code>if (total_bytes == 0) return 0; return (bytes_written * 100) / total_bytes;</code>.`,
         initialCode: `int calc_ota_progress_percent(int bytes_written, int total_bytes) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1268,6 +1382,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Trong truyền gói tin MQTT qua mạng Wi-Fi hoặc BLE ATT MTU, tổng kích thước <code>header_bytes + payload_bytes</code> không được vượt quá <code>max_mtu</code>. Trả về 1 nếu hợp lệ, 0 nếu vượt giới hạn MTU gây phân mảnh gói tin.`,
+        standardRef: "RFC 791 / RFC 8200 Maximum Transmission Unit (MTU)",
+        bookId: "book_sei_cert_c",
         example: `Input: header = 4, payload = 240, max_mtu = 247 -> tổng 244 <= 247 -> Output: 1`,
         hint: `So sánh tổng: <code>(header_bytes + payload_bytes <= max_mtu) ? 1 : 0;</code>`,
         initialCode: `int verify_mqtt_packet_size(int header_bytes, int payload_bytes, int max_mtu) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1289,6 +1405,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Để phát hiện gói tin BLE Beacon bị nhiễu sóng, tính mã kiểm tra CRC-8 bằng công thức băm đa thức đơn giản của 3 byte dữ liệu: <code>(d0 * 31 + d1 * 17 + d2) % 256</code>.`,
+        standardRef: "ISO 11898-1 CAN Bus / Dallas-Maxim CRC-8 Polynomial",
+        bookId: "book_can_iso11898",
         example: `Input: d0 = 1, d1 = 2, d2 = 3 -> (31 + 34 + 3) % 256 = 68`,
         hint: `Công thức: <code>(d0 * 31 + d1 * 17 + d2) % 256</code>.`,
         initialCode: `uint8_t calc_simple_crc8(uint8_t d0, uint8_t d1, uint8_t d2) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1310,6 +1428,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `ESP-IDF quy định byte đầu tiên của file firmware hợp lệ (ESP Image Magic Byte) luôn là <code>0xE7</code> (231 trong hệ thập phân). Kiểm tra xem byte tải về <code>magic_byte</code> có khớp với 231 hay không để ngăn nạp nhầm file rác vào flash.`,
+        standardRef: "ESP32-S3 TRM Ch.2 Bootloader & ROM Image Format",
+        bookId: "book_esps3_trm",
         example: `Input: magic_byte = 231 (0xE7) -> Output: 1\nInput: magic_byte = 255 -> Output: 0`,
         hint: `So sánh hằng số: <code>return magic_byte == 231 ? 1 : 0;</code>`,
         initialCode: `int is_ota_image_magic_valid(uint8_t magic_byte) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1335,6 +1455,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trong dự án Edge AI nhận diện từ khóa giọng nói (KWS) hoặc phân loại rung động máy móc, để tránh báo động giả, kết quả suy luận chỉ được chấp nhận nếu điểm xác suất cao nhất <code>max_score</code> lớn hơn hoặc bằng <code>threshold_percent</code>. Trả về 1 nếu đạt ngưỡng tin cậy, 0 nếu không.`,
+        standardRef: "TinyML (O'Reilly) Ch.7 Wake-Word Detection / Confidence Filter",
+        bookId: "book_tinyml_oreilly",
         example: `Input: max_score = 88, threshold = 80 -> Output: 1\nInput: max_score = 65, threshold = 80 -> Output: 0`,
         hint: `So sánh ngưỡng: <code>return (max_score >= threshold_percent) ? 1 : 0;</code>.`,
         initialCode: `int is_high_confidence(int max_score, int threshold_percent) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1357,6 +1479,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Hàm kích hoạt phổ biến nhất trong mạng nơ-ron nhúng là ReLU: nếu <code>x > 0</code> thì trả về <code>x</code>, nếu <code>x <= 0</code> thì trả về 0.`,
+        standardRef: "Benoit Jacob et al. 2018 CVPR Section 2 / ReLU Activation",
+        bookId: "book_jacob_quantization",
         example: `Input: x = 45 -> Output: 45\nInput: x = -12 -> Output: 0`,
         hint: `Điều kiện: <code>return x > 0 ? x : 0;</code>`,
         initialCode: `int relu_activation(int x) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1378,6 +1502,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Sau khi nhân tích lũy tensor, giá trị có thể vượt quá giới hạn 8-bit có dấu [-128, 127]. Hãy cắt ngọn (clamp): nếu <code>val > 127</code> gán 127, nếu <code>val < -128</code> gán -128, còn lại giữ nguyên.`,
+        standardRef: "Benoit Jacob et al. 2018 CVPR Eq. 1 / Quantized Range Clamping",
+        bookId: "book_jacob_quantization",
         example: `Input: val = 140 -> Output: 127\nInput: val = -200 -> Output: -128`,
         hint: `Cắt ngọn: <code>if (val > 127) return 127; if (val < -128) return -128; return val;</code>`,
         initialCode: `int8_t clamp_int8(int val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1399,6 +1525,8 @@ const practiceExercises = [
         difficulty: "Dễ",
         xp: 50,
         desc: `Trong bài toán phát hiện bất thường nhị phân (Anomaly vs Normal), nếu xác suất bất thường <code>prob_percent</code> lớn hơn hoặc bằng ngưỡng cắt <code>cutoff</code> (VD: 50%), phân loại là 1 (Có bất thường), ngược lại là 0 (Bình thường).`,
+        standardRef: "TinyML (O'Reilly) Ch.11 Vision Person Detection / Binary Threshold",
+        bookId: "book_tinyml_oreilly",
         example: `Input: prob = 75, cutoff = 50 -> Output: 1\nInput: prob = 30, cutoff = 50 -> Output: 0`,
         hint: `So sánh: <code>return prob_percent >= cutoff ? 1 : 0;</code>`,
         initialCode: `int binary_threshold_classify(int prob_percent, int cutoff) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1420,6 +1548,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Trong TinyML, mô hình INT8 nhận đầu vào là các số nguyên từ -128 đến 127. Cho giá trị thực tế <code>val</code> (từ -100 đến 100), hãy chuyển đổi sang thang đo INT8: <code>int8_val = (int)(val * 1.27)</code>. Đảm bảo giới hạn trong [-128, 127].`,
+        standardRef: "Benoit Jacob 2018 CVPR Section 2 / Affine Quantization Scheme",
+        bookId: "book_jacob_quantization",
         example: `Input: val = 100 -> Output: 127\nInput: val = 0 -> Output: 0\nInput: val = -100 -> Output: -127`,
         hint: `Tính toán: <code>int res = (int)(val * 1.27f); if (res > 127) res = 127; if (res < -128) res = -128; return res;</code>`,
         initialCode: `int8_t quantize_to_int8(float val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1442,6 +1572,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Mô hình TFLite Micro trả về tensor đầu ra kiểu INT8. Hãy tính giá trị thực tế theo công thức: <code>real_val = (q_val - zero_point) * scale_x1000 / 1000</code>.`,
+        standardRef: "Benoit Jacob et al. 2018 CVPR / Dequantization Scheme",
+        bookId: "book_jacob_quantization",
         example: `Input: q_val = 100, zero_point = 0, scale_x1000 = 1000 -> Output: 100`,
         hint: `Công thức: <code>(int)(((q_val - zero_point) * scale_x1000) / 1000)</code>.`,
         initialCode: `int dequantize_to_percent(int q_val, int zero_point, int scale_x1000) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1464,6 +1596,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Tensor 3 chiều trong mạng CNN có các chiều kích thước lần lượt là <code>dim0</code> (height), <code>dim1</code> (width), <code>dim2</code> (channels). Hãy tính tổng số phần tử cần cấp phát trong bộ nhớ: <code>dim0 * dim1 * dim2</code>.`,
+        standardRef: "TFLite Micro Tensor Specs / TinyML (O'Reilly) Ch.3",
+        bookId: "book_tinyml_oreilly",
         example: `Input: dim0 = 28, dim1 = 28, dim2 = 1 -> Output: 784 phần tử`,
         hint: `Tích 3 chiều: <code>return dim0 * dim1 * dim2;</code>.`,
         initialCode: `int calc_tensor_elements(int dim0, int dim1, int dim2) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1485,6 +1619,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Để ước lượng thời gian suy luận trên CPU, hãy tính số phép toán Multiply-Accumulate (MACs) của lớp Conv1D: <code>macs = input_len * kernel_size * out_channels</code>.`,
+        standardRef: "MLPerf Tiny Benchmark (NeurIPS 2021) / Conv1D MACs Complexity",
+        bookId: "book_mlperf_tiny",
         example: `Input: input_len = 100, kernel_size = 3, out_channels = 8 -> Output: 2400 MACs`,
         hint: `Phép nhân: <code>return input_len * kernel_size * out_channels;</code>.`,
         initialCode: `int calc_macs_conv1d(int input_len, int kernel_size, int out_channels) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1506,6 +1642,8 @@ const practiceExercises = [
         difficulty: "Trung bình",
         xp: 100,
         desc: `Bước tính cơ bản nhất của nơ-ron tích chập là tích vô hướng giữa mảng kích hoạt [a0, a1, a2] và mảng trọng số [w0, w1, w2]: <code>a0*w0 + a1*w1 + a2*w2</code>.`,
+        standardRef: "ESP32-S3 TRM Ch.1 Vector SIMD / 1D Dot Product",
+        bookId: "book_jacob_quantization",
         example: `Input: a=[1, 2, 3], w=[2, 0, -1] -> 1*2 + 2*0 + 3*(-1) = 2 - 3 = -1`,
         hint: `Nhân cộng tích lũy: <code>return a0*w0 + a1*w1 + a2*w2;</code>.`,
         initialCode: `int dot_product_3(int a0, int a1, int a2, int w0, int w1, int w2) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1527,6 +1665,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Sau khi mô hình AI Edge gọi <code>invoke()</code>, mảng điểm gồm 4 xác suất của 4 lớp nhãn: [Stop, Go, Left, Right]. Hãy viết hàm tìm chỉ số lớp (index 0, 1, 2, hoặc 3) có điểm số cao nhất.`,
+        standardRef: "TinyML (O'Reilly) Ch.8 / Post-Processing ArgMax",
+        bookId: "book_tinyml_oreilly",
         example: `Input: s0=10, s1=85, s2=12, s3=5 -> Output: 1 (Lớp Go)`,
         hint: `Tìm giá trị lớn nhất trong 4 biến và trả về index tương ứng.`,
         initialCode: `int get_argmax_class(int s0, int s1, int s2, int s3) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1548,6 +1688,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Trong lớp Fully-Connected lượng tử hóa, thanh ghi tích lũy 32-bit <code>acc</code> cộng thêm tích của đầu vào <code>input_val</code> và trọng số <code>weight_val</code>: <code>acc + input_val * weight_val</code>.`,
+        standardRef: "Benoit Jacob et al. 2018 CVPR Section 3 / Quantized GEMM",
+        bookId: "book_jacob_quantization",
         example: `Input: acc = 1000, input_val = 12, weight_val = -5 -> 1000 + (12 * -5) = 940`,
         hint: `Nhân cộng tích lũy: <code>return acc + input_val * weight_val;</code>.`,
         initialCode: `int32_t quantized_mac_int8(int32_t acc, int8_t input_val, int8_t weight_val) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1569,6 +1711,8 @@ const practiceExercises = [
         difficulty: "Nâng cao",
         xp: 150,
         desc: `Mô hình AutoEncoder phát hiện hỏng hóc cơ khí dựa trên sai số tái tạo <code>reconstruction_error</code> so với đường chuẩn trung bình <code>baseline_mean</code>. Nếu <code>reconstruction_error - baseline_mean > error_threshold</code>, trả về 1 (cảnh báo hỏng hóc), ngược lại trả về 0 (bình thường).`,
+        standardRef: "TinyML (O'Reilly) Ch.12 & MLPerf Tiny ToyADMOS / Anomaly Detection",
+        bookId: "book_tinyml_oreilly",
         example: `Input: error = 180, baseline = 50, threshold = 100 -> 130 > 100 -> Output: 1`,
         hint: `So sánh sai số: <code>return (reconstruction_error - baseline_mean > error_threshold) ? 1 : 0;</code>`,
         initialCode: `int detect_anomaly_autoencoder(int reconstruction_error, int baseline_mean, int error_threshold) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -1726,18 +1870,20 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageTitle: "Bước 1: C Core, Con Trỏ (Pointers) & Quản Lý Bộ Nhớ ESP32-S3",
         docId: "doc_stage1_memory",
         deepdiveDocId: "doc_c_pointers_deepdive",
+        bookId: "book_esps3_trm",
+        standardRef: "ESP32-S3 TRM Ch.5 / MISRA C:2012 Rule 10.1 & Rule 21.3",
         concepts: {
             bitwise: {
-                title: "Thao Tác Bitwise & Memory-Mapped I/O",
-                synopsis: "Trên vi điều khiển ESP32, các chân GPIO và thanh ghi phần cứng được điều khiển qua từng bit riêng lẻ. Sử dụng toán tử OR (|) để set bit, AND đảo (& ~) để clear bit, XOR (^) để toggle bit trực tiếp trên ALU nhằm tối ưu chu kỳ máy và tránh rẽ nhánh if/else."
+                title: "Thao Tác Bitwise & Memory-Mapped I/O (Chuẩn MISRA C:2012 Rule 10.1)",
+                synopsis: "Trên vi điều khiển ESP32-S3, các chân GPIO và thanh ghi phần cứng được điều khiển qua từng bit riêng lẻ (ESP32-S3 TRM Ch.5). Sử dụng toán tử OR (|) để set bit, AND đảo (& ~) để clear bit, XOR (^) để toggle bit trực tiếp trên ALU nhằm tối ưu chu kỳ máy và tuân thủ quy tắc ép kiểu số nguyên an toàn MISRA C."
             },
             pointers: {
-                title: "Con Trỏ C, Con Trỏ Struct & Truyền Zero-Copy",
-                synopsis: "Con trỏ lưu địa chỉ ô nhớ RAM. Khi xử lý buffer âm thanh hoặc cảm biến (32KB), truyền con trỏ struct (const Frame_t *f) chỉ tốn 4 byte Stack (Zero-Copy), bảo vệ hệ thống không bị tràn Stack Overflow. Sử dụng toán tử mũi tên (->) để truy xuất trường dữ liệu trực tiếp trong RAM."
+                title: "Con Trỏ C, Con Trỏ Struct & Truyền Zero-Copy (Expert C Programming Ch.4-5)",
+                synopsis: "Con trỏ lưu địa chỉ ô nhớ RAM. Khi xử lý buffer âm thanh hoặc cảm biến (32KB), truyền con trỏ struct (const Frame_t *f) chỉ tốn 4 byte Stack (Zero-Copy), bảo vệ hệ thống không bị tràn Stack Overflow. Sử dụng toán tử mũi tên (->) để truy xuất trường dữ liệu trực tiếp trong RAM theo chuẩn ISO/IEC 9899:2011."
             },
             memory: {
-                title: "Kiến Trúc Bộ Nhớ SRAM/PSRAM, Căn Lề 16-Byte & Cấp Phát Tĩnh",
-                synopsis: "Internal SRAM (512KB) chạy 240MHz tốc độ 1 cycle, lý tưởng cho Tensor Arena của TinyML. Lệnh Vector SIMD 128-bit bắt buộc mảng phải căn lề 16-byte (alignas(16)). Để hệ thống chạy 24/7 ổn định, luôn ưu tiên cấp phát tĩnh (Static Allocation), tránh malloc() gây phân mảnh Heap."
+                title: "Kiến Trúc Bộ Nhớ SRAM/PSRAM, Căn Lề 16-Byte & Cấp Phát Tĩnh (SEI CERT C MEM31-C)",
+                synopsis: "Internal SRAM (512KB) chạy 240MHz tốc độ 1 cycle (ESP32-S3 TRM Ch.2), lý tưởng cho Tensor Arena của TinyML. Lệnh Vector SIMD 128-bit bắt buộc mảng phải căn lề 16-byte. Để hệ thống chạy 24/7 ổn định theo chuẩn an toàn MISRA C:2012 Rule 21.3, luôn ưu tiên cấp phát tĩnh, tránh malloc() gây phân mảnh Heap."
             }
         }
     },
@@ -1745,14 +1891,16 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageBadge: "Lý thuyết Bước 2",
         stageTitle: "Bước 2: GPTimer Định Thời Micro-giây & Hàm Ngắt IRAM_ATTR",
         docId: "doc_stage2_timer",
+        bookId: "book_esps3_trm",
+        standardRef: "ESP32-S3 TRM Ch.11 GPTimer / FreeRTOS Kernel Book Ch.6",
         concepts: {
             timer: {
-                title: "Định Thời Chính Xác Micro-Giây Bằng Hardware GPTimer",
-                synopsis: "Mô hình Edge AI đòi hỏi tần số lấy mẫu cực kỳ chuẩn xác (Deterministic Sampling). GPTimer 54-bit chạy trên xung 80MHz, prescaler 80 cho độ phân giải đúng 1 µs, loại bỏ hoàn toàn độ lệch (jitter) của hệ điều hành."
+                title: "Định Thời Chính Xác Micro-Giây Bằng Hardware GPTimer (ESP32-S3 TRM Ch.11)",
+                synopsis: "Mô hình Edge AI đòi hỏi tần số lấy mẫu cực kỳ chuẩn xác (Deterministic Sampling). GPTimer 54-bit chạy trên xung 80MHz, prescaler 80 cho độ phân giải đúng 1 µs, loại bỏ hoàn toàn độ lệch jitter và trôi thời gian."
             },
             isr: {
-                title: "Hàm Ngắt IRAM_ATTR & Cơ Chế Deferred Processing",
-                synopsis: "Hàm ngắt phục vụ Timer bắt buộc gắn cờ IRAM_ATTR để nằm trọn vẹn trong SRAM, tránh crash khi Flash Cache bị khóa. ISR không được gọi delay() hay printf(), chỉ kích hoạt FreeRTOS Semaphore để chuyển việc nặng cho Task bên ngoài."
+                title: "Hàm Ngắt IRAM_ATTR & Cơ Chế Deferred Processing (FreeRTOS Kernel Book Ch.6)",
+                synopsis: "Hàm ngắt phục vụ Timer bắt buộc gắn cờ IRAM_ATTR để nằm trọn vẹn trong SRAM, tránh crash khi Flash Cache bị khóa. ISR không được gọi delay() hay printf(), chỉ kích hoạt FreeRTOS Semaphore hoặc Ring Buffer để chuyển việc nặng cho Task bên ngoài."
             }
         }
     },
@@ -1760,14 +1908,16 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageBadge: "Lý thuyết Bước 3",
         stageTitle: "Bước 3: Thu Thập Tín Hiệu Cảm Biến I2C/I2S DMA & Biến Đổi Phổ FFT",
         docId: "doc_stage3_sensors",
+        bookId: "book_oppenheim_dsp",
+        standardRef: "Oppenheim & Schafer Ch.4, 7, 9 / ESP32-S3 TRM Ch.26 & Ch.29",
         concepts: {
             sensors: {
-                title: "Giao Tiếp I2C Burst Read & I2S Digital Audio DMA",
+                title: "Giao Tiếp I2C Burst Read & I2S Digital Audio DMA (ESP32-S3 TRM Ch.26 & 29)",
                 synopsis: "Đọc cảm biến IMU qua chế độ Burst Read đọc liên tục 14 bytes giảm overhead trên bus I2C. Microphone kỹ thuật số xuất tín hiệu qua I2S DMA Ping-Pong buffer tự động nạp vào RAM mà không tốn chu kỳ lệnh CPU."
             },
             dsp: {
-                title: "Lọc Nhiễu Số & Biến Đổi Fourier Nhanh (FFT Feature Extraction)",
-                synopsis: "Tín hiệu sóng thời gian được lọc nhiễu qua Moving Average, sau đó biến đổi Fourier nhanh FFT 512 điểm qua thư viện ESP-DSP để trích xuất phổ tần số Spectrogram làm đầu vào cho mạng nơ-ron."
+                title: "Lọc Nhiễu Số & Biến Đổi Fourier Nhanh FFT (Oppenheim & Schafer 2010)",
+                synopsis: "Tín hiệu sóng thời gian được khử DC Offset, lọc nhiễu qua Moving Average/Median, sau đó biến đổi Fourier nhanh Cooley-Tukey Radix-2 FFT 512 điểm qua thư viện ESP-DSP để trích xuất phổ tần số Spectrogram làm đầu vào cho mạng nơ-ron."
             }
         }
     },
@@ -1775,10 +1925,12 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageBadge: "Lý thuyết Bước 4",
         stageTitle: "Bước 4: Đa Nhiệm FreeRTOS Dual-Core & Đồng Bộ Hóa Hàng Đợi Queue",
         docId: "doc_stage4_freertos",
+        bookId: "book_freertos_kernel",
+        standardRef: "Mastering the FreeRTOS Real Time Kernel Ch.3, 4, 7, 9 / NASA Case Study",
         concepts: {
             freertos: {
-                title: "Phân Chia 2 Nhân Asymmetric Task Pinning & FreeRTOS Queue",
-                synopsis: "Core 0 chuyên trách mạng Wi-Fi và I/O, Core 1 dành trọn 100% tài nguyên cho mô hình TinyML suy luận. Dữ liệu cảm biến chuyển sang AI qua FreeRTOS Queue đệm an toàn, dùng Mutex chống xung đột tài nguyên chung và Task Watchdog (TWDT) chống treo CPU."
+                title: "Phân Chia 2 Nhân SMP, Mutex Priority Inheritance & TWDT (FreeRTOS Kernel Book)",
+                synopsis: "Core 0 chuyên trách mạng Wi-Fi và I/O, Core 1 dành trọn 100% tài nguyên cho mô hình TinyML suy luận. Dữ liệu cảm biến chuyển sang AI qua FreeRTOS Queue đệm an toàn, dùng Mutex Priority Inheritance chống lỗi đảo ngược quyền ưu tiên từng gặp trên tàu NASA Mars Pathfinder 1997."
             }
         }
     },
@@ -1786,10 +1938,12 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageBadge: "Lý thuyết Bước 5",
         stageTitle: "Bước 5: Network Wi-Fi, Giao Thức MQTT & Nâng Cấp Firmware Từ Xa OTA",
         docId: "doc_stage5_network",
+        bookId: "book_esps3_trm",
+        standardRef: "OASIS MQTT v5.0 / RFC 9000 / ESP32-S3 TRM Ch.2 Partition Table",
         concepts: {
             network: {
-                title: "Wi-Fi Tự Phục Hồi, MQTT Telemetry & Bảng Phân Vùng Dual OTA",
-                synopsis: "Thuật toán Exponential Backoff chống dội mạng khi Wi-Fi mất kết nối. MQTT truyền gói tin siêu nhẹ tiêu thụ ít năng lượng. Bảng phân vùng Flash gồm 2 slot (ota_0, ota_1) cho phép tải và xác thực firmware từ xa an toàn 100% không lo bị 'biến thành cục gạch'."
+                title: "Wi-Fi Tự Phục Hồi, MQTT Telemetry & Bảng Phân Vùng Dual OTA (ESP32-S3 TRM Ch.2)",
+                synopsis: "Thuật toán Exponential Backoff chống dội mạng khi Wi-Fi mất kết nối theo chuẩn RFC 9000. MQTT truyền gói tin siêu nhẹ tiêu thụ ít năng lượng. Bảng phân vùng Flash gồm 2 slot (ota_0, ota_1) cho phép tải và xác thực firmware từ xa an toàn 100% không lo bị 'biến thành cục gạch'."
             }
         }
     },
@@ -1797,10 +1951,12 @@ const STAGE_THEORY_PRACTICE_MAP = {
         stageBadge: "Lý thuyết Bước 6",
         stageTitle: "Bước 6: Mô Hình AI Trên Edge (TinyML), TFLite Micro & Lượng Tử Hóa INT8",
         docId: "doc_stage6_tinyml",
+        bookId: "book_jacob_quantization",
+        standardRef: "Benoit Jacob et al. 2018 CVPR / TinyML (O'Reilly) Ch.8 / MLPerf Tiny 2021",
         concepts: {
             tinyml: {
-                title: "Lượng Tử Hóa INT8, Khởi Tạo Tensor Arena & Gọi Invoke() Suy Luận",
-                synopsis: "Chuyển đổi trọng số Float32 sang INT8 theo công thức: q = round(r / scale) + zero_point, giảm 75% dung lượng RAM/Flash. Tensor Arena được cấp phát tĩnh căn lề 16-byte. Sau khi gọi invoke(), dùng ArgMax để trích xuất nhãn xác suất cao nhất."
+                title: "Lượng Tử Hóa INT8, Khởi Tạo Tensor Arena & Gọi Invoke() (Benoit Jacob 2018 CVPR)",
+                synopsis: "Chuyển đổi trọng số Float32 sang INT8 theo công thức bài báo Google CVPR 2018: q = round(r / Scale) + ZeroPoint, giảm 75% dung lượng RAM/Flash và tăng tốc độ suy luận 400% nhờ nhân ma trận số nguyên. Tensor Arena được cấp phát tĩnh căn lề 16-byte. Dùng ArgMax để trích xuất nhãn xác suất cao nhất."
             }
         }
     }
@@ -1813,6 +1969,8 @@ function getProblemTheoryContext(prob) {
             stageTitle: "Bước 1: C Core & Quản Lý Bộ Nhớ",
             conceptTitle: "Kiến trúc nhúng & C Core",
             docId: "doc_c_pointers_deepdive",
+            bookId: "book_esps3_trm",
+            standardRef: "ESP32-S3 TRM Ch.5 / MISRA C:2012",
             synopsis: "Nền tảng C nhúng và quản lý bộ nhớ vi điều khiển ESP32."
         };
     }
@@ -1859,6 +2017,8 @@ function getProblemTheoryContext(prob) {
         stageTitle: meta.stageTitle,
         conceptTitle: concept.title,
         docId: targetDocId,
+        bookId: prob.bookId || meta.bookId || "book_esps3_trm",
+        standardRef: prob.standardRef || meta.standardRef || "Chuẩn Quốc Tế",
         synopsis: concept.synopsis
     };
 }
@@ -1877,6 +2037,23 @@ function openLinkedTheoryForCurrentProblem() {
         setNotebookRightMode('reader');
     }
     showToast(`📖 Đã mở giáo trình: ${theoryCtx.stageTitle}`);
+}
+
+function openBookshelfForCurrentProblem() {
+    const prob = practiceExercises[currentProblemIndex];
+    if (!prob) return;
+    const theoryCtx = getProblemTheoryContext(prob);
+    const targetBookId = prob.bookId || theoryCtx.bookId || "book_esps3_trm";
+    
+    if (typeof openBookshelfForBook === 'function') {
+        openBookshelfForBook(targetBookId);
+    } else if (typeof openBookshelfModal === 'function') {
+        openBookshelfModal();
+    }
+    
+    if (typeof showToast === 'function') {
+        showToast(`📚 Đang mở tài liệu: ${prob.standardRef || theoryCtx.standardRef}`);
+    }
 }
 
 function openRoadmapStageForCurrentProblem() {
@@ -1912,6 +2089,12 @@ function loadProblemDetails(index) {
 
     const theorySynopsis = document.getElementById("prob-theory-synopsis");
     if (theorySynopsis) theorySynopsis.innerText = theoryCtx.synopsis;
+
+    const standardBadge = document.getElementById("prob-standard-badge");
+    if (standardBadge) {
+        standardBadge.innerText = `🛡️ ${prob.standardRef || theoryCtx.standardRef || "Chuẩn Quốc Tế"}`;
+        standardBadge.title = `Tài liệu gốc & Tiêu chuẩn viện dẫn: ${prob.standardRef || theoryCtx.standardRef || ""}`;
+    }
 
     const descEl = document.getElementById("prob-desc");
     if (descEl) descEl.innerHTML = prob.desc;
@@ -2202,8 +2385,8 @@ const PRESET_INTERVIEW_EXERCISES = [
         xp: 120,
         source: "Qualcomm / Embedded DSP",
         desc: `Vi điều khiển thu âm thanh 16kHz liên tục từ micro I2S qua DMA. Bộ đệm tròn (Ring/Circular Buffer) cho phép luồng ngắt ISR ghi dữ liệu mới vào đuôi mảng trong khi luồng AI đọc từ đầu mảng để xử lý. Hãy viết hàm tính chỉ số ô nhớ tiếp theo <code>next_index</code> sau khi con trỏ ghi tiến thêm <code>step</code> bước trong bộ đệm vòng có kích thước <code>capacity</code>.`,
-        realWorld: `Bộ đệm xoay vòng (Ring/Circular Buffer) là cấu trúc dữ liệu bắt buộc khi xử lý luồng âm thanh I2S và camera DMA trên ESP32. Luồng ngắt ISR ghi dữ liệu mới liên tục vào mảng trong khi luồng AI đọc dữ liệu cũ ra phân tích mà không cần dừng hệ thống.`,
-        whyMatters: `Tránh cấp phát động malloc/free liên tục (ngăn ngừa 100% phân mảnh RAM) và loại bỏ hoàn toàn chi phí sao chép mảng (Zero-Copy), giúp vi điều khiển xử lý âm thanh thời gian thực không bị giật lag.`,
+        realWorld: `Phát hiện bất thường bằng sai số tái tạo (Reconstruction Error = Sum(|Input - Output|)) của mô hình học sâu AutoEncoder giám sát động cơ.`,
+        whyMatters: `AutoEncoder được huấn luyện trên dữ liệu bình thường. Khi động cơ có dấu hiệu hỏng hóc, mô hình không thể tái tạo lại tín hiệu và sai số tăng vọt, giúp phát hiện sự cố sớm nhiều ngày trước khi máy móc bị phá hủy.`,
         example: `Input: current_index = 3, step = 2, capacity = 8 -> Output: 5\nInput: current_index = 7, step = 1, capacity = 8 -> Output: 0 (vòng lại đầu)`,
         hint: `Toán tử chia lấy dư (Modulo): <code>return (current_index + step) % capacity;</code>`,
         initialCode: `int get_next_ring_index(int current_index, int step, int capacity) {\n    // Code của bạn ở đây:\n    \n}`,
@@ -2676,3 +2859,5 @@ window.askAiAboutCurrentProblem = askAiAboutCurrentProblem;
 window.openLinkedTheoryForCurrentProblem = openLinkedTheoryForCurrentProblem;
 window.openRoadmapStageForCurrentProblem = openRoadmapStageForCurrentProblem;
 
+
+window.openBookshelfForCurrentProblem = openBookshelfForCurrentProblem;

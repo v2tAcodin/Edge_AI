@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="css/search.css">
     <link rel="stylesheet" href="css/analytics.css">
     <link rel="stylesheet" href="css/audio.css">
+    <link rel="stylesheet" href="css/bookshelf.css">
 </head>
 
 <body>
@@ -168,6 +169,11 @@
                 <!-- CheatSheet Drawer Button -->
                 <button class="btn btn-secondary" onclick="openCheatSheet()" title="Tra cứu nhanh thanh ghi, bản đồ bộ nhớ & APIs">
                     📖 CheatSheet
+                </button>
+
+                <!-- Technical Bookshelf Button -->
+                <button class="btn btn-secondary btn-bookshelf" onclick="openBookshelfModal()" title="Tủ Sách Kỹ Thuật: Sách giáo khoa, Báo cáo khoa học & PDF gốc">
+                    📚 Tủ Sách
                 </button>
 
                 <!-- Backup & Restore Buttons (Phase 3: + Lịch sử) -->
@@ -343,6 +349,21 @@
                             <div class="portal-card-action" style="color: var(--cyan);">
                                 <span id="portal-theory-stat">14 Chương Lý Thuyết</span>
                                 <span>Đọc Giáo Trình →</span>
+                            </div>
+                        </div>
+
+                        <!-- Portal: Technical Bookshelf (12 Gốc) -->
+                        <div class="portal-card" onclick="openBookshelfModal()" style="border-color: rgba(56, 189, 248, 0.45); background: linear-gradient(145deg, rgba(16, 24, 40, 0.95), rgba(56, 189, 248, 0.06));">
+                            <div>
+                                <div class="portal-icon" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4);">📚</div>
+                                <div class="portal-card-title" style="color: #38bdf8;">Tủ Sách &amp; Thư Viện PDF Gốc</div>
+                                <div class="portal-card-desc">
+                                    12 Tài liệu kinh điển, Báo cáo CVPR/NeurIPS, Datasheet ESP32-S3 TRM 1426 trang, Sách FreeRTOS Kernel &amp; Chuẩn MISRA C:2012.
+                                </div>
+                            </div>
+                            <div class="portal-card-action" style="color: #38bdf8;">
+                                <span>12 Sách &amp; Paper Gốc</span>
+                                <span>Mở Tủ Sách →</span>
                             </div>
                         </div>
 
@@ -1312,10 +1333,14 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                 <div class="theory-link-info">
                                     <span class="theory-link-badge" id="prob-theory-stage-badge">📖 Lý thuyết Bước 1</span>
                                     <span class="theory-link-concept" id="prob-theory-concept">Khái niệm: Thao tác con trỏ & Zero-copy</span>
+                                    <span class="theory-link-standard" id="prob-standard-badge" title="Tiêu chuẩn & Tài liệu viện dẫn">🛡️ Chuẩn: ESP32-S3 TRM</span>
                                 </div>
                                 <div class="theory-link-buttons">
                                     <button type="button" class="btn-theory-jump" onclick="openLinkedTheoryForCurrentProblem()" title="Mở giáo trình lý thuyết đầy đủ trong Sổ Tay AI">
-                                        <span>📖 Đọc Lý Thuyết Chi Tiết ↗</span>
+                                        <span>📖 Lý Thuyết ↗</span>
+                                    </button>
+                                    <button type="button" class="btn-theory-book" onclick="openBookshelfForCurrentProblem()" title="Mở sách/tài liệu gốc trích dẫn trong Tủ Sách">
+                                        <span>📚 Sách Gốc &amp; PDF ↗</span>
                                     </button>
                                     <button type="button" class="btn-theory-roadmap" onclick="openRoadmapStageForCurrentProblem()" title="Xem vị trí bài học trên Lộ trình">
                                         <span>🗺️ Lộ Trình</span>
@@ -2387,6 +2412,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/cheatsheet.js?v=3.1.5" defer></script>
     <script src="js/interview.js?v=3.1.5" defer></script>
     <script src="js/notebook.js?v=3.1.5" defer></script>
+    <script src="js/bookshelf.js?v=3.1.5" defer></script>
     <script src="js/projects.js?v=3.1.5" defer></script>
     <script src="js/hexmem.js?v=3.1.5" defer></script>
     <script src="js/search.js?v=3.1.5" defer></script>
