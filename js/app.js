@@ -184,6 +184,8 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then((reg) => {
                 console.log('[PWA] Service Worker registered with scope:', reg.scope);
+                // Chủ động kiểm tra bản cập nhật mới nhất từ server
+                if (reg.update) reg.update();
             })
             .catch((err) => {
                 console.warn('[PWA] Service Worker registration failed:', err);

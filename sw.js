@@ -1,9 +1,7 @@
-// ==========================================
-// EDGE AI HUB — PWA SERVICE WORKER
-// Version: 3.1.2
+// Version: 3.1.3
 // ==========================================
 
-const CACHE_NAME = 'edge-ai-hub-v3.1.2';
+const CACHE_NAME = 'edge-ai-hub-v3.1.3';
 
 const PRECACHE_ASSETS = [
     './',
@@ -104,7 +102,24 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2. Static Assets (CSS, JS, Fonts, Images): Cache First with Background Update (Stale-While-Revalidate)
+    // 2. Code Assets (JS, CSS): Network first, fallback to Cache (đảm bảo code luôn mới nhất)
+    const isCodeAsset = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+    if (isCodeAsset) {
+        event.respondWith(
+            fetch(request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => caches.match(request))
+        );
+        return;
+    }
+
+    // 3. Media & Static Assets (Fonts, Images, Audio, Icons): Cache First with Background Update (Stale-While-Revalidate)
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             const fetchPromise = fetch(request)
