@@ -2291,18 +2291,26 @@ Trả về duy nhất định dạng JSON chuẩn (không chứa markdown backti
   ]
 }`;
 
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            const res = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
+            const aiModels = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+            for (const m of aiModels) {
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
 
-            if (res.ok) {
-                const data = await res.json();
-                let txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
-                problemData = JSON.parse(txt);
+                    if (res.ok) {
+                        const data = await res.json();
+                        let txt = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        txt = txt.replace(/```json/g, '').replace(/```/g, '').trim();
+                        problemData = JSON.parse(txt);
+                        break;
+                    }
+                } catch (e) {
+                    console.warn(`AI model ${m} failed:`, e);
+                }
             }
         }
 

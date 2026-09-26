@@ -422,8 +422,8 @@ function updateGeminiKeyStatus() {
     if (!statusPill) return;
 
     if (geminiApiKey && geminiApiKey.trim().length > 10) {
-        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 2.0 Flash Online</span>`;
-        statusPill.title = "Đã kết nối Google Gemini 2.0 Flash. Sẵn sàng xử lý tài liệu đa phương thức và PDF nguyên bản.";
+        statusPill.innerHTML = `🟢 <span style="color: var(--accent);">Gemini 3.8 Flash Online</span>`;
+        statusPill.title = "Đã kết nối Google Gemini 3.8 Flash. Sẵn sàng xử lý tài liệu đa phương thức và PDF nguyên bản.";
     } else {
         statusPill.innerHTML = `⚡ <span style="color: var(--cyan);">Offline Knowledge AI</span>`;
         statusPill.title = "Đang chạy chế độ Động Cơ Tri Thức Nhúng Cục Bộ. Bấm ⚙️ Cấu Hình Key để kích hoạt Cloud Gemini AI.";
@@ -911,10 +911,11 @@ async function handleSendNotebookQuery() {
 }
 
 // ==========================================
-// CẤU HÌNH GOOGLE GEMINI API (MODEL 2.0 FLASH & FALLBACK 1.5 FLASH)
+// CẤU HÌNH GOOGLE GEMINI API (MODEL 3.8 FLASH & FALLBACKS)
 // ==========================================
-const GEMINI_PRIMARY_MODEL = "gemini-2.0-flash";
-const GEMINI_FALLBACK_MODEL = "gemini-1.5-flash";
+const GEMINI_PRIMARY_MODEL = "gemini-3.8-flash";
+const GEMINI_FALLBACK_MODEL = "gemini-2.5-flash";
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
 // Gọi Google Gemini API (Multimodal PDF + Text)
 async function queryGeminiApi(question, docs, directPdf = null) {
@@ -987,13 +988,12 @@ QUY TẮC PHẢN HỒI:
         }
     };
 
-    // Thử model chính (gemini-2.0-flash), nếu lỗi 404 thì tự động thử model phụ (gemini-1.5-flash)
-    const modelsToTry = [GEMINI_PRIMARY_MODEL, GEMINI_FALLBACK_MODEL];
+    // Thử danh sách model (gemini-3.8-flash -> gemini-2.5-flash -> gemini-1.5-flash)
     let responseData = null;
     let successfulModel = null;
     let lastError = null;
 
-    for (const modelName of modelsToTry) {
+    for (const modelName of GEMINI_MODELS) {
         try {
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey.trim()}`;
             const response = await fetch(endpoint, {
@@ -1005,8 +1005,14 @@ QUY TẮC PHẢN HỒI:
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 const msg = errorData.error?.message || `HTTP ${response.status}`;
-                if (response.status === 404 || msg.toLowerCase().includes("not found")) {
-                    console.warn(`Model ${modelName} không khả dụng, thử fallback sang model tiếp theo...`);
+                const isModelUnavailable = response.status === 404 || 
+                    msg.toLowerCase().includes("not found") || 
+                    msg.toLowerCase().includes("no longer available") || 
+                    msg.toLowerCase().includes("deprecated") ||
+                    msg.toLowerCase().includes("not supported");
+
+                if (isModelUnavailable) {
+                    console.warn(`Model ${modelName} không khả dụng (${msg}), tự động fallback sang model tiếp theo...`);
                     lastError = new Error(msg);
                     continue;
                 }
@@ -1018,7 +1024,7 @@ QUY TẮC PHẢN HỒI:
             break;
         } catch (err) {
             lastError = err;
-            if (modelName === modelsToTry[modelsToTry.length - 1]) {
+            if (modelName === GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
                 throw err;
             }
         }
@@ -1330,29 +1336,42 @@ async function testGeminiApiConnection() {
         return;
     }
 
-    statusEl.innerHTML = `<span style="color: var(--cyan);">⏳ Đang kết nối thử nghiệm đến Google Gemini 2.0 Flash...</span>`;
+    statusEl.innerHTML = `<span style="color: var(--cyan);">⏳ Đang kết nối thử nghiệm đến Google Gemini API (model ${GEMINI_PRIMARY_MODEL})...</span>`;
 
-    try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${testKey}`;
-        const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Hello! Reply with 'OK'" }] }],
-                generationConfig: { maxOutputTokens: 10 }
-            })
-        });
+    let successModel = null;
+    let lastErrMsg = "";
 
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `HTTP ${res.status}`);
+    for (const modelName of GEMINI_MODELS) {
+        try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${testKey}`;
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "Hello! Reply with 'OK'" }] }],
+                    generationConfig: { maxOutputTokens: 10 }
+                })
+            });
+
+            if (res.ok) {
+                successModel = modelName;
+                break;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                lastErrMsg = errData.error?.message || `HTTP ${res.status}`;
+                console.warn(`Test model ${modelName} không thành công: ${lastErrMsg}`);
+            }
+        } catch (e) {
+            lastErrMsg = e.message;
         }
+    }
 
-        statusEl.innerHTML = `<span style="color: var(--accent);">✅ KẾT NỐI THÀNH CÔNG! Google Gemini 2.0 Flash phản hồi tốt. Hãy bấm "Lưu Cấu Hình".</span>`;
-        showToast("Kết nối Gemini API thành công!");
-    } catch (err) {
-        console.error("Test Gemini connection failed:", err);
-        statusEl.innerHTML = `<span style="color: var(--danger);">❌ Lỗi kết nối: ${err.message}<br><small style="color: var(--text-muted);">Hãy kiểm tra lại API Key hoặc đảm bảo bạn đã bật Generative Language API tại Google AI Studio.</small></span>`;
+    if (successModel) {
+        statusEl.innerHTML = `<span style="color: var(--accent);">✅ KẾT NỐI THÀNH CÔNG! Google Gemini (model <strong>${successModel}</strong>) phản hồi xuất sắc. Hãy bấm "Lưu Cấu Hình".</span>`;
+        showToast(`Kết nối Gemini API (${successModel}) thành công!`);
+    } else {
+        console.error("Test Gemini connection failed:", lastErrMsg);
+        statusEl.innerHTML = `<span style="color: var(--danger);">❌ Lỗi kết nối: ${lastErrMsg}<br><small style="color: var(--text-muted);">Hãy kiểm tra lại API Key hoặc đảm bảo bạn đã bật Generative Language API tại Google AI Studio.</small></span>`;
     }
 }
 
@@ -1367,7 +1386,7 @@ function saveGeminiApiKey() {
 
     if (geminiApiKey) {
         showToast("Đã lưu Gemini API Key! Sẵn sàng hỏi đáp Cloud AI.");
-        addNotebookChatMessage("ai", "🎉 **Tuyệt vời!** Đã kích hoạt kết nối **Google Gemini 2.0 Flash** thành công. Bây giờ tôi có thể đọc trực tiếp các file PDF nguyên bản với đầy đủ bảng biểu & sơ đồ phần cứng!");
+        addNotebookChatMessage("ai", "🎉 **Tuyệt vời!** Đã kích hoạt kết nối **Google Gemini 3.8 Flash** thành công. Bây giờ tôi có thể đọc trực tiếp các file PDF nguyên bản với đầy đủ bảng biểu & sơ đồ phần cứng!");
     } else {
         showToast("Đã chuyển về chế độ Động Cơ Tri Thức Nhúng Cục Bộ!");
     }
