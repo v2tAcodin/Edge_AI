@@ -1,0 +1,255 @@
+/* ========================================================================== */
+/* PROJECT THAI // 3D SKILL GALAXY STYLESHEET                                 */
+/* ========================================================================== */
+
+.galaxy-section-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #04060d;
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 240, 255, 0.03);
+}
+
+.galaxy-viewport-container {
+    position: relative;
+    width: 100%;
+    height: 720px;
+    cursor: grab;
+    overflow: hidden;
+}
+
+.galaxy-viewport-container:active {
+    cursor: grabbing;
+}
+
+#galaxy-3d-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+}
+
+/* Galaxy Top Controls HUD */
+.galaxy-hud-top {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.galaxy-track-filters {
+    display: flex;
+    gap: 8px;
+    pointer-events: all;
+    background: rgba(6, 10, 18, 0.85);
+    padding: 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    overflow-x: auto;
+    max-width: 80%;
+}
+
+.galaxy-filter-pill {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted, #8492a6);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.galaxy-filter-pill:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.galaxy-filter-pill.active {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.5);
+    color: var(--cyan, #00f0ff);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+}
+
+.galaxy-hud-btn {
+    pointer-events: all;
+    background: rgba(6, 10, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.galaxy-hud-btn:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.4);
+    color: var(--cyan, #00f0ff);
+}
+
+/* Galaxy Bottom Telemetry HUD */
+.galaxy-hud-bottom {
+    position: absolute;
+    bottom: 16px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.galaxy-telemetry-card {
+    pointer-events: all;
+    background: rgba(6, 10, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px 18px;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.galaxy-telemetry-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--cyan, #00f0ff);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.galaxy-instructions-card {
+    pointer-events: all;
+    background: rgba(6, 10, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    backdrop-filter: blur(12px);
+    font-size: 12px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Floating Node Tooltip */
+.galaxy-node-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(-50%, -120%);
+    background: rgba(4, 7, 14, 0.94);
+    border: 1px solid rgba(0, 240, 255, 0.5);
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 240, 255, 0.2);
+    backdrop-filter: blur(10px);
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+    transition: opacity 0.15s ease;
+}
+
+.galaxy-node-tooltip.visible {
+    display: flex;
+}
+
+.tooltip-station-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+}
+
+.tooltip-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tooltip-prompt {
+    font-size: 10px;
+    color: var(--cyan, #00f0ff);
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 4px;
+}
+
+/* 2D Fallback Map View */
+.galaxy-2d-fallback {
+    display: none;
+    padding: 24px;
+    background: #060913;
+    min-height: 500px;
+}
+
+.galaxy-2d-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.galaxy-2d-station-card {
+    background: rgba(10, 16, 28, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.galaxy-2d-station-card:hover {
+    border-color: rgba(0, 240, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 240, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+    .galaxy-viewport-container {
+        height: 520px;
+    }
+
+    .galaxy-track-filters {
+        max-width: 100%;
+    }
+
+    .galaxy-hud-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .galaxy-instructions-card {
+        display: none;
+    }
+}

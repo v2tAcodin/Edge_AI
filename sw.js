@@ -1,7 +1,7 @@
-// Version: 3.2.0
+// Version: 4.0.0 // Project Thai // Personal Mastery HUD
 // ==========================================
 
-const CACHE_NAME = 'edge-ai-hub-v3.2.0';
+const CACHE_NAME = 'project-thai-hud-v4.0.0';
 
 const PRECACHE_ASSETS = [
     './',
@@ -24,9 +24,17 @@ const PRECACHE_ASSETS = [
     './css/search.css',
     './css/analytics.css',
     './css/audio.css',
+    './css/bookshelf.css',
+    './css/module-quiz.css',
+    './css/dock.css',
+    './css/station-workspace.css',
+    './css/galaxy.css',
     // JS Modular Files
     './js/auth.js',
     './js/state.js',
+    './js/tracks.js',
+    './js/station-workspace.js',
+    './js/galaxy3d.js',
     './js/quotes.js',
     './js/practice.js',
     './js/decision.js',
@@ -39,12 +47,17 @@ const PRECACHE_ASSETS = [
     './js/cheatsheet.js',
     './js/interview.js',
     './js/notebook.js',
+    './js/bookshelf.js',
+    './js/module-quiz.js',
     './js/projects.js',
     './js/hexmem.js',
     './js/search.js',
     './js/analytics.js',
     './js/audio.js',
-    './js/app.js'
+    './js/app.js',
+    // Three.js 3D WebGL Engine & OrbitControls
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'
 ];
 
 // --- Install Event: Pre-cache Core Assets ---

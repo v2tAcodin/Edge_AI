@@ -1,7 +1,7 @@
 {
-  "name": "Edge AI & Embedded Hub - Mr. Thai",
-  "short_name": "EdgeAIHub",
-  "description": "Nền tảng đào tạo kỹ sư nhúng chuyên sâu & kiến trúc sư giải pháp TinyML / Edge AI ESP32-S3",
+  "name": "Project Thai // Personal Mastery HUD",
+  "short_name": "ProjectThai",
+  "description": "Nền tảng rèn luyện & phát triển tự thân kỹ sư nhúng chuyên sâu & kiến trúc sư giải pháp TinyML / Edge AI ESP32-S3",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

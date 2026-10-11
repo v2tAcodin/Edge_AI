@@ -1,0 +1,693 @@
+/* ========================================================================== */
+/* PROJECT THAI // STATION WORKSPACE HUD (SPLIT-VIEW OVERLAY)                 */
+/* Giao diện tác nghiệp 2 cột công nghệ cao đè lên nền 3D                    */
+/* ========================================================================== */
+
+.station-workspace-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    background: rgba(4, 7, 14, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(0.985);
+    color: var(--text, #e2e8f0);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.station-workspace-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1);
+}
+
+/* -------------------------------------------------------------------------- */
+/* HUD Header Bar                                                             */
+/* -------------------------------------------------------------------------- */
+.workspace-hud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(10, 15, 26, 0.85);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+}
+
+.workspace-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.workspace-track-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: var(--cyan, #00f0ff);
+}
+
+.workspace-station-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.workspace-station-id-category {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted, #8492a6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.workspace-station-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.2px;
+    margin: 0;
+}
+
+.workspace-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.workspace-xp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.workspace-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.workspace-status-badge.mastered {
+    background: rgba(0, 255, 157, 0.12);
+    border: 1px solid rgba(0, 255, 157, 0.35);
+    color: var(--green, #00ff9d);
+}
+
+.workspace-status-badge.in-progress {
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--cyan, #00f0ff);
+}
+
+.workspace-status-badge.unlocked {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #cbd5e1;
+}
+
+.workspace-status-badge.locked {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.btn-workspace-override {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-workspace-override:hover {
+    background: rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-workspace-close {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-workspace-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Split-View Body Grid                                                       */
+/* -------------------------------------------------------------------------- */
+.workspace-body {
+    display: grid;
+    grid-template-columns: 46% 54%;
+    gap: 18px;
+    flex: 1;
+    padding: 16px 24px;
+    overflow: hidden;
+}
+
+/* Left Column: Theory & Architecture */
+.workspace-col-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.workspace-card {
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.workspace-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--cyan, #00f0ff);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+}
+
+.workspace-theory-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #cbd5e1;
+}
+
+.workspace-diagram-box {
+    background: #020408;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #38bdf8;
+    overflow-x: auto;
+    white-space: pre;
+    box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+.workspace-takeaways-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.workspace-takeaway-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e2e8f0;
+}
+
+.workspace-takeaway-item::before {
+    content: "▹";
+    color: var(--green, #00ff9d);
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.workspace-reference-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted, #8492a6);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 6px;
+}
+
+/* Right Column: Interactive Tabs */
+.workspace-col-right {
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.workspace-tab-nav {
+    display: flex;
+    background: rgba(6, 10, 18, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 8px 0 8px;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.workspace-tab-btn {
+    flex: 1;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted, #8492a6);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.workspace-tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.workspace-tab-btn.active {
+    color: var(--cyan, #00f0ff);
+    border-bottom-color: var(--cyan, #00f0ff);
+    background: rgba(0, 240, 255, 0.08);
+    box-shadow: inset 0 -2px 10px rgba(0, 240, 255, 0.15);
+}
+
+.workspace-tab-pane {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 18px;
+}
+
+.workspace-tab-pane.active {
+    display: flex;
+}
+
+/* Tab 1: Code Lab */
+.code-lab-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.code-lab-lang-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan, #00f0ff);
+    background: rgba(0, 240, 255, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.code-lab-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-code-action {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-code-action:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.4);
+    color: var(--cyan, #00f0ff);
+}
+
+.btn-code-run {
+    background: rgba(0, 255, 157, 0.15);
+    border-color: rgba(0, 255, 157, 0.4);
+    color: var(--green, #00ff9d);
+}
+
+.btn-code-run:hover {
+    background: rgba(0, 255, 157, 0.25);
+    box-shadow: 0 0 12px rgba(0, 255, 157, 0.3);
+}
+
+.code-editor-view {
+    background: #020408;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e2e8f0;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.code-run-terminal {
+    margin-top: 14px;
+    background: #010204;
+    border: 1px solid rgba(0, 255, 157, 0.2);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #34d399;
+    max-height: 160px;
+    overflow-y: auto;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Tab 2: Visual Simulator */
+.sim-container-card {
+    background: #030712;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sim-bits-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+}
+
+.sim-bit-toggle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s ease;
+}
+
+.sim-bit-toggle.on {
+    background: rgba(0, 255, 157, 0.2);
+    border-color: rgba(0, 255, 157, 0.6);
+    color: var(--green, #00ff9d);
+    box-shadow: 0 0 8px rgba(0, 255, 157, 0.3);
+}
+
+.sim-bit-label {
+    font-size: 10px;
+    color: var(--text-muted, #8492a6);
+}
+
+.sim-bit-val {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.sim-telemetry-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+}
+
+/* Tab 3: Checkpoint Quiz */
+.quiz-station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quiz-score-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cyan, #00f0ff);
+}
+
+.quiz-q-card {
+    background: rgba(6, 10, 18, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.quiz-q-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.quiz-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quiz-option-btn {
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quiz-option-btn:hover {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: rgba(0, 240, 255, 0.3);
+    color: #fff;
+}
+
+.quiz-option-btn.correct {
+    background: rgba(0, 255, 157, 0.15) !important;
+    border-color: rgba(0, 255, 157, 0.6) !important;
+    color: var(--green, #00ff9d) !important;
+}
+
+.quiz-option-btn.wrong {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #fca5a5 !important;
+}
+
+.quiz-explanation-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: rgba(0, 240, 255, 0.05);
+    border-left: 3px solid var(--cyan, #00f0ff);
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #94a3b8;
+    display: none;
+}
+
+.quiz-submit-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-quiz-submit {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 800;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #00d2ff, #00ff88);
+    border: none;
+    color: #030712;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-quiz-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Engineer Override Modal                                                    */
+/* -------------------------------------------------------------------------- */
+.override-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.override-modal-backdrop.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.override-modal-box {
+    background: #090e1a;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.override-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+.override-input {
+    background: #020408;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-align: center;
+    color: #fff;
+    outline: none;
+}
+
+.override-input:focus {
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.override-modal-btns {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive Layout (Mobile / Tablet)                                       */
+/* -------------------------------------------------------------------------- */
+@media (max-width: 960px) {
+    .workspace-body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+
+    .workspace-col-left {
+        overflow-y: visible;
+        padding-right: 0;
+    }
+
+    .workspace-col-right {
+        min-height: 500px;
+    }
+
+    .workspace-hud-header {
+        padding: 10px 16px;
+    }
+
+    .workspace-station-title {
+        font-size: 15px;
+    }
+}

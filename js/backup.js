@@ -15,22 +15,34 @@ function exportBackupData() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mr_thai_edge_ai_backup_${Date.now()}.json`;
+    a.download = `project_thai_mastery_backup_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast("📥 Đã tải xuống file sao lưu đầy đủ!");
+    showToast("📥 Đã tải xuống file sao lưu đầy đủ Project Thai!");
 }
 
 // 2. Tạo Snapshot Payload
 function createBackupSnapshotPayload(reason = "Tự động") {
+    let stationState = {};
+    try {
+        if (window.trackStateManager) {
+            stationState = window.trackStateManager.state;
+        } else {
+            const raw = localStorage.getItem("project_thai_station_state_v1");
+            if (raw) stationState = JSON.parse(raw);
+        }
+    } catch(e) {}
+
     return {
-        version: "3.0",
+        version: "4.0",
+        appName: "Project Thai // Personal Mastery HUD",
         timestamp: Date.now(),
         reason: reason,
         exportDate: new Date().toLocaleString("vi-VN"),
         user: (typeof profile !== 'undefined' && profile.name) ? profile.name : "Mr. Thai",
         xp: (typeof profile !== 'undefined' && profile.xp) ? profile.xp : 0,
         profile: (typeof profile !== 'undefined') ? profile : {},
+        projectThaiStations: stationState,
         roadmap: (typeof roadmap !== 'undefined') ? roadmap : [],
         notes: (typeof notes !== 'undefined') ? notes : {},
         studyStreak: (typeof studyStreak !== 'undefined') ? studyStreak : 1,
@@ -109,6 +121,15 @@ function applyRestoredData(data) {
         codeCache = data.codeCache;
         localStorage.setItem(STORAGE_CODE_CACHE, JSON.stringify(codeCache));
     }
+    if (data.projectThaiStations) {
+        localStorage.setItem("project_thai_station_state_v1", JSON.stringify(data.projectThaiStations));
+        if (window.trackStateManager) {
+            window.trackStateManager.init();
+        }
+        if (window.skillGalaxy3D && typeof window.skillGalaxy3D.refreshNodeVisuals === 'function') {
+            window.skillGalaxy3D.refreshNodeVisuals();
+        }
+    }
 
     // Re-render UI
     if (typeof renderRoadmap === 'function') renderRoadmap();
@@ -119,6 +140,7 @@ function applyRestoredData(data) {
     if (typeof updatePortalStats === 'function') updatePortalStats();
     if (typeof renderLearningHeatmap === 'function') renderLearningHeatmap();
     if (typeof updateAnalyticsStats === 'function') updateAnalyticsStats();
+    if (typeof updateHeaderBadges === 'function') updateHeaderBadges();
 }
 
 // 7. Nhập file JSON từ máy

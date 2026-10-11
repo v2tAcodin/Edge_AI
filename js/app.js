@@ -5,7 +5,7 @@ const STORAGE_THEME = "mr_thai_theme_v1";
 
 function switchTab(tabId) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "active-menu"));
-    document.querySelectorAll("#view-menu, #view-simulator, #view-learning, #view-practice, #view-profile, #view-interview, #view-notebook, #view-projects").forEach(v => {
+    document.querySelectorAll("#view-galaxy, #view-menu, #view-simulator, #view-learning, #view-practice, #view-profile, #view-interview, #view-notebook, #view-projects").forEach(v => {
         if (v) {
             v.style.display = "none";
             v.classList.remove("view-enter");
@@ -22,7 +22,16 @@ function switchTab(tabId) {
         el.classList.add("view-enter");
     }
 
-    if (tabId === 'menu') {
+    if (tabId === 'galaxy') {
+        const tabEl = document.getElementById("tab-galaxy");
+        if (tabEl) tabEl.classList.add("active");
+        showView("view-galaxy");
+        if (window.skillGalaxy3D) {
+            window.skillGalaxy3D.init();
+            window.skillGalaxy3D.onWindowResize();
+            window.skillGalaxy3D.refreshNodeVisuals();
+        }
+    } else if (tabId === 'menu') {
         document.getElementById("tab-menu").classList.add("active", "active-menu");
         showView("view-menu");
     } else if (tabId === 'learning') {
@@ -78,6 +87,13 @@ function updatePortalStats() {
 
     const portalRank = document.getElementById("portal-rank-stat");
     if (portalRank) portalRank.innerText = `${stats.rank.code} • ${stats.percent}%`;
+    
+    const headerLvl = document.getElementById("header-level-badge");
+    if (headerLvl && stats.rank) headerLvl.innerText = stats.rank.title.includes(':') ? stats.rank.title.split(':')[1].trim() : stats.rank.title;
+    const headerXp = document.getElementById("header-xp-badge");
+    if (headerXp) headerXp.innerText = "⭐ " + (profile.xp || 0) + " XP";
+    const headerStreak = document.getElementById("header-streak-badge");
+    if (headerStreak && typeof studyStreak !== 'undefined') headerStreak.innerText = `🔥 ${studyStreak.count || 1} ngày`;
 
     if (typeof renderProjectsView === 'function') renderProjectsView();
 }

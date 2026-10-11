@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edge AI & Embedded Hub - Mr. Thai</title>
+    <title>Project Thai // Personal Mastery HUD - ESP32-S3 & Edge AI</title>
 
     <!-- PWA & Mobile Meta Tags -->
     <meta name="theme-color" content="#070b14">
@@ -38,6 +38,9 @@
     <link rel="stylesheet" href="css/audio.css">
     <link rel="stylesheet" href="css/bookshelf.css">
     <link rel="stylesheet" href="css/module-quiz.css?v=3.1.5">
+    <link rel="stylesheet" href="css/dock.css">
+    <link rel="stylesheet" href="css/station-workspace.css">
+    <link rel="stylesheet" href="css/galaxy.css">
 </head>
 
 <body>
@@ -85,9 +88,9 @@
                     </div>
                 </div>
                 <h1 class="auth-title">
-                    <span class="logo-glyph">⚡</span> EDGE AI // HUB
+                    <span class="logo-glyph">⚡</span> PROJECT THAI
                 </h1>
-                <p class="auth-subtitle">ESP32-S3 CORE • SECURE AUTHENTICATION</p>
+                <p class="auth-subtitle">PERSONAL MASTERY • ESP32-S3 CORE • SECURE AUTHENTICATION</p>
             </div>
 
             <form class="auth-form" id="auth-form" onsubmit="handleAuthSubmit(event)">
@@ -141,81 +144,34 @@
     </div>
 
 <div class="container">
-        <!-- Main App Header -->
+                <!-- Main App Header: Project Thai // Personal Mastery HUD -->
         <header>
             <div class="header-left">
                 <div class="brand-hud">
-                    <div class="hud-logo">⚡</div>
+                    <div class="hud-logo" title="Project Thai • Personal Mastery">⚡</div>
                     <div class="brand-title-wrap">
                         <div class="brand-name">
-                            <span>EDGE AI // HUB</span>
+                            <span>PROJECT THAI</span>
                             <span class="pulse-dot"></span>
                             <span class="badge badge-gold" id="header-xp-badge">0 XP</span>
+                            <span class="badge badge-ai" id="header-level-badge">Junior Architect</span>
+                            <span class="badge badge-streak header-streak-badge" id="header-streak-badge">🔥 1 ngày</span>
                         </div>
-                        <div class="brand-telemetry">SYSTEM ONLINE • ESP32-S3 CORE • MR. THAI</div>
+                        <div class="brand-telemetry">PERSONAL MASTERY • ESP32-S3 CORE • KỸ SƯ THAI</div>
                     </div>
                 </div>
             </div>
             
             <div class="header-actions">
-                <!-- Pomodoro Capsule -->
-                <div class="pomodoro-box" id="pomodoro-widget" title="Kỹ sư Focus Timer (25/5)">
-                    <span class="pomo-time-text" id="pomo-timer-text">25:00</span>
-                    <span class="pomo-mode-badge pomo-mode-work" id="pomo-badge">FOCUS</span>
-                    <button class="pomo-btn-icon" id="pomo-btn-play" onclick="togglePomodoro()" title="Bắt đầu/Tạm dừng">▶</button>
-                    <button class="pomo-btn-icon" onclick="resetPomodoro()" title="Đặt lại">↺</button>
-                    <button class="pomo-btn-icon" onclick="switchPomodoroMode()" title="Chuyển chế độ">☕</button>
-                </div>
-
-                <!-- CheatSheet Drawer Button -->
-                <button class="btn btn-secondary" onclick="openCheatSheet()" title="Tra cứu nhanh thanh ghi, bản đồ bộ nhớ & APIs">
-                    📖 CheatSheet
-                </button>
-
-                <!-- Technical Bookshelf Button -->
-                <button class="btn btn-secondary btn-bookshelf" onclick="openBookshelfModal()" title="Tủ Sách Kỹ Thuật: Sách giáo khoa, Báo cáo khoa học & PDF gốc">
-                    📚 Tủ Sách
-                </button>
-
-                <!-- Backup & Restore Buttons (Phase 3: + Lịch sử) -->
-                <div style="display: flex; gap: 4px;">
-                    <button class="btn btn-secondary" onclick="openBackupHistoryModal()" title="Lịch sử sao lưu & phục hồi (5 phiên bản)">
-                        🕒 Lịch Sử
-                    </button>
-                    <button class="btn btn-secondary" onclick="exportBackupData()" title="Tải xuống file JSON sao lưu">
-                        📥 Lưu
-                    </button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('restore-file-input').click()" title="Nạp file JSON phục hồi">
-                        📤 Nạp
-                    </button>
-                </div>
-                <input type="file" id="restore-file-input" style="display: none;" accept=".json" onchange="handleRestoreFile(event)">
-                
                 <button class="btn btn-secondary" id="btn-install-pwa" style="display: none;" onclick="installPwaApp()">
-                    💻 App
+                    💻 Cài App
                 </button>
-
-                <!-- English Portal Button -->
-                <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="btn btn-english" title="Mở trang Tiếng Anh Ra Trường">
-                    🇬🇧 Tiếng Anh ↗
-                </a>
-
-                <!-- Search Button (Phase 2) -->
                 <button class="btn btn-secondary" onclick="openGlobalSearch()" title="Tìm kiếm toàn cục (Ctrl+K)">
-                    🔍 Tìm
+                    🔍 Tìm <kbd class="header-kbd">Ctrl+K</kbd>
                 </button>
-
-                <!-- Dark/Light Theme Toggle (Phase 2) -->
                 <button class="btn btn-secondary btn-theme-toggle" id="btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
                     🌙
                 </button>
-
-                <!-- Audio Engine Header Toggle -->
-                <button type="button" class="btn btn-secondary btn-audio-header" id="btn-audio-header" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh & Nhạc nền Lo-Fi (Web Audio API)">
-                    <span id="header-audio-icon">🎵</span> <span id="header-audio-label">Nhạc</span>
-                </button>
-
-                <!-- Lock / Logout Button -->
                 <button type="button" class="btn btn-secondary btn-logout" onclick="handleLogout()" title="Khóa hệ thống / Đăng xuất">
                     🔒 Khóa
                 </button>
@@ -226,6 +182,10 @@
         <nav class="tab-nav">
             <button class="tab-btn active active-menu" id="tab-menu" onclick="switchTab('menu')">
                 <span>🧭 Tổng Quan</span>
+            </button>
+            <button class="tab-btn" id="tab-galaxy" onclick="switchTab('galaxy')">
+                <span>🌌 3D Skill Galaxy</span>
+                <span class="tab-badge" style="background: rgba(0, 240, 255, 0.2); color: #00f0ff;">24 Trạm</span>
             </button>
             <button class="tab-btn" id="tab-simulator" onclick="switchTab('simulator')">
                 <span>⚡ Lab & Sim</span>
@@ -254,6 +214,74 @@
                 <span>👤 Kỹ Sư Thai</span>
             </button>
         </nav>
+
+        <!-- ============================================== -->
+        <!-- VIEW: 3D SKILL GALAXY (PROJECT THAI)           -->
+        <!-- ============================================== -->
+        <div id="view-galaxy" style="display: none;">
+            <div class="galaxy-section-wrapper">
+                <!-- Top HUD Controls -->
+                <div class="galaxy-hud-top">
+                    <div class="galaxy-track-filters">
+                        <button type="button" class="galaxy-filter-pill active" data-track="all" onclick="skillGalaxy3D.filterTrack('all')">
+                            🌌 Tất Cả (24 Trạm)
+                        </button>
+                        <button type="button" class="galaxy-filter-pill" data-track="track-c-core" onclick="skillGalaxy3D.filterTrack('track-c-core')">
+                            🧠 Track 1: C Core
+                        </button>
+                        <button type="button" class="galaxy-filter-pill" data-track="track-esp32-sys" onclick="skillGalaxy3D.filterTrack('track-esp32-sys')">
+                            ⚡ Track 2: ESP32-S3
+                        </button>
+                        <button type="button" class="galaxy-filter-pill" data-track="track-tinyml" onclick="skillGalaxy3D.filterTrack('track-tinyml')">
+                            🤖 Track 3: TinyML
+                        </button>
+                        <button type="button" class="galaxy-filter-pill" data-track="track-capstone" onclick="skillGalaxy3D.filterTrack('track-capstone')">
+                            🏆 Track 4: Capstone
+                        </button>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="galaxy-hud-btn" onclick="skillGalaxy3D.resetCameraFocus()">
+                            🎯 Reset Góc Nhìn
+                        </button>
+                        <button type="button" class="galaxy-hud-btn" onclick="stationWorkspaceController.openOverrideModal()">
+                            ⚡ Override
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Three.js 3D Viewport -->
+                <div class="galaxy-viewport-container" id="galaxy-viewport-container">
+                    <canvas id="galaxy-3d-canvas"></canvas>
+                </div>
+
+                <!-- 2D Fallback Container -->
+                <div class="galaxy-2d-fallback" id="galaxy-2d-fallback">
+                    <div style="margin-bottom: 16px; color: var(--cyan); font-weight: bold;">
+                        🗺️ BẢN ĐỒ CHÒM SAO KỸ NĂNG 2D (CHẾ ĐỘ TỐC ĐỘ CAO)
+                    </div>
+                    <div class="galaxy-2d-grid" id="galaxy-2d-grid"></div>
+                </div>
+
+                <!-- Bottom Telemetry HUD -->
+                <div class="galaxy-hud-bottom">
+                    <div class="galaxy-telemetry-card">
+                        <span class="galaxy-telemetry-title">⚡ TELEMETRY MẠNG LƯỚI SKILL GALAXY</span>
+                        <div>Làm Chủ: <strong id="telem-galaxy-count" style="color: #34d399;">0 / 24 Trạm</strong> (<span id="telem-galaxy-pct" style="color: #38bdf8;">0%</span>)</div>
+                        <div style="font-size: 10px; color: #64748b;">Render Engine: WebGL 3D • Double-Buffered • 60 FPS</div>
+                    </div>
+
+                    <div class="galaxy-instructions-card">
+                        <span>🖱️ <strong>Kéo chuột:</strong> Xoay 360°</span>
+                        <span>🔍 <strong>Lăn chuột:</strong> Zoom</span>
+                        <span>✨ <strong>Nhấp Trạm:</strong> Bay tới &amp; Mở Workspace</span>
+                    </div>
+                </div>
+
+                <!-- Floating Tooltip -->
+                <div class="galaxy-node-tooltip" id="galaxy-node-tooltip"></div>
+            </div>
+        </div>
 
         <!-- ============================================== -->
         <!-- VIEW 0: GIAO DIỆN MENU RIÊNG (WELCOME MR. THAI)-->
@@ -2944,9 +2972,65 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
     </div>
 
+        <!-- ============================================== -->
+    <!-- FLOATING TOOLKIT DOCK (Bottom High-Tech Dock)  -->
+    <!-- ============================================== -->
+    <div class="floating-toolkit-dock" id="floating-toolkit-dock">
+        <!-- Pomodoro Capsule -->
+        <div class="pomodoro-box" id="pomodoro-widget" title="Kỹ sư Focus Timer (25/5)">
+            <span class="pomo-time-text" id="pomo-timer-text">25:00</span>
+            <span class="pomo-mode-badge pomo-mode-work" id="pomo-badge">FOCUS</span>
+            <button class="pomo-btn-icon" id="pomo-btn-play" onclick="togglePomodoro()" title="Bắt đầu/Tạm dừng">▶</button>
+            <button class="pomo-btn-icon" onclick="resetPomodoro()" title="Đặt lại">↺</button>
+            <button class="pomo-btn-icon" onclick="switchPomodoroMode()" title="Chuyển chế độ">☕</button>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- Lo-Fi Audio Toggle -->
+        <button type="button" class="dock-item" id="btn-audio-header" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh & Nhạc nền Lo-Fi (Web Audio API)">
+            <span class="dock-icon" id="header-audio-icon">🎵</span>
+            <span class="dock-label" id="header-audio-label">Lo-Fi</span>
+        </button>
+
+        <!-- Technical Bookshelf -->
+        <button type="button" class="dock-item" onclick="openBookshelfModal()" title="Tủ Sách Kỹ Thuật: Sách giáo khoa, Báo cáo khoa học & PDF gốc">
+            <span class="dock-icon">📚</span>
+            <span class="dock-label">Tủ Sách</span>
+        </button>
+
+        <!-- CheatSheet -->
+        <button type="button" class="dock-item" onclick="openCheatSheet()" title="Tra cứu nhanh thanh ghi, bản đồ bộ nhớ & APIs">
+            <span class="dock-icon">📖</span>
+            <span class="dock-label">CheatSheet</span>
+        </button>
+
+        <!-- Backup & Restore -->
+        <button type="button" class="dock-item" onclick="openBackupHistoryModal()" title="Lịch sử sao lưu & phục hồi (5 phiên bản)">
+            <span class="dock-icon">💾</span>
+            <span class="dock-label">Sao Lưu</span>
+        </button>
+
+        <!-- English Portal Link -->
+        <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="dock-item btn-dock-english" title="Mở cổng Tiếng Anh Ra Trường">
+            <span class="dock-icon">🇬🇧</span>
+            <span class="dock-label">Tiếng Anh</span> ↗
+        </a>
+    </div>
+
+    <!-- Hidden input for JSON restore -->
+    <input type="file" id="restore-file-input" style="display: none;" accept=".json" onchange="handleRestoreFile(event)">
+
+    <!-- Three.js 3D WebGL Engine & OrbitControls via High-Availability CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
     <!-- Modular JavaScript Scripts -->
     <script src="js/auth.js?v=3.1.5" defer></script>
     <script src="js/state.js?v=3.1.5" defer></script>
+    <script src="js/tracks.js?v=3.1.5" defer></script>
+    <script src="js/station-workspace.js?v=3.1.5" defer></script>
+    <script src="js/galaxy3d.js?v=3.1.5" defer></script>
     <script src="js/quotes.js?v=3.1.5" defer></script>
     <script src="js/practice.js?v=3.1.5" defer></script>
     <script src="js/decision.js?v=3.1.5" defer></script>

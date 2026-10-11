@@ -1,0 +1,166 @@
+/* ================================================= */
+/* PROJECT THAI // FLOATING TOOLKIT DOCK (CSS)        */
+/* ================================================= */
+.floating-toolkit-dock {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 850;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: rgba(10, 14, 24, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 40px;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 240, 255, 0.16);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: calc(100vw - 32px);
+}
+
+.floating-toolkit-dock:hover {
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.28);
+    transform: translateX(-50%) translateY(-2px);
+}
+
+/* Dock Item Buttons */
+.dock-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: var(--text);
+    padding: 7px 13px;
+    border-radius: 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.dock-item:hover {
+    background: rgba(0, 240, 255, 0.14);
+    border-color: rgba(0, 240, 255, 0.4);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 240, 255, 0.25);
+}
+
+.dock-item:active {
+    transform: translateY(0);
+}
+
+.dock-item .dock-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.dock-item .dock-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.02em;
+}
+
+/* Embedded Pomodoro Capsule in Dock */
+.floating-toolkit-dock .pomodoro-box {
+    margin: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 22px;
+    padding: 4px 10px;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.floating-toolkit-dock .pomodoro-box:hover {
+    border-color: rgba(0, 240, 255, 0.4);
+    background: rgba(0, 240, 255, 0.08);
+}
+
+/* Vertical divider inside dock */
+.dock-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 2px;
+}
+
+/* English Portal special highlight */
+.dock-item.btn-dock-english {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(0, 255, 157, 0.06));
+    border-color: rgba(0, 240, 255, 0.25);
+    color: var(--cyan);
+}
+
+.dock-item.btn-dock-english:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(0, 255, 157, 0.15));
+    border-color: var(--cyan);
+    color: #fff;
+}
+
+/* Header Rebrand Elements */
+.header-streak-badge {
+    background: rgba(255, 110, 0, 0.15) !important;
+    color: #ff8800 !important;
+    border: 1px solid rgba(255, 110, 0, 0.35) !important;
+}
+
+.header-kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+/* Extra bottom padding for main container so dock doesn't obscure content */
+body {
+    padding-bottom: 90px !important;
+}
+
+/* Responsive adjustment for Mobile */
+@media (max-width: 900px) {
+    .floating-toolkit-dock {
+        bottom: 12px;
+        padding: 5px 8px;
+        gap: 5px;
+        border-radius: 20px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .dock-item {
+        padding: 6px 9px;
+        font-size: 12px;
+    }
+
+    .dock-item .dock-label {
+        display: none;
+    }
+
+    .floating-toolkit-dock .pomodoro-box {
+        padding: 3px 6px;
+    }
+    
+    .floating-toolkit-dock .pomo-time-text {
+        font-size: 12px;
+    }
+
+    .floating-toolkit-dock .pomo-mode-badge {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+}

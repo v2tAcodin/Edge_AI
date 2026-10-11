@@ -344,8 +344,12 @@ function renderRoadmap() {
     const headerLevelBadge = document.getElementById("header-level-badge");
     if (headerLevelBadge) headerLevelBadge.innerText = stats.rank.title;
     
-    const headerXpBadge = document.getElementById("header-xp-badge");
+const headerXpBadge = document.getElementById("header-xp-badge");
     if (headerXpBadge) headerXpBadge.innerText = "⭐ " + profile.xp + " XP";
+    const headerStreakBadge = document.getElementById("header-streak-badge");
+    if (headerStreakBadge && typeof studyStreak !== 'undefined') {
+        headerStreakBadge.innerText = `🔥 ${studyStreak.count || 1} ngày`;
+    }
     
     const practiceXpTag = document.getElementById("practice-xp-tag");
     if (practiceXpTag) practiceXpTag.innerText = "⭐ " + profile.xp + " XP";
