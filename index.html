@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="css/dock.css">
     <link rel="stylesheet" href="css/station-workspace.css">
     <link rel="stylesheet" href="css/galaxy.css">
+    <link rel="stylesheet" href="css/portfolio-hud.css?v=4.0.0">
 </head>
 
 <body>
@@ -178,74 +179,54 @@
             </div>
         </header>
 
-        <!-- Minimalist Hi-Tech Navigation Dock -->
+        <!-- Minimalist Hi-Tech Navigation Dock (Living Portfolio) -->
         <nav class="tab-nav">
-            <button class="tab-btn active active-menu" id="tab-menu" onclick="switchTab('menu')">
-                <span>🧭 Tổng Quan</span>
+            <button class="tab-btn active" id="tab-tree3d" onclick="switchTab('tree3d')">
+                <span>🌌 3D Skill Tree</span>
+                <span class="tab-badge" style="background: rgba(0, 240, 255, 0.2); color: #00f0ff;">Universe</span>
             </button>
-            <button class="tab-btn" id="tab-galaxy" onclick="switchTab('galaxy')">
-                <span>🌌 3D Skill Galaxy</span>
-                <span class="tab-badge" style="background: rgba(0, 240, 255, 0.2); color: #00f0ff;">24 Trạm</span>
-            </button>
-            <button class="tab-btn" id="tab-simulator" onclick="switchTab('simulator')">
-                <span>⚡ Lab & Sim</span>
-            </button>
-            <button class="tab-btn" id="tab-learning" onclick="switchTab('learning')">
-                <span>🗺️ Lộ Trình</span>
-                <span class="tab-badge" id="tab-learning-count">0/56</span>
-            </button>
-            <button class="tab-btn" id="tab-practice" onclick="switchTab('practice')">
-                <span>💻 Code C</span>
-                <span class="tab-badge tab-badge-gold" id="tab-practice-count">0/72</span>
-            </button>
-            <button class="tab-btn" id="tab-projects" onclick="switchTab('projects')">
-                <span>🏆 Dự Án</span>
-                <span class="tab-badge tab-badge-gold" id="tab-projects-count">0/6</span>
-            </button>
-            <button class="tab-btn" id="tab-interview" onclick="switchTab('interview')">
-                <span>🎯 Phỏng Vấn</span>
-                <span class="tab-badge tab-badge-gold" id="quiz-score-badge">0/24</span>
-            </button>
-            <button class="tab-btn" id="tab-notebook" onclick="switchTab('notebook')" title="Mở Giáo Trình Lý Thuyết & Sổ Tay AI">
-                <span>📖 Lý Thuyết &amp; Sổ Tay</span>
-                <span class="tab-badge" id="tab-notebook-count">14 Doc</span>
+            <button class="tab-btn" id="tab-grid" onclick="switchTab('grid')">
+                <span>🏆 Projects Grid</span>
+                <span class="tab-badge tab-badge-gold" id="tab-grid-count">6 Dự Án</span>
             </button>
             <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">
                 <span>👤 Kỹ Sư Thai</span>
+                <span class="tab-badge" style="background: rgba(0, 255, 136, 0.2); color: #00ff88;">CV 3.0</span>
             </button>
         </nav>
 
         <!-- ============================================== -->
-        <!-- VIEW: 3D SKILL GALAXY (PROJECT THAI)           -->
+        <!-- VIEW: 3D SKILL TREE (PROJECT THAI PORTFOLIO)   -->
         <!-- ============================================== -->
-        <div id="view-galaxy" style="display: none;">
+        <div id="view-tree3d" class="view-tree3d-container" style="display: block;">
+            <div id="view-galaxy" style="display: block;">
             <div class="galaxy-section-wrapper">
                 <!-- Top HUD Controls -->
                 <div class="galaxy-hud-top">
                     <div class="galaxy-track-filters">
-                        <button type="button" class="galaxy-filter-pill active" data-track="all" onclick="skillGalaxy3D.filterTrack('all')">
-                            🌌 Tất Cả (24 Trạm)
+                        <button type="button" class="galaxy-filter-pill active" data-track="all" onclick="PortfolioController.filterCategory('all')">
+                            🌌 Toàn Vũ Trụ
                         </button>
-                        <button type="button" class="galaxy-filter-pill" data-track="track-c-core" onclick="skillGalaxy3D.filterTrack('track-c-core')">
-                            🧠 Track 1: C Core
+                        <button type="button" class="galaxy-filter-pill" data-track="vision" onclick="PortfolioController.filterCategory('vision')">
+                            👁️ Computer Vision
                         </button>
-                        <button type="button" class="galaxy-filter-pill" data-track="track-esp32-sys" onclick="skillGalaxy3D.filterTrack('track-esp32-sys')">
-                            ⚡ Track 2: ESP32-S3
+                        <button type="button" class="galaxy-filter-pill" data-track="audio" onclick="PortfolioController.filterCategory('audio')">
+                            🎙️ Audio &amp; Voice AI
                         </button>
-                        <button type="button" class="galaxy-filter-pill" data-track="track-tinyml" onclick="skillGalaxy3D.filterTrack('track-tinyml')">
-                            🤖 Track 3: TinyML
+                        <button type="button" class="galaxy-filter-pill" data-track="iot" onclick="PortfolioController.filterCategory('iot')">
+                            📡 FreeRTOS &amp; IoT
                         </button>
-                        <button type="button" class="galaxy-filter-pill" data-track="track-capstone" onclick="skillGalaxy3D.filterTrack('track-capstone')">
-                            🏆 Track 4: Capstone
+                        <button type="button" class="galaxy-filter-pill" data-track="dsp" onclick="PortfolioController.filterCategory('dsp')">
+                            ⚡ SIMD &amp; Optimization
                         </button>
                     </div>
 
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="galaxy-hud-btn" onclick="skillGalaxy3D.resetCameraFocus()">
-                            🎯 Reset Góc Nhìn
+                        <button type="button" class="galaxy-hud-btn" id="btn-toggle-orbit" onclick="cyberTree3D.toggleAutoOrbit()">
+                            🌀 Auto-Orbit: ON
                         </button>
-                        <button type="button" class="galaxy-hud-btn" onclick="stationWorkspaceController.openOverrideModal()">
-                            ⚡ Override
+                        <button type="button" class="galaxy-hud-btn" onclick="cyberTree3D.resetCameraFocus()">
+                            🎯 Reset Góc Nhìn
                         </button>
                     </div>
                 </div>
@@ -281,6 +262,7 @@
                 <!-- Floating Tooltip -->
                 <div class="galaxy-node-tooltip" id="galaxy-node-tooltip"></div>
             </div>
+        </div>
         </div>
 
         <!-- ============================================== -->
@@ -2013,46 +1995,77 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
 
         <!-- ============================================== -->
-        <!-- VIEW: CAPSTONE PROJECTS (KIỂM TRA THÀNH TỰU)  -->
+        <!-- VIEW: CAPSTONE PROJECTS & GRID (LIVING PORTFOLIO)-->
         <!-- ============================================== -->
-        <div id="view-projects" style="display: none;">
-            <div class="projects-container">
-                <!-- Hero Banner -->
-                <div class="projects-hero-banner">
-                    <div class="projects-hero-content">
-                        <div class="projects-hero-tag">
-                            <span>🏆 CAPSTONE VERIFICATION</span>
-                            <span class="pulse-dot"></span>
-                            <span>ĐỒ ÁN TỐT NGHIỆP TỪNG GIAI ĐOẠN</span>
+        <div id="view-grid" class="view-grid-container" style="display: none;">
+            <div id="view-projects">
+                <div class="projects-container">
+                    <!-- Hero Banner -->
+                    <div class="projects-hero-banner">
+                        <div class="projects-hero-content">
+                            <div class="projects-hero-tag">
+                                <span>🏆 SHOWCASE & VERIFICATION</span>
+                                <span class="pulse-dot"></span>
+                                <span>6 ĐỒ ÁN THỰC CHIẾN ESP32-S3</span>
+                            </div>
+                            <h2 class="projects-hero-title">
+                                Dự Án &amp; Thành Tựu Thực Chiến Edge AI
+                            </h2>
+                            <p class="projects-hero-desc">
+                                Bộ sưu tập các dự án và giải pháp kỹ thuật nhúng cao cấp chạy trên vi điều khiển ESP32-S3. Mỗi dự án bao gồm phân tích kiến trúc hệ thống, mã nguồn C/C++ chuẩn sản xuất, đo lường benchmark thực tế và trình phát Serial UART Log.
+                            </p>
                         </div>
-                        <h2 class="projects-hero-title">
-                            Kiểm Tra Thành Tựu & Đồ Án Thực Chiến Edge AI
-                        </h2>
-                        <p class="projects-hero-desc">
-                            Sau khi hoàn thành lý thuyết lộ trình và các bài tập code C/AI, hãy thực hiện 6 Đồ án Milestone thực tế. Mỗi đồ án mô phỏng trọn vẹn một sản phẩm IoT / Edge AI công nghiệp chạy trên vi điều khiển ESP32-S3, đi kèm kiến trúc luồng dữ liệu, starter code chuẩn sản xuất, tiêu chuẩn nghiệm thu và chứng nhận thành tựu có dấu chứng thực.
-                        </p>
+
+                        <!-- Progress Stats -->
+                        <div class="projects-stats-row">
+                            <div class="pstat-card">
+                                <div class="pstat-val" id="projects-stat-completed">6/6</div>
+                                <div class="pstat-lbl">Dự Án Trưng Bày</div>
+                            </div>
+                            <div class="pstat-card">
+                                <div class="pstat-val" id="projects-stat-xp" style="color: var(--gold);">ESP-IDF</div>
+                                <div class="pstat-lbl">Framework Chuẩn</div>
+                            </div>
+                            <div class="pstat-card">
+                                <div class="pstat-val" style="color: var(--accent);">ESP32-S3</div>
+                                <div class="pstat-lbl">Xtensa PIE SIMD</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Progress Stats -->
-                    <div class="projects-stats-row">
-                        <div class="pstat-card">
-                            <div class="pstat-val" id="projects-stat-completed">0/6</div>
-                            <div class="pstat-lbl">Đồ Án Nghiệm Thu</div>
+                    <!-- Quick View Switcher & Category Filter Bar -->
+                    <div class="grid-controls-bar">
+                        <div class="grid-filter-pills">
+                            <button type="button" class="grid-filter-pill active" data-cat="all" onclick="PortfolioGrid.filterCategory('all')">
+                                🌌 Tất Cả Dự Án
+                            </button>
+                            <button type="button" class="grid-filter-pill" data-cat="vision" onclick="PortfolioGrid.filterCategory('vision')">
+                                👁️ Computer Vision
+                            </button>
+                            <button type="button" class="grid-filter-pill" data-cat="audio" onclick="PortfolioGrid.filterCategory('audio')">
+                                🎙️ Audio &amp; Voice AI
+                            </button>
+                            <button type="button" class="grid-filter-pill" data-cat="iot" onclick="PortfolioGrid.filterCategory('iot')">
+                                📡 FreeRTOS &amp; IoT
+                            </button>
+                            <button type="button" class="grid-filter-pill" data-cat="dsp" onclick="PortfolioGrid.filterCategory('dsp')">
+                                ⚡ SIMD &amp; DSP
+                            </button>
+                            <button type="button" class="grid-filter-pill" data-cat="imu" onclick="PortfolioGrid.filterCategory('imu')">
+                                🖐️ Motion &amp; IMU
+                            </button>
                         </div>
-                        <div class="pstat-card">
-                            <div class="pstat-val" id="projects-stat-xp" style="color: var(--gold);">0 XP</div>
-                            <div class="pstat-lbl">XP Thành Tựu</div>
-                        </div>
-                        <div class="pstat-card">
-                            <div class="pstat-val" style="color: var(--accent);">ESP32-S3</div>
-                            <div class="pstat-lbl">Mục Tiêu Phần Cứng</div>
+                        <div class="grid-view-toggle">
+                            <button type="button" class="btn-toggle-view" onclick="switchTab('tree3d')" title="Chuyển sang 3D Universe Skill Tree">
+                                🌌 Xem Chế Độ 3D Skill Tree
+                            </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Projects Cards Grid -->
-                <div class="projects-grid" id="projects-grid-container">
-                    <!-- Rendered dynamically by js/projects.js -->
+                    <!-- Projects Cards Grid -->
+                    <div class="projects-grid" id="projects-grid-container">
+                        <!-- Rendered dynamically by js/portfolio-grid.js -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -2254,83 +2267,104 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
                                         <span>📝</span> Bắt Đầu Làm Bài Trắc Nghiệm ↗
                                     </button>
                                 </div>
+                                 <!-- ============================================== -->
+        <!-- VIEW: HỒ SƠ NĂNG LỰC & CV 3.0 (KỸ SƯ THAI)      -->
+        <!-- ============================================== -->
+        <div id="view-profile" style="display: none;">
+            <div class="profile-container">
+                
+                <!-- Hero Profile Card -->
+                <div class="profile-hero">
+                    <div class="profile-hero-grid">
+                        <div class="avatar-wrap">
+                            <span id="profile-avatar-icon">🤖</span>
+                            <span class="avatar-rank-badge">CV 3.0</span>
+                        </div>
+                        <div class="profile-info">
+                            <h2>
+                                <span id="hero-name-display">Kỹ Sư Thai</span>
+                                <span class="badge badge-ai" id="hero-badge-status">
+                                    <span class="status-pulse-dot" style="background: #00ff88;"></span> Open for Engineering Challenges
+                                </span>
+                            </h2>
+                            <div class="profile-role" id="hero-role-display">
+                                Embedded Systems &amp; Edge AI Engineer (ESP32-S3 / TinyML)
                             </div>
-
-                            <!-- Hands-on Practice Exercises Section Linked Directly to this Lesson -->
-                            <div class="nb-reader-practice-box" id="nb-reader-practice-section">
-                                <div class="nb-reader-practice-header">
-                                    <div>
-                                        <div class="nb-reader-practice-title">
-                                            <span>🎯</span> BÀI TẬP C THỰC HÀNH ÁP DỤNG TRỰC TIẾP CHO BÀI HỌC NÀY
-                                        </div>
-                                        <div class="nb-reader-practice-sub" id="nb-reader-practice-sub">
-                                            Làm ngay các bài tập C này để biến lý thuyết vừa học thành kỹ năng lập trình nhúng thực tế (+XP):
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-accent" style="font-size: 11.5px; padding: 4px 10px;" id="nb-reader-btn-do-all" onclick="openPracticeForCurrentDocModule()">
-                                        🚀 Mở Toàn Bộ 12 Bài Tập Module Này ↗
-                                    </button>
-                                </div>
-                                <div class="nb-reader-practice-grid" id="nb-reader-practice-grid">
-                                    <!-- Rendered dynamically by js/notebook.js -->
-                                </div>
+                            <p class="profile-bio" id="hero-bio-display">
+                                Nghiên cứu và triển khai các hệ thống nhúng thông minh, tối ưu hóa suy luận mô hình Deep Learning trực tiếp trên vi điều khiển ESP32-S3 với tập lệnh SIMD, RTOS đa nhiệm và lượng tử hóa INT8.
+                            </p>
+                            <div class="connect-chips-row" id="profile-connect-links">
+                                <!-- Rendered dynamically by js/profile.js -->
                             </div>
                         </div>
-
-                        <!-- 2. GEMINI AI DOC ASSISTANT & RAG CHAT VIEW -->
-                        <div class="nb-chat-workspace-wrap" id="nb-doc-chat-view" style="display: none;">
-                            <!-- Context Bar -->
-                        <div class="nb-chat-context-bar">
-                            <div>
-                                <span>🎯 Ngữ cảnh truy vấn: </span>
-                                <strong id="nb-chat-context-name" style="color: var(--cyan);">Toàn bộ kho tài liệu</strong>
-                            </div>
-                            <div style="font-size: 11px; color: var(--text-dim);">
-                                Powered by Gemini 2.5 Flash / Local RAG
-                            </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button type="button" class="btn btn-accent" onclick="window.print()" title="In hoặc lưu file PDF CV Kỹ sư chuẩn tuyển dụng">
+                                📄 Tải CV Bản Đẹp (PDF)
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="copyAutoIntroduction()" title="Sao chép tóm tắt năng lực dạng Markdown">
+                                📋 Sao chép CV Bio
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="copyPortfolioLink()" title="Sao chép link Portfolio để gửi HR/Nhà tuyển dụng">
+                                🔗 Link Portfolio
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="switchTab('grid')" title="Xem chi tiết 6 đồ án thực chiến">
+                                🏆 Xem 6 Dự Án
+                            </button>
                         </div>
-
-                        <!-- Quick Action Prompts -->
-                        <div class="nb-quick-prompts">
-                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('summary')">📝 Tóm tắt cốt lõi</div>
-                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('extract')">🔬 Trích xuất thanh ghi & API</div>
-                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('quiz')">🎯 Tạo 3 câu hỏi phỏng vấn</div>
-                            <div class="nb-prompt-chip" onclick="sendQuickPrompt('code')">⚡ Viết code C mẫu</div>
-                        </div>
-
-                        <!-- Chat Messages Container -->
-                        <div class="nb-chat-messages" id="nb-chat-messages-container">
-                            <!-- Rendered by js/notebook.js -->
-                        </div>
-
-                        <!-- Chat Input Bar -->
-                        <div class="nb-chat-input-bar">
-                            <!-- Direct PDF Attachment Preview -->
-                            <div class="nb-attachment-preview-bar" id="nb-chat-pdf-preview">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-size: 16px;">📕</span>
-                                    <span>Đang đính kèm PDF gốc: <strong id="nb-chat-pdf-name" style="color: var(--cyan);">datasheet.pdf</strong> (<span id="nb-chat-pdf-size">0 MB</span>)</span>
-                                </div>
-                                <button type="button" class="btn-icon" onclick="removeChatPdfAttachment()" style="color: var(--text-muted); font-size: 14px; cursor: pointer;" title="Gỡ đính kèm">✕</button>
-                            </div>
-
-                            <div class="nb-input-row">
-                                <button type="button" class="nb-btn-attach" onclick="document.getElementById('nb-chat-pdf-input').click()" title="Đính kèm file PDF để Gemini đọc trực tiếp bảng biểu & sơ đồ">
-                                    <span>📎</span> PDF Gốc
-                                </button>
-                                <input type="file" id="nb-chat-pdf-input" accept=".pdf" style="display: none;" onchange="handleDirectPdfAttach(event)">
-                                <textarea class="nb-chat-input" id="nb-chat-input" placeholder="Hỏi bất kỳ điều gì về tài liệu nhúng, thanh ghi, bộ nhớ hoặc đính kèm PDF gốc..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();handleSendNotebookQuery();}"></textarea>
-                                <button class="nb-btn-send" id="nb-btn-send" onclick="handleSendNotebookQuery()">
-                                    <span>Gửi</span> ➔
-                                </button>
-                            </div>
-                            <div class="nb-input-footer">
-                                <span>Mẹo: Nhấn <code>Enter</code> để gửi câu hỏi, <code>Shift + Enter</code> để xuống dòng.</span>
-                                <span>Hỗ trợ trích dẫn nguồn & code C/C++</span>
-                            </div>
-                        </div>
-                        </div> <!-- End #nb-doc-chat-view -->
                     </div>
+                </div>
+
+                <!-- Core Engineering Principles -->
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #f8fafc;">
+                        🛡️ NGUYÊN TẮC THIẾT KẾ HỆ THỐNG CỦA KỸ SƯ THAI
+                    </h3>
+                    <div class="principles-grid" id="profile-principles-container">
+                        <!-- Rendered by js/profile.js -->
+                    </div>
+                </div>
+
+                <!-- Skills Radar Matrix (4-Axis High-Precision SVG) -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">📊 MA TRẬN NĂNG LỰC CỐT LÕI (SKILLS RADAR MATRIX - 4 TRỤC CHUYÊN SÂU)</span>
+                        <span style="font-size: 12px; color: #00f0ff; font-weight: 600;">
+                            4 Trụ Cột: Firmware • Edge AI • Hardware • SIMD Optimization
+                        </span>
+                    </div>
+                    <div id="skills-radar-container">
+                        <!-- Rendered dynamically by js/profile.js via SVG -->
+                    </div>
+                </div>
+
+                <!-- Production Showcase Projects Summary -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">🏆 TỔNG QUAN 6 ĐỒ ÁN SẢN XUẤT TIÊU BIỂU (PRODUCTION SHOWCASE)</span>
+                        <span style="font-size: 12px; color: #94a3b8;">
+                            Nhấp vào bất kỳ dự án nào để mở Deep-Dive HUD &amp; UART Telemetry
+                        </span>
+                    </div>
+                    <div class="profile-projects-grid" id="profile-projects-summary">
+                        <!-- Rendered by js/profile.js -->
+                    </div>
+                </div>
+
+                <!-- Auto-Generated Markdown CV (For Recruiters & Job Applications) -->
+                <div class="card">
+                    <div class="card-title">
+                        <span class="card-title-text">📝 HỒ SƠ ỨNG VIÊN BẢN VĂN BẢN (RECRUITER-READY CV SUMMARY)</span>
+                        <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px;" onclick="copyAutoIntroduction()">
+                            📋 Sao chép Markdown
+                        </button>
+                    </div>
+                    <div class="cv-intro-box">
+                        <div class="cv-text" id="auto-cv-text">Đang tải đoạn giới thiệu...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>       </div>
                 </div>
             </div>
         </div>
@@ -2973,48 +3007,49 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     </div>
 
         <!-- ============================================== -->
-    <!-- FLOATING TOOLKIT DOCK (Bottom High-Tech Dock)  -->
+    <!-- RECRUITER QUICK DOCK (FLOATING BOTTOM DOCK)    -->
     <!-- ============================================== -->
-    <div class="floating-toolkit-dock" id="floating-toolkit-dock">
-        <!-- Pomodoro Capsule -->
-        <div class="pomodoro-box" id="pomodoro-widget" title="Kỹ sư Focus Timer (25/5)">
-            <span class="pomo-time-text" id="pomo-timer-text">25:00</span>
-            <span class="pomo-mode-badge pomo-mode-work" id="pomo-badge">FOCUS</span>
-            <button class="pomo-btn-icon" id="pomo-btn-play" onclick="togglePomodoro()" title="Bắt đầu/Tạm dừng">▶</button>
-            <button class="pomo-btn-icon" onclick="resetPomodoro()" title="Đặt lại">↺</button>
-            <button class="pomo-btn-icon" onclick="switchPomodoroMode()" title="Chuyển chế độ">☕</button>
-        </div>
-
-        <div class="dock-divider"></div>
-
+    <div class="floating-toolkit-dock recruiter-quick-dock" id="recruiter-quick-dock">
         <!-- Lo-Fi Audio Toggle -->
-        <button type="button" class="dock-item" id="btn-audio-header" onclick="AudioEngine.togglePanel()" title="Bảng điều khiển Âm thanh & Nhạc nền Lo-Fi (Web Audio API)">
+        <button type="button" class="dock-item" id="btn-audio-header" onclick="if(typeof AudioEngine !== 'undefined') AudioEngine.toggleMusic()" title="Bật/Tắt Nhạc Nền Lo-Fi (Web Audio API)">
             <span class="dock-icon" id="header-audio-icon">🎵</span>
             <span class="dock-label" id="header-audio-label">Lo-Fi</span>
         </button>
 
-        <!-- Technical Bookshelf -->
-        <button type="button" class="dock-item" onclick="openBookshelfModal()" title="Tủ Sách Kỹ Thuật: Sách giáo khoa, Báo cáo khoa học & PDF gốc">
-            <span class="dock-icon">📚</span>
-            <span class="dock-label">Tủ Sách</span>
+        <div class="dock-divider"></div>
+
+        <!-- Theme Toggle -->
+        <button type="button" class="dock-item" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
+            <span class="dock-icon">🌙</span>
+            <span class="dock-label">Theme</span>
         </button>
 
-        <!-- CheatSheet -->
-        <button type="button" class="dock-item" onclick="openCheatSheet()" title="Tra cứu nhanh thanh ghi, bản đồ bộ nhớ & APIs">
-            <span class="dock-icon">📖</span>
-            <span class="dock-label">CheatSheet</span>
+        <div class="dock-divider"></div>
+
+        <!-- Quick CV / Profile View -->
+        <button type="button" class="dock-item" onclick="switchTab('profile')" title="Xem Hồ Sơ &amp; Năng Lực Kỹ Sư Thai (CV 3.0)">
+            <span class="dock-icon">👤</span>
+            <span class="dock-label">Hồ Sơ CV</span>
         </button>
 
-        <!-- Backup & Restore -->
-        <button type="button" class="dock-item" onclick="openBackupHistoryModal()" title="Lịch sử sao lưu & phục hồi (5 phiên bản)">
-            <span class="dock-icon">💾</span>
-            <span class="dock-label">Sao Lưu</span>
+        <!-- Print / Save PDF -->
+        <button type="button" class="dock-item" onclick="window.print()" title="In hoặc lưu file PDF CV Kỹ Sư">
+            <span class="dock-icon">📄</span>
+            <span class="dock-label">Tải PDF</span>
         </button>
 
-        <!-- English Portal Link -->
-        <a href="https://tienganhratruong.com/dashboard" target="_blank" rel="noopener noreferrer" class="dock-item btn-dock-english" title="Mở cổng Tiếng Anh Ra Trường">
-            <span class="dock-icon">🇬🇧</span>
-            <span class="dock-label">Tiếng Anh</span> ↗
+        <div class="dock-divider"></div>
+
+        <!-- Quick Contact Button -->
+        <a href="mailto:v2t.embedded@gmail.com?subject=Trao%20đổi%20cơ%20hội%20kỹ%20sư%20Edge%20AI%20-%20Project%20Thai" class="dock-item btn-dock-contact" title="Gửi Email trực tiếp tới Kỹ sư Thai">
+            <span class="dock-icon">✉️</span>
+            <span class="dock-label">Liên Hệ</span>
+        </a>
+
+        <!-- GitHub Profile -->
+        <a href="https://github.com/v2tAcodin" target="_blank" rel="noopener noreferrer" class="dock-item" title="Xem GitHub cá nhân của Thai">
+            <span class="dock-icon">🐙</span>
+            <span class="dock-label">GitHub</span> ↗
         </a>
     </div>
 
@@ -3031,6 +3066,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/tracks.js?v=3.1.5" defer></script>
     <script src="js/station-workspace.js?v=3.1.5" defer></script>
     <script src="js/galaxy3d.js?v=3.1.5" defer></script>
+    <script src="js/cyber-tree3d.js?v=4.0.0" defer></script>
     <script src="js/quotes.js?v=3.1.5" defer></script>
     <script src="js/practice.js?v=3.1.5" defer></script>
     <script src="js/decision.js?v=3.1.5" defer></script>
@@ -3049,6 +3085,10 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/hexmem.js?v=3.1.5" defer></script>
     <script src="js/search.js?v=3.1.5" defer></script>
     <script src="js/analytics.js?v=3.1.5" defer></script>
+    <script src="js/portfolio-data.js?v=4.0.0" defer></script>
+    <script src="js/portfolio-controller.js?v=4.0.0" defer></script>
+    <script src="js/portfolio-grid.js?v=4.0.0" defer></script>
+    <script src="js/portfolio-hud.js?v=4.0.0" defer></script>
     <script src="js/audio.js?v=3.1.5" defer></script>
     <script src="js/app.js?v=3.1.5" defer></script>
 </body>

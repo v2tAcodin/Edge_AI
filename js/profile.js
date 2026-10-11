@@ -1,151 +1,259 @@
-// ==========================================
-// 8. PROFILE & AUTO-GENERATED CV
-// ==========================================
-// RENDER CỬA SỔ GIỚI THIỆU BẢN THÂN & NĂNG LỰC
-        // ==========================================
-        function renderProfileView() {
-            const stats = calculateStats();
-            const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
+/**
+ * Project Thai: Profile & Verified Competencies Module (CV 3.0)
+ * Renders engineer background, verified skills radar matrix (4 axes SVG),
+ * core engineering principles, and printable recruiter-friendly CV.
+ */
 
-            document.getElementById("profile-avatar-icon").innerText = profile.icon || "🤖";
-            document.getElementById("hero-badge-lvl").innerText = stats.rank.code;
-            document.getElementById("hero-name-display").innerText = profile.name;
-            document.getElementById("hero-rank-display").innerText = stats.rank.title;
-            document.getElementById("hero-total-xp").innerText = "⭐ " + profile.xp + " XP";
-            document.getElementById("hero-role-display").innerText = profile.role;
-            document.getElementById("hero-bio-display").innerText = profile.bio;
+(function(root) {
+    'use strict';
 
-            document.getElementById("metric-tasks-done").innerText = `${stats.completedTasks}/${stats.totalTasks}`;
-            document.getElementById("metric-code-solved").innerText = `${solvedCount}/${practiceExercises.length}`;
-            document.getElementById("metric-notes-count").innerText = notes.length;
-            document.getElementById("metric-mastery-percent").innerText = stats.percent + "%";
+    function renderProfileView() {
+        const data = root.PortfolioData || (typeof window !== 'undefined' ? window.PortfolioData : null);
+        if (!data || !data.engineerProfile) return;
 
-            // 6 Domain Cards
-            const domainContainer = document.getElementById("domain-cards-container");
-            domainContainer.innerHTML = "";
-            stats.stageStats.forEach(st => {
-                const card = document.createElement("div");
-                card.className = "domain-card";
-                card.innerHTML = `
-                    <div class="domain-header">
-                        <span class="domain-name">${st.icon} ${st.stageName}</span>
-                        <span class="domain-stat">${st.done}/${st.total} (${st.percent}%)</span>
+        const eng = data.engineerProfile;
+
+        // 1. Hero Identity & Bio
+        const nameEl = document.getElementById("hero-name-display");
+        if (nameEl) nameEl.innerText = eng.name;
+
+        const roleEl = document.getElementById("hero-role-display");
+        if (roleEl) roleEl.innerText = eng.title;
+
+        const bioEl = document.getElementById("hero-bio-display");
+        if (bioEl) bioEl.innerText = eng.bio;
+
+        const statusEl = document.getElementById("hero-badge-status");
+        if (statusEl) {
+            const statusText = eng.status || eng.statusBadge || 'Open for Engineering Challenges';
+            statusEl.innerHTML = `<span class="status-pulse-dot" style="background: #00ff88;"></span> ${statusText}`;
+        }
+
+        const avatarEl = document.getElementById("profile-avatar-icon");
+        if (avatarEl) avatarEl.innerText = eng.avatar || "🤖";
+
+        // 2. Connect Links
+        const connectEl = document.getElementById("profile-connect-links");
+        if (connectEl) {
+            const githubUrl = (eng.connect && eng.connect.github) || eng.github || "https://github.com/v2tAcodin";
+            const linkedinUrl = (eng.connect && eng.connect.linkedin) || eng.linkedin || "https://linkedin.com";
+            const emailAddr = (eng.connect && eng.connect.email) || eng.email || "v2t.embedded@gmail.com";
+            connectEl.innerHTML = `
+                <a href="${githubUrl}" target="_blank" rel="noopener noreferrer" class="connect-chip">
+                    <span>🐙</span> GitHub
+                </a>
+                <a href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" class="connect-chip">
+                    <span>💼</span> LinkedIn
+                </a>
+                <a href="mailto:${emailAddr}?subject=Trao%20đổi%20cơ%20hội%20kỹ%20sư%20Edge%20AI" class="connect-chip">
+                    <span>✉️</span> ${emailAddr}
+                </a>
+            `;
+        }
+
+        // 3. Core Principles
+        const principlesEl = document.getElementById("profile-principles-container");
+        if (principlesEl && Array.isArray(eng.principles)) {
+            principlesEl.innerHTML = eng.principles.map(p => `
+                <div class="principle-card">
+                    <div class="principle-icon">⚡</div>
+                    <div class="principle-title">${p.title}</div>
+                    <div class="principle-desc">${p.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        // 4. Skills Radar Matrix (4 Axes SVG)
+        const radarData = eng.skillsRadar || eng.radarMatrix || [];
+        renderSkillsRadarMatrix(radarData);
+
+        // 5. Production Projects Showcase Summary
+        const projSummaryEl = document.getElementById("profile-projects-summary");
+        if (projSummaryEl && Array.isArray(data.projects)) {
+            projSummaryEl.innerHTML = data.projects.map(p => `
+                <div class="profile-proj-card" onclick="if(window.PortfolioController) PortfolioController.selectProject('${p.id}')">
+                    <div class="pp-header">
+                        <span class="pp-title">${p.title}</span>
+                        <span class="pp-badge">${p.status}</span>
                     </div>
-                    <div class="domain-bar">
-                        <div class="domain-bar-fill" style="width: ${st.percent}%;"></div>
-                    </div>
-                `;
-                domainContainer.appendChild(card);
-            });
-
-            // 24 Verified Skills
-            const skillsContainer = document.getElementById("skills-matrix-container");
-            skillsContainer.innerHTML = "";
-
-            let unlockedSkillsList = [];
-
-            roadmap.forEach(stage => {
-                stage.tasks.forEach(task => {
-                    const pill = document.createElement("div");
-                    const isUnlocked = task.done;
-                    if (isUnlocked) {
-                        unlockedSkillsList.push(task.skill);
-                    }
-
-                    pill.className = `skill-pill ${isUnlocked ? 'unlocked' : 'locked'}`;
-                    pill.innerHTML = `
-                        <div class="skill-pill-left">
-                            <span class="skill-icon">${isUnlocked ? '✅' : '🔒'}</span>
-                            <div class="skill-info">
-                                <span class="skill-name">${task.skill}</span>
-                                <span class="skill-category">${stage.stage}</span>
-                            </div>
-                        </div>
-                        <span class="skill-badge ${isUnlocked ? 'badge-verified' : 'badge-locked'}">
-                            ${isUnlocked ? 'ĐÃ LÀM CHỦ' : 'ĐANG RÈN'}
-                        </span>
-                    `;
-                    skillsContainer.appendChild(pill);
-                });
-            });
-
-            // Auto-generated CV Text
-            const autoCvContainer = document.getElementById("auto-cv-text");
-            const skillsString = unlockedSkillsList.length > 0 
-                ? unlockedSkillsList.map(s => `  • ${s}`).join("\n") 
-                : "  • Đang trong quá trình rèn luyện các bước nền tảng C, Ngắt và Cảm biến.";
-
-            const generatedText = 
-`# THÔNG TIN ỨNG VIÊN / EMBEDDED & EDGE AI ENGINEER PROFILE
-- Họ và tên: ${profile.name}
-- Định hướng: ${profile.role}
-- Trạng thái hiện tại: ${stats.rank.title} (Hoàn thành ${stats.percent}% Lộ trình Kỹ Sư 14 bước • 4 Chặng Nghề Nghiệp | ${profile.xp} XP)
-- Thành tích Thuật toán & Code C: Đã giải đúng ${solvedCount}/${practiceExercises.length} bài tập Code C & TinyML
-- Đấu trường Phỏng Vấn: Đã vượt qua các câu hỏi trắc nghiệm bẫy C & Firmware từ Bosch, Renesas, Viettel, FPT
-- Chuẩn ngoại ngữ: Đang duy trì rèn luyện thường xuyên trên tienganhratruong.com
-- Liên hệ / Portfolio Online: ${profile.contact || 'https://v2tacodin.github.io/Edge_AI/#profile'}
-
-## TÓM TẮT NĂNG LỰC THỰC CHIẾN
-${profile.bio}
-
-## KỸ NĂNG ĐÃ KIỂM CHỨNG & TÍCH LŨY (${stats.completedTasks}/${stats.totalTasks} kỹ năng chuẩn công nghiệp):
-${skillsString}
-
-## CƠ SỞ KỸ THUẬT & DỰ ÁN ĐÃ THỰC HÀNH (4 CHẶNG NGHỀ NGHIỆP):
-1. 🎓 Nền tảng Sinh viên: Con trỏ C nâng cao, Quản lý bộ nhớ SRAM/PSRAM, Timer định thời chính xác, Xử lý ngắt ISR và Lọc số FFT.
-2. 🏆 Đồ án Tốt nghiệp Edge AI (A+): Kiến trúc FreeRTOS 2 nhân, Lượng tử hóa INT8 TFLite Micro, Nguồn ULP Deep Sleep và Benchmarking khoa học.
-3. 💼 Phỏng vấn Intern: Làm chủ các bẫy C kinh điển (volatile, struct padding, callback), Thanh ghi trần Bare-metal, Đo kiểm với Logic Analyzer và JTAG.
-4. 🚀 Kỹ sư Fresher: Tiêu chuẩn an toàn ô tô MISRA C:2012, Mạng truyền thông công nghiệp CAN Bus / Modbus, Unit Test tự động Unity/CMock & CI/CD.`;
-
-            autoCvContainer.innerText = generatedText;
+                    <div class="pp-summary">${p.summary}</div>
+                    <div class="pp-metric">FPS: ${p.benchmarks ? (p.benchmarks.fps || 'Real-Time') : 'N/A'} • Latency: ${p.benchmarks ? p.benchmarks.latency : 'N/A'}</div>
+                </div>
+            `).join('');
         }
 
-// QUẢN LÝ CHỈNH SỬA PROFILE
-        // ==========================================
-        function openEditProfileModal() {
-            document.getElementById("edit-profile-name").value = profile.name;
-            document.getElementById("edit-profile-role").value = profile.role;
-            document.getElementById("edit-profile-icon").value = profile.icon || "🤖";
-            document.getElementById("edit-profile-bio").value = profile.bio;
-            document.getElementById("edit-profile-contact").value = profile.contact || "";
-            document.getElementById("edit-profile-modal").classList.add("active");
+        // 6. Auto-generated Printable CV Text
+        const cvTextEl = document.getElementById("auto-cv-text");
+        if (cvTextEl) {
+            const radarText = (eng.radarMatrix || []).map(r => `  • ${r.pillar} (${r.score}%): ${r.description}`).join('\n');
+            const projectsText = (data.projects || []).map(p => `  • [${p.status.toUpperCase()}] ${p.title}: ${p.summary}`).join('\n');
+
+            cvTextEl.innerText = 
+`# CURRICULUM VITAE // EMBEDDED SYSTEMS & EDGE AI ENGINEER
+- Họ và tên: ${eng.name}
+- Chức danh: ${eng.title}
+- Trạng thái: ${eng.statusBadge}
+- Email: ${eng.connect ? eng.connect.email : 'v2t.embedded@gmail.com'}
+- GitHub: ${eng.connect ? eng.connect.github : 'https://github.com/v2tAcodin'}
+
+## 1. TỔNG QUAN NĂNG LỰC CỐT LÕI (CORE COMPETENCIES)
+${eng.bio}
+
+## 2. MA TRẬN KỸ NĂNG CHUYÊN SÂU (RADAR MATRIX):
+${radarText}
+
+## 3. DỰ ÁN THỰC CHIẾN TIÊU BIỂU (PRODUCTION SHOWCASE):
+${projectsText}
+
+## 4. NGUYÊN TẮC THIẾT KẾ HỆ THỐNG:
+  • Zero Waste Memory: Tối ưu từng byte SRAM và Flash, nói không với cấp phát động.
+  • Real-Time Determinism: Đảm bảo độ trễ phản hồi xác định, ngắt cứng chính xác.
+  • Air-Gapped Intelligence: Mô hình AI suy luận độc lập tại biên, an toàn bảo mật.`;
+        }
+    }
+
+    /**
+     * Renders a sleek 4-axis SVG Radar Matrix
+     */
+    function renderSkillsRadarMatrix(radarData) {
+        const container = document.getElementById("skills-radar-container");
+        if (!container) return;
+
+        if (!Array.isArray(radarData) || radarData.length === 0) {
+            container.innerHTML = '<div style="color: #64748b; text-align: center; padding: 20px;">Đang tải dữ liệu radar...</div>';
+            return;
         }
 
-        function closeEditProfileModal() {
-            document.getElementById("edit-profile-modal").classList.remove("active");
-        }
+        const size = 380;
+        const cx = size / 2;
+        const cy = size / 2;
+        const R = 125;
 
-        document.getElementById("edit-profile-form").addEventListener("submit", (e) => {
-            e.preventDefault();
-            profile.name = document.getElementById("edit-profile-name").value.trim();
-            profile.role = document.getElementById("edit-profile-role").value.trim();
-            profile.icon = document.getElementById("edit-profile-icon").value;
-            profile.bio = document.getElementById("edit-profile-bio").value.trim();
-            profile.contact = document.getElementById("edit-profile-contact").value.trim();
+        // 4 Axes: Top (-PI/2), Right (0), Bottom (PI/2), Left (PI)
+        const angles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
 
-            localStorage.setItem(STORAGE_PROFILE, JSON.stringify(profile));
-            closeEditProfileModal();
-            renderProfileView();
-            showToast("Đã cập nhật hồ sơ cá nhân thành công!");
+        // Background concentric webs (25%, 50%, 75%, 100%)
+        const webLevels = [0.25, 0.5, 0.75, 1.0];
+        const webPolygons = webLevels.map(lvl => {
+            const pts = angles.map(a => {
+                const x = cx + R * lvl * Math.cos(a);
+                const y = cy + R * lvl * Math.sin(a);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+            return `<polygon points="${pts}" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />`;
+        }).join('');
+
+        // 4 Axis radial lines
+        const axisLines = angles.map(a => {
+            const x = cx + R * Math.cos(a);
+            const y = cy + R * Math.sin(a);
+            return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.2" stroke-dasharray="3,3" />`;
+        }).join('');
+
+        // Data polygon points
+        const dataPoints = radarData.map((item, idx) => {
+            const score = Math.max(10, Math.min(100, item.score || 80));
+            const angle = angles[idx % angles.length];
+            const r = R * (score / 100);
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            return { x, y, score, item };
         });
 
-        function copyAutoIntroduction() {
-            const cvText = document.getElementById("auto-cv-text").innerText;
-            navigator.clipboard.writeText(cvText).then(() => {
-                showToast("📋 Đã sao chép đoạn Giới Thiệu Bản Thân vào Clipboard!");
-            }).catch(() => {
-                alert("Không thể sao chép tự động, vui lòng chọn văn bản và copy thủ công.");
-            });
-        }
+        const polygonPointsStr = dataPoints.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
-        function copyPortfolioLink() {
-            const url = window.location.origin + window.location.pathname + "#profile";
+        // Glowing vertex dots
+        const vertexDots = dataPoints.map(p => 
+            `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#00ff88" stroke="#ffffff" stroke-width="1.5" />`
+        ).join('');
+
+        // Perimeter Labels
+        const labelsSvg = [
+            // Top: Embedded Core
+            `<text x="${cx}" y="${cy - R - 14}" text-anchor="middle" fill="#00f0ff" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700">Embedded Core (${radarData[0] ? radarData[0].score : 95}%)</text>`,
+            // Right: Edge AI
+            `<text x="${cx + R + 10}" y="${cy + 4}" text-anchor="start" fill="#00f0ff" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700">Edge AI & TinyML (${radarData[1] ? radarData[1].score : 90}%)</text>`,
+            // Bottom: Hardware Protocols
+            `<text x="${cx}" y="${cy + R + 22}" text-anchor="middle" fill="#00f0ff" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700">Hardware Protocols (${radarData[2] ? radarData[2].score : 88}%)</text>`,
+            // Left: System Optimization
+            `<text x="${cx - R - 10}" y="${cy + 4}" text-anchor="end" fill="#00f0ff" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700">Optimization (${radarData[3] ? radarData[3].score : 92}%)</text>`
+        ].join('');
+
+        // Detailed pillar cards underneath
+        const pillarCards = radarData.map(r => `
+            <div class="radar-pillar-card">
+                <div class="rpc-header">
+                    <span class="rpc-name">${r.pillar}</span>
+                    <span class="rpc-score">${r.score}%</span>
+                </div>
+                <div class="rpc-bar">
+                    <div class="rpc-fill" style="width: ${r.score}%;"></div>
+                </div>
+                <div class="rpc-desc">${r.description}</div>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="radar-wrapper">
+                <div class="radar-svg-box">
+                    <svg viewBox="0 0 ${size} ${size}" class="skills-radar-svg">
+                        <defs>
+                            <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#0072ff" stop-opacity="0.1" />
+                            </radialGradient>
+                        </defs>
+                        ${webPolygons}
+                        ${axisLines}
+                        <polygon points="${polygonPointsStr}" fill="url(#radarGlow)" stroke="#00f0ff" stroke-width="2.5" />
+                        ${vertexDots}
+                        ${labelsSvg}
+                    </svg>
+                </div>
+                <div class="radar-pillars-grid">
+                    ${pillarCards}
+                </div>
+            </div>
+        `;
+    }
+
+    function copyAutoIntroduction() {
+        const cvTextEl = document.getElementById("auto-cv-text");
+        if (!cvTextEl) return;
+        const text = cvTextEl.innerText;
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                if (typeof root.showToast === 'function') {
+                    root.showToast("📋 Đã sao chép đoạn CV Kỹ Sư vào Clipboard!");
+                }
+            }).catch(() => {});
+        }
+    }
+
+    function copyPortfolioLink() {
+        if (typeof window === 'undefined') return;
+        const url = window.location.origin + window.location.pathname + "#profile";
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(() => {
-                showToast("🔗 Đã sao chép link Portfolio Online để gửi HR / Nhà tuyển dụng!");
-            }).catch(() => {
-                prompt("Copy link Portfolio bên dưới:", url);
-            });
+                if (typeof root.showToast === 'function') {
+                    root.showToast("🔗 Đã sao chép link Portfolio Online!");
+                }
+            }).catch(() => {});
         }
+    }
 
+    // Export module
+    root.renderProfileView = renderProfileView;
+    root.renderSkillsRadarMatrix = renderSkillsRadarMatrix;
+    root.copyAutoIntroduction = copyAutoIntroduction;
+    root.copyPortfolioLink = copyPortfolioLink;
 
-        
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            renderProfileView,
+            renderSkillsRadarMatrix,
+            copyAutoIntroduction,
+            copyPortfolioLink
+        };
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : this);

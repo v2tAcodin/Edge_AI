@@ -1,7 +1,7 @@
-// Version: 4.0.0 // Project Thai // Personal Mastery HUD
+// Version: 5.0.0 // Project Thai // Living Portfolio & Showcase HUD
 // ==========================================
 
-const CACHE_NAME = 'project-thai-hud-v4.0.0';
+const CACHE_NAME = 'project-thai-showcase-v5.0.0';
 
 const PRECACHE_ASSETS = [
     './',
@@ -29,12 +29,18 @@ const PRECACHE_ASSETS = [
     './css/dock.css',
     './css/station-workspace.css',
     './css/galaxy.css',
+    './css/portfolio-hud.css',
     // JS Modular Files
     './js/auth.js',
     './js/state.js',
     './js/tracks.js',
     './js/station-workspace.js',
     './js/galaxy3d.js',
+    './js/cyber-tree3d.js',
+    './js/portfolio-data.js',
+    './js/portfolio-controller.js',
+    './js/portfolio-grid.js',
+    './js/portfolio-hud.js',
     './js/quotes.js',
     './js/practice.js',
     './js/decision.js',

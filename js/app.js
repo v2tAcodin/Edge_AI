@@ -5,7 +5,7 @@ const STORAGE_THEME = "mr_thai_theme_v1";
 
 function switchTab(tabId) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "active-menu"));
-    document.querySelectorAll("#view-galaxy, #view-menu, #view-simulator, #view-learning, #view-practice, #view-profile, #view-interview, #view-notebook, #view-projects").forEach(v => {
+    document.querySelectorAll("#view-tree3d, #view-galaxy, #view-grid, #view-menu, #view-simulator, #view-learning, #view-practice, #view-profile, #view-interview, #view-notebook, #view-projects").forEach(v => {
         if (v) {
             v.style.display = "none";
             v.classList.remove("view-enter");
@@ -17,58 +17,51 @@ function switchTab(tabId) {
         const el = document.getElementById(viewId);
         if (!el) return;
         el.style.display = "block";
-        // Force reflow to re-trigger animation
         void el.offsetHeight;
         el.classList.add("view-enter");
     }
 
-    if (tabId === 'galaxy') {
-        const tabEl = document.getElementById("tab-galaxy");
+    if (tabId === 'tree3d' || tabId === 'galaxy') {
+        const tabEl = document.getElementById("tab-tree3d") || document.getElementById("tab-galaxy");
         if (tabEl) tabEl.classList.add("active");
+        showView("view-tree3d");
         showView("view-galaxy");
+        if (window.PortfolioController) {
+            window.PortfolioController.activeView = 'tree3d';
+        }
         if (window.skillGalaxy3D) {
             window.skillGalaxy3D.init();
             window.skillGalaxy3D.onWindowResize();
             window.skillGalaxy3D.refreshNodeVisuals();
         }
-    } else if (tabId === 'menu') {
-        document.getElementById("tab-menu").classList.add("active", "active-menu");
-        showView("view-menu");
-    } else if (tabId === 'learning') {
-        document.getElementById("tab-learning").classList.add("active");
-        showView("view-learning");
-        renderRoadmap();
-    } else if (tabId === 'practice') {
-        document.getElementById("tab-practice").classList.add("active");
-        showView("view-practice");
-        renderPracticeView();
-    } else if (tabId === 'projects') {
-        const tabEl = document.getElementById("tab-projects");
+    } else if (tabId === 'grid' || tabId === 'projects') {
+        const tabEl = document.getElementById("tab-grid") || document.getElementById("tab-projects");
         if (tabEl) tabEl.classList.add("active");
+        showView("view-grid");
         showView("view-projects");
-        if (typeof renderProjectsView === 'function') renderProjectsView();
-    } else if (tabId === 'simulator') {
-        document.getElementById("tab-simulator").classList.add("active");
-        showView("view-simulator");
-        updateSramSimulation();
-        if (typeof initHexMemoryModule === 'function') initHexMemoryModule();
-    } else if (tabId === 'interview') {
-        const tabEl = document.getElementById("tab-interview");
-        if (tabEl) tabEl.classList.add("active");
-        showView("view-interview");
-        renderInterviewArena();
-    } else if (tabId === 'notebook') {
-        const tabEl = document.getElementById("tab-notebook");
-        if (tabEl) tabEl.classList.add("active");
-        showView("view-notebook");
-        if (typeof renderNotebookView === 'function') renderNotebookView();
+        if (window.PortfolioController) {
+            window.PortfolioController.activeView = 'grid';
+        }
+        if (window.PortfolioGrid) {
+            window.PortfolioGrid.init();
+            window.PortfolioGrid.render();
+        } else if (typeof renderProjectsView === 'function') {
+            renderProjectsView();
+        }
     } else if (tabId === 'profile') {
-        document.getElementById("tab-profile").classList.add("active");
+        const tabEl = document.getElementById("tab-profile");
+        if (tabEl) tabEl.classList.add("active");
         showView("view-profile");
-        renderProfileView();
+        if (window.PortfolioController) {
+            window.PortfolioController.activeView = 'profile';
+        }
+        if (typeof renderProfileView === 'function') renderProfileView();
+    } else if (tabId === 'menu') {
+        const tabEl = document.getElementById("tab-menu");
+        if (tabEl) tabEl.classList.add("active", "active-menu");
+        showView("view-menu");
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Play tab switch SFX
     if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('tab');
 }
 
@@ -226,6 +219,18 @@ document.addEventListener("DOMContentLoaded", () => {
     generateDailyDecision(false);
     updatePortalStats();
     updatePomoDisplay();
+
+    // Living Portfolio 3.0: Core & Grid Initializers
+    if (window.PortfolioData && window.PortfolioController) {
+        window.PortfolioController.init(window.PortfolioData);
+    }
+    if (window.PortfolioGrid) {
+        window.PortfolioGrid.init();
+        window.PortfolioGrid.render();
+    }
+    if (window.PortfolioHUD) {
+        window.PortfolioHUD.init();
+    }
 });
 
 // Listen for system theme changes
