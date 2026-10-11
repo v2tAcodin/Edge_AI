@@ -34,6 +34,16 @@ function buildSearchIndex() {
         });
     });
 
+    // Quick Notes Scratchpad action
+    searchIndex.push({
+        type: "action",
+        icon: "📝",
+        title: "Sổ Ghi Chú Nhanh (Quick Notes)",
+        meta: "Ghi chú & nhắc việc cá nhân • Phím tắt Alt+N",
+        tab: "quicknotes",
+        searchText: "ghi chú note notes memo scratchpad sổ tay nhắc nhớ việc cần làm"
+    });
+
     // 2. Roadmap tasks
     if (typeof roadmap !== "undefined" && Array.isArray(roadmap)) {
         roadmap.forEach((stage, si) => {
@@ -259,6 +269,12 @@ function closeGlobalSearch() {
 
 function handleSearchSelect(tab) {
     closeGlobalSearch();
+    if (tab === "quicknotes") {
+        setTimeout(() => {
+            if (window.QuickNotes) QuickNotes.open();
+        }, 150);
+        return;
+    }
     if (typeof switchTab === "function") {
         switchTab(tab === "cheatsheet" ? "menu" : tab);
         if (tab === "cheatsheet" && typeof openCheatSheet === "function") {

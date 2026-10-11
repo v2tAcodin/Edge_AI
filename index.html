@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="css/galaxy.css">
     <link rel="stylesheet" href="css/portfolio-hud.css?v=4.0.0">
     <link rel="stylesheet" href="css/portfolio-admin.css?v=4.0.0">
+    <link rel="stylesheet" href="css/quick-notes.css?v=4.0.0">
 </head>
 
 <body>
@@ -170,6 +171,9 @@
                 </button>
                 <button class="btn btn-secondary" onclick="openGlobalSearch()" title="Tìm kiếm toàn cục (Ctrl+K)">
                     🔍 Tìm <kbd class="header-kbd">Ctrl+K</kbd>
+                </button>
+                <button class="btn btn-secondary btn-quick-notes" onclick="QuickNotes.open()" title="Sổ Ghi Chú Nhanh (Alt+N)">
+                    📝 Ghi Chú <span class="notes-header-counter" id="notes-header-counter" style="display: none;">0</span>
                 </button>
                 <button class="btn btn-secondary btn-theme-toggle" id="btn-theme-toggle" onclick="toggleTheme()" title="Chuyển chế độ Sáng/Tối">
                     🌙
@@ -3010,6 +3014,93 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- QUICK NOTES DRAWER & BACKDROP (SCRATCHPAD)     -->
+    <!-- ============================================== -->
+    <div class="qn-backdrop" id="qn-backdrop" onclick="QuickNotes.close()"></div>
+    <div class="quick-notes-drawer" id="quick-notes-drawer">
+        <div class="qn-header">
+            <div class="qn-title-wrap">
+                <div class="qn-icon">📝</div>
+                <div>
+                    <div class="qn-title-text">
+                        <span>SỔ GHI CHÚ NHANH</span>
+                        <span class="qn-count-pill" id="qn-header-count-pill">0 ghi chú</span>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b;">Tự động lưu ngoại tuyến • Phím tắt Alt+N</div>
+                </div>
+            </div>
+            <div class="qn-header-actions">
+                <button type="button" class="qn-btn-icon" onclick="QuickNotes.exportMarkdown()" title="Xuất file Markdown (.md)">📥</button>
+                <button type="button" class="qn-btn-icon" onclick="QuickNotes.exportJson()" title="Sao lưu file JSON">💾</button>
+                <button type="button" class="qn-btn-icon" onclick="QuickNotes.triggerImportJson()" title="Nhập file sao lưu JSON">📤</button>
+                <a href="notes.html" target="_blank" class="qn-btn-icon" title="Mở trang ghi chú toàn màn hình" style="text-decoration: none;">⛶</a>
+                <button type="button" class="qn-btn-icon qn-btn-close" onclick="QuickNotes.close()" title="Đóng (ESC)">✕</button>
+            </div>
+        </div>
+
+        <!-- Hidden input for file import -->
+        <input type="file" id="qn-file-import" style="display: none;" accept=".json" onchange="QuickNotes.handleFileImport(event)">
+
+        <!-- Compose Box -->
+        <div class="qn-compose-section">
+            <div class="qn-compose-box">
+                <input type="text" class="qn-input-title" id="qn-compose-title" placeholder="Tiêu đề ghi chú (VD: Lệnh nạp ESP32, Checklist bảo vệ đồ án...)" autocomplete="off">
+                <textarea class="qn-textarea" id="qn-compose-content" placeholder="Nhập nội dung cần ghi nhớ vào đây... (Hỗ trợ checklist - [ ], link web, code C... Bấm Ctrl+Enter để lưu)" onkeydown="if(event.ctrlKey && event.key === 'Enter') QuickNotes.addNote()"></textarea>
+                
+                <div class="qn-compose-footer">
+                    <div class="qn-category-selector">
+                        <span class="qn-cat-pill selected" data-cat="general" onclick="QuickNotes.selectCategory('general')">📌 Chung</span>
+                        <span class="qn-cat-pill" data-cat="urgent" onclick="QuickNotes.selectCategory('urgent')">⚡ Cần nhớ gấp</span>
+                        <span class="qn-cat-pill" data-cat="todo" onclick="QuickNotes.selectCategory('todo')">📋 Việc cần làm</span>
+                        <span class="qn-cat-pill" data-cat="idea" onclick="QuickNotes.selectCategory('idea')">💡 Ý tưởng</span>
+                        <span class="qn-cat-pill" data-cat="code" onclick="QuickNotes.selectCategory('code')">💻 Lệnh / Code</span>
+                    </div>
+                    <div class="qn-compose-actions">
+                        <button type="button" class="qn-pin-toggle" id="qn-new-pin-btn" onclick="QuickNotes.toggleNewPin()">
+                            ☆ Ghim
+                        </button>
+                        <button type="button" class="qn-btn-save" onclick="QuickNotes.addNote()">
+                            💾 Lưu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="qn-filter-section">
+            <div class="qn-search-wrapper">
+                <span class="qn-search-icon">🔍</span>
+                <input type="text" class="qn-search-input" id="qn-search-input" placeholder="Tìm kiếm nhanh trong các ghi chú..." oninput="QuickNotes.handleSearch(this.value)">
+                <button type="button" class="qn-search-clear" id="qn-search-clear" style="display: none;" onclick="QuickNotes.clearSearch()">✕</button>
+            </div>
+            <div class="qn-filter-tabs">
+                <button type="button" class="qn-filter-pill active" data-filter="all" onclick="QuickNotes.setFilter('all')">Tất cả</button>
+                <button type="button" class="qn-filter-pill" data-filter="pinned" onclick="QuickNotes.setFilter('pinned')">⭐ Đã ghim</button>
+                <button type="button" class="qn-filter-pill" data-filter="urgent" onclick="QuickNotes.setFilter('urgent')">⚡ Cần nhớ gấp</button>
+                <button type="button" class="qn-filter-pill" data-filter="todo" onclick="QuickNotes.setFilter('todo')">📋 Cần làm</button>
+                <button type="button" class="qn-filter-pill" data-filter="idea" onclick="QuickNotes.setFilter('idea')">💡 Ý tưởng</button>
+                <button type="button" class="qn-filter-pill" data-filter="code" onclick="QuickNotes.setFilter('code')">💻 Lệnh/Code</button>
+            </div>
+        </div>
+
+        <!-- Notes List Cards -->
+        <div class="qn-notes-list" id="qn-notes-list">
+            <!-- Rendered by js/quick-notes.js -->
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div class="qn-bottom-bar">
+            <span id="qn-bottom-status">0 ghi chú</span>
+            <div class="qn-bottom-links">
+                <button type="button" class="qn-bottom-link" onclick="QuickNotes.clearAll()">Xóa tất cả</button>
+                <span>•</span>
+                <a href="notes.html" target="_blank" class="qn-bottom-link">Mở toàn màn hình ↗</a>
+            </div>
+        </div>
+    </div>
+
         <!-- ============================================== -->
     <!-- RECRUITER QUICK DOCK (FLOATING BOTTOM DOCK)    -->
     <!-- ============================================== -->
@@ -3018,6 +3109,15 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
         <button type="button" class="dock-item" id="btn-audio-header" onclick="if(typeof AudioEngine !== 'undefined') AudioEngine.toggleMusic()" title="Bật/Tắt Nhạc Nền Lo-Fi (Web Audio API)">
             <span class="dock-icon" id="header-audio-icon">🎵</span>
             <span class="dock-label" id="header-audio-label">Lo-Fi</span>
+        </button>
+
+        <div class="dock-divider"></div>
+
+        <!-- Quick Notes Drawer Button -->
+        <button type="button" class="dock-item" id="dock-btn-quick-notes" onclick="QuickNotes.open()" title="Mở Sổ Ghi Chú Nhanh (Alt+N)">
+            <span class="dock-icon">📝</span>
+            <span class="dock-label">Ghi Chú</span>
+            <span class="dock-note-badge" id="dock-notes-count-badge" style="display: none;">0</span>
         </button>
 
         <div class="dock-divider"></div>
@@ -3099,6 +3199,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/portfolio-grid.js?v=4.0.0" defer></script>
     <script src="js/portfolio-hud.js?v=4.0.0" defer></script>
     <script src="js/portfolio-admin.js?v=4.0.0" defer></script>
+    <script src="js/quick-notes.js?v=4.0.0" defer></script>
     <script src="js/audio.js?v=3.1.5" defer></script>
     <script src="js/app.js?v=3.1.5" defer></script>
 </body>

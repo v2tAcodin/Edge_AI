@@ -31,6 +31,8 @@ const PRECACHE_ASSETS = [
     './css/galaxy.css',
     './css/portfolio-hud.css',
     './css/portfolio-admin.css',
+    './css/quick-notes.css',
+    './notes.html',
     // JS Modular Files
     './js/auth.js',
     './js/state.js',
@@ -42,6 +44,7 @@ const PRECACHE_ASSETS = [
     './js/portfolio-grid.js',
     './js/portfolio-hud.js',
     './js/portfolio-admin.js',
+    './js/quick-notes.js',
     './js/quotes.js',
     './js/practice.js',
     './js/decision.js',

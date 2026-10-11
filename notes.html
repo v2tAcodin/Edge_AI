@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ Ghi Chú // Project Thai - Edge AI & Personal Mastery</title>
+
+    <meta name="theme-color" content="#06080e">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/quick-notes.css">
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background: #06080e;
+            color: #e2e8f0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-app-container {
+            max-width: 1080px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 20px 60px 20px;
+            flex: 1;
+        }
+
+        .notes-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .notes-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notes-brand-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .notes-brand-text h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notes-brand-sub {
+            font-size: 12px;
+            color: #64748b;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 2px;
+        }
+
+        .notes-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-hud-return {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #00f0ff;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-hud-return:hover {
+            background: rgba(0, 240, 255, 0.2);
+            border-color: #00f0ff;
+            transform: translateY(-1px);
+        }
+
+        /* In standalone mode, notes list has full layout */
+        .standalone-notes-view .qn-notes-list {
+            padding: 0;
+            overflow-y: visible;
+        }
+
+        .standalone-notes-view .quick-notes-drawer {
+            position: static;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .standalone-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar-panel {
+            background: #090e1a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            height: fit-content;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+
+        .sidebar-menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-menu-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #f8fafc;
+        }
+
+        .sidebar-menu-item.active {
+            background: rgba(0, 240, 255, 0.12);
+            border-color: rgba(0, 240, 255, 0.3);
+            color: #00f0ff;
+        }
+
+        .sidebar-pill-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 820px) {
+            .standalone-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="notes-app-container">
+        <!-- Top Nav -->
+        <header class="notes-nav-header">
+            <div class="notes-brand">
+                <div class="notes-brand-logo">📝</div>
+                <div class="notes-brand-text">
+                    <h1>SỔ GHI CHÚ NHANH // SCRATCHPAD</h1>
+                    <div class="notes-brand-sub">TỰ ĐỘNG LƯU TRỮ OFFLINE • DÀNH CHO KỸ SƯ EDGE AI</div>
+                </div>
+            </div>
+            <div class="notes-top-actions">
+                <button type="button" class="btn btn-secondary" onclick="QuickNotes.exportMarkdown()" title="Tải file Markdown (.md)">
+                    📥 Xuất Markdown
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="QuickNotes.exportJson()" title="Tải file sao lưu JSON">
+                    💾 Sao Lưu JSON
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="QuickNotes.triggerImportJson()" title="Nhập file JSON">
+                    📤 Nhập File
+                </button>
+                <a href="index.html" class="btn-hud-return" title="Quay lại giao diện chính Project Thai">
+                    ⚡ Về Project Thai HUD ↗
+                </a>
+            </div>
+        </header>
+
+        <!-- Hidden input for JSON import -->
+        <input type="file" id="qn-file-import" style="display: none;" accept=".json" onchange="QuickNotes.handleFileImport(event)">
+
+        <div class="standalone-grid">
+            <!-- Sidebar -->
+            <aside class="sidebar-panel">
+                <div class="sidebar-title">Danh Mục Ghi Chú</div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div class="sidebar-menu-item active" onclick="setStandaloneFilter('all', this)">
+                        <span>📌 Tất Cả Ghi Chú</span>
+                        <span class="sidebar-pill-badge" id="side-count-all">0</span>
+                    </div>
+                    <div class="sidebar-menu-item" onclick="setStandaloneFilter('pinned', this)">
+                        <span>⭐ Đã Ghim Ưu Tiên</span>
+                        <span class="sidebar-pill-badge" id="side-count-pinned">0</span>
+                    </div>
+                    <div class="sidebar-menu-item" onclick="setStandaloneFilter('urgent', this)">
+                        <span>⚡ Cần Nhớ Gấp</span>
+                        <span class="sidebar-pill-badge" id="side-count-urgent">0</span>
+                    </div>
+                    <div class="sidebar-menu-item" onclick="setStandaloneFilter('todo', this)">
+                        <span>📋 Việc Cần Làm (Todo)</span>
+                        <span class="sidebar-pill-badge" id="side-count-todo">0</span>
+                    </div>
+                    <div class="sidebar-menu-item" onclick="setStandaloneFilter('idea', this)">
+                        <span>💡 Ý Tưởng & Dự Án</span>
+                        <span class="sidebar-pill-badge" id="side-count-idea">0</span>
+                    </div>
+                    <div class="sidebar-menu-item" onclick="setStandaloneFilter('code', this)">
+                        <span>💻 Lệnh / Đoạn Mã</span>
+                        <span class="sidebar-pill-badge" id="side-count-code">0</span>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 14px;">
+                    <div class="sidebar-title" style="margin-bottom: 8px;">Mẹo Nhanh</div>
+                    <div style="font-size: 11.5px; color: #64748b; line-height: 1.6;">
+                        • Bấm <strong>Ctrl + Enter</strong> để lưu nhanh.<br>
+                        • Viết <code>- [ ] Việc cần làm</code> để tạo checklist bấm tick trực tiếp.<br>
+                        • Mọi dữ liệu tự động lưu trong trình duyệt của bạn.
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="standalone-notes-view">
+                <div class="quick-notes-drawer" style="right: 0;">
+                    <!-- Compose Box -->
+                    <div class="qn-compose-section">
+                        <div class="qn-compose-box">
+                            <input type="text" class="qn-input-title" id="qn-compose-title" placeholder="Tiêu đề ghi chú (VD: Lệnh nạp ESP32, Checklist bảo vệ đồ án...)" autocomplete="off">
+                            <textarea class="qn-textarea" id="qn-compose-content" placeholder="Nhập nội dung cần ghi nhớ vào đây... (Hỗ trợ checklist - [ ], link web, mã code C, phím tắt... Bấm Ctrl+Enter để lưu)" onkeydown="if(event.ctrlKey && event.key === 'Enter') QuickNotes.addNote()"></textarea>
+                            
+                            <div class="qn-compose-footer">
+                                <div class="qn-category-selector">
+                                    <span class="qn-cat-pill selected" data-cat="general" onclick="QuickNotes.selectCategory('general')">📌 Chung</span>
+                                    <span class="qn-cat-pill" data-cat="urgent" onclick="QuickNotes.selectCategory('urgent')">⚡ Cần nhớ gấp</span>
+                                    <span class="qn-cat-pill" data-cat="todo" onclick="QuickNotes.selectCategory('todo')">📋 Việc cần làm</span>
+                                    <span class="qn-cat-pill" data-cat="idea" onclick="QuickNotes.selectCategory('idea')">💡 Ý tưởng</span>
+                                    <span class="qn-cat-pill" data-cat="code" onclick="QuickNotes.selectCategory('code')">💻 Lệnh / Code</span>
+                                </div>
+                                <div class="qn-compose-actions">
+                                    <button type="button" class="qn-pin-toggle" id="qn-new-pin-btn" onclick="QuickNotes.toggleNewPin()">
+                                        ☆ Ghim
+                                    </button>
+                                    <button type="button" class="qn-btn-save" onclick="QuickNotes.addNote()">
+                                        💾 Lưu Ghi Chú
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Bar -->
+                    <div class="qn-filter-section">
+                        <div class="qn-search-wrapper">
+                            <span class="qn-search-icon">🔍</span>
+                            <input type="text" class="qn-search-input" id="qn-search-input" placeholder="Tìm kiếm nhanh trong các ghi chú..." oninput="QuickNotes.handleSearch(this.value)">
+                            <button type="button" class="qn-search-clear" id="qn-search-clear" style="display: none;" onclick="QuickNotes.clearSearch()">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Notes List Cards -->
+                    <div class="qn-notes-list" id="qn-notes-list" style="padding-bottom: 24px;">
+                        <!-- Rendered by js/quick-notes.js -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast-msg">
+        <span>✓ Đã lưu thành công!</span>
+    </div>
+
+    <script src="js/quick-notes.js"></script>
+    <script>
+        function showToast(msg) {
+            const toast = document.getElementById("toast-msg");
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 2500);
+        }
+
+        function setStandaloneFilter(filter, el) {
+            document.querySelectorAll('.sidebar-menu-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
+            QuickNotes.setFilter(filter);
+        }
+
+        // Update sidebar count pills
+        function updateSidebarCounts() {
+            const notes = QuickNotes.getNotes();
+            document.getElementById('side-count-all').innerText = notes.length;
+            document.getElementById('side-count-pinned').innerText = notes.filter(n => n.pinned).length;
+            document.getElementById('side-count-urgent').innerText = notes.filter(n => n.category === 'urgent').length;
+            document.getElementById('side-count-todo').innerText = notes.filter(n => n.category === 'todo').length;
+            document.getElementById('side-count-idea').innerText = notes.filter(n => n.category === 'idea').length;
+            document.getElementById('side-count-code').innerText = notes.filter(n => n.category === 'code').length;
+        }
+
+        window.addEventListener('quicknotes:changed', updateSidebarCounts);
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateSidebarCounts, 100);
+        });
+    </script>
+</body>
+
+</html>
