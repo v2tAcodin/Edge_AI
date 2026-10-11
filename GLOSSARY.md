@@ -28,6 +28,14 @@ _Avoid_: Station Workspace, Màn hình giải bài tập, Modal học tập
 Hệ thống đồ thị mạng nhện trực quan hóa chiều sâu năng lực của Kỹ sư Thai trên 4 trục cốt lõi: Embedded Core, Edge AI / TinyML, Hardware Protocols và System Optimization.
 _Avoid_: Bảng điểm, Danh sách gạch đầu dòng kỹ năng
 
+**Node Inspector**:
+Bảng thông tin nhẹ (side panel trên desktop, bottom sheet trên mobile) hiển thị bên cạnh canvas 3D khi click vào một node trong Cybernetic Skill Tree. Cung cấp breadcrumb vị trí trong cây, summary, danh sách kỹ năng/tags, liên kết con trực thuộc và nút chuyển nhanh vào Deep-Dive HUD. Là lớp khám phá thứ nhất (preview), trước khi mở full Deep-Dive.
+_Avoid_: Deep-Dive HUD, Tooltip, Popup
+
 **Recruiter Quick Dock**:
 Thanh công cụ nổi công nghệ cao đặt tại cạnh dưới màn hình, tối ưu cho khách tham quan và nhà tuyển dụng: Xem nhanh CV, Tải PDF, Kết nối GitHub/LinkedIn/Email và Trình phát Lo-Fi Audio.
 _Avoid_: Floating Toolkit Dock, Thanh đếm giờ Pomodoro, Tủ sách học tập
+
+**Admin Project Editor**:
+Trình biên tập dự án công nghệ cao tích hợp trực tiếp trên web theo cơ chế zero-backend, cho phép Kỹ sư Thai thêm mới hoặc hiệu chỉnh dữ liệu dự án, cấu trúc nhánh cây kỹ năng, và xuất mã nguồn cập nhật cho `portfolio-data.js` mà không cần phụ thuộc vào server bên ngoài.
+_Avoid_: CMS, Trang quản trị backend, Database admin

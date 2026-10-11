@@ -197,14 +197,14 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    animation: inspectorSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: inspectorSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     color: #e2e8f0;
 }
 
 @keyframes inspectorSlideIn {
     from {
         opacity: 0;
-        transform: translateX(30px);
+        transform: translateX(100%);
     }
     to {
         opacity: 1;
@@ -525,5 +525,33 @@
 
     .galaxy-instructions-card {
         display: none;
+    }
+
+    /* Mobile Bottom Sheet Node Inspector */
+    .galaxy-node-inspector {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 65vh;
+        max-height: 80vh;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+        border-left: none;
+        border-right: none;
+        animation: inspectorSlideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+}
+
+@keyframes inspectorSlideUpMobile {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

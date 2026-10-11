@@ -618,7 +618,32 @@ gesture_type_t evaluate_imu_window(const float *imu_window_data) {
                 label: "Xtensa SIMD Tensor Math",
                 parent: "branch-hardware"
             }
-        ]
+        ],
+
+        // Centralized Category Metadata (Icons & Human Labels)
+        categoryMeta: {
+            'vision': { icon: '👁️', label: 'Computer Vision' },
+            'audio': { icon: '🎙️', label: 'Audio & Voice AI' },
+            'iot': { icon: '📡', label: 'FreeRTOS & IoT' },
+            'dsp': { icon: '⚡', label: 'SIMD Optimization' },
+            'imu': { icon: '🖐️', label: 'Motion & Gesture' }
+        },
+
+        // Centralized Status Badge Styling
+        statusStyle: {
+            'Completed': { bg: 'rgba(0, 255, 136, 0.12)', border: '#00ff88', text: '#00ff88', dot: '#00ff88' },
+            'In Progress': { bg: 'rgba(255, 170, 0, 0.12)', border: '#ffaa00', text: '#ffaa00', dot: '#ffaa00' },
+            'Architecture Design': { bg: 'rgba(0, 212, 255, 0.12)', border: '#00d4ff', text: '#00d4ff', dot: '#00d4ff' }
+        },
+
+        // Helper accessors with graceful fallbacks
+        getCategoryMeta(category) {
+            return (this.categoryMeta && this.categoryMeta[category]) || { icon: '⚡', label: category || 'Embedded' };
+        },
+
+        getStatusStyle(status) {
+            return (this.statusStyle && this.statusStyle[status]) || { bg: 'rgba(0, 240, 255, 0.12)', border: '#00f0ff', text: '#00f0ff', dot: '#00f0ff' };
+        }
     };
 
     // Export module cleanly

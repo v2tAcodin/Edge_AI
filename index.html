@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="css/station-workspace.css">
     <link rel="stylesheet" href="css/galaxy.css">
     <link rel="stylesheet" href="css/portfolio-hud.css?v=4.0.0">
+    <link rel="stylesheet" href="css/portfolio-admin.css?v=4.0.0">
 </head>
 
 <body>
@@ -3054,6 +3055,12 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
             <span class="dock-icon">🐙</span>
             <span class="dock-label">GitHub</span> ↗
         </a>
+
+        <!-- Admin Project Editor Trigger (Ctrl+Shift+E) -->
+        <button type="button" class="dock-item dock-btn-admin" id="dock-btn-admin" onclick="PortfolioAdmin.open()" title="Admin Project Editor (Ctrl+Shift+E)">
+            <span class="dock-icon">⚙️</span>
+            <span class="dock-label">Admin</span>
+        </button>
     </div>
 
     <!-- Hidden input for JSON restore -->
@@ -3068,7 +3075,6 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/state.js?v=3.1.5" defer></script>
     <script src="js/tracks.js?v=3.1.5" defer></script>
     <script src="js/station-workspace.js?v=3.1.5" defer></script>
-    <script src="js/galaxy3d.js?v=3.1.5" defer></script>
     <script src="js/cyber-tree3d.js?v=4.0.0" defer></script>
     <script src="js/quotes.js?v=3.1.5" defer></script>
     <script src="js/practice.js?v=3.1.5" defer></script>
@@ -3092,6 +3098,7 @@ static uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));</pre
     <script src="js/portfolio-controller.js?v=4.0.0" defer></script>
     <script src="js/portfolio-grid.js?v=4.0.0" defer></script>
     <script src="js/portfolio-hud.js?v=4.0.0" defer></script>
+    <script src="js/portfolio-admin.js?v=4.0.0" defer></script>
     <script src="js/audio.js?v=3.1.5" defer></script>
     <script src="js/app.js?v=3.1.5" defer></script>
 </body>

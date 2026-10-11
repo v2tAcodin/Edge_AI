@@ -20,7 +20,11 @@
 
             this.nodesMap = {}; // { id: { mesh, halo, data, position } }
             this.branchesGroup = null;
-            this.particleStreams = [];
+            this.halosList = [];
+            this.particlesData = [];
+            this.particlePositions = null;
+            this.particleGeometry = null;
+            this.particlePoints = null;
             this.starfield = null;
             this.hoveredNode = null;
 
@@ -143,13 +147,15 @@
 
             this.branchesGroup = new THREE.Group();
             this.scene.add(this.branchesGroup);
+            this.halosList = [];
+            this.particlesData = [];
 
             // 1. Build Nodes
             rawNodes.forEach(nodeData => {
                 const nodeGroup = new THREE.Group();
                 nodeGroup.position.set(nodeData.x, nodeData.y, nodeData.z);
 
-                const colorHex = parseInt(nodeData.color.replace("#", "0x"), 16);
+                const colorHex = parseInt((nodeData.color || '#00f0ff').replace("#", "0x"), 16);
                 const radius = nodeData.radius || 10;
 
                 // Core Sphere
@@ -173,6 +179,7 @@
                 });
                 const haloMesh = new THREE.Mesh(haloGeom, haloMat);
                 nodeGroup.add(haloMesh);
+                this.halosList.push(haloMesh);
 
                 this.scene.add(nodeGroup);
 
@@ -197,6 +204,9 @@
                     this.createBranchLine(parentNode.position, this.nodesMap[nodeData.id].position, nodeData.color);
                 }
             });
+
+            // 3. Initialize Particle Energy Streams (1-way pulse from parent to child)
+            this.initParticleStreams();
         }
 
         createBranchLine(startPos, endPos, hexColor) {
@@ -204,13 +214,83 @@
             const points = [startPos, endPos];
             const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
             const lineMat = new THREE.LineBasicMaterial({
-                color: parseInt(hexColor.replace("#", "0x"), 16),
+                color: parseInt((hexColor || '#00f0ff').replace("#", "0x"), 16),
                 transparent: true,
                 opacity: 0.45
             });
             const line = new THREE.Line(lineGeo, lineMat);
             line.userData = { isBranch: true, baseOpacity: 0.45 };
             this.branchesGroup.add(line);
+        }
+
+        initParticleStreams() {
+            if (this.is2DFallback || typeof THREE === 'undefined' || !THREE.BufferGeometry || !THREE.Points) return;
+
+            this.particlesData = [];
+            const data = root.PortfolioData || (typeof window !== 'undefined' ? window.PortfolioData : null) || {};
+            const rawNodes = data.skillTreeNodes || [];
+
+            rawNodes.forEach(nodeData => {
+                if (nodeData.parent && this.nodesMap[nodeData.parent]) {
+                    const parentNode = this.nodesMap[nodeData.parent];
+                    const childNode = this.nodesMap[nodeData.id];
+                    const start = parentNode.position;
+                    const end = childNode.position;
+                    const hexColor = parseInt((nodeData.color || '#00f0ff').replace('#', '0x'), 16);
+                    const r = ((hexColor >> 16) & 255) / 255;
+                    const g = ((hexColor >> 8) & 255) / 255;
+                    const b = (hexColor & 255) / 255;
+
+                    // 6 flowing particles per branch segment
+                    const particlesPerBranch = 6;
+                    for (let j = 0; j < particlesPerBranch; j++) {
+                        this.particlesData.push({
+                            start: start,
+                            end: end,
+                            t: j / particlesPerBranch,
+                            speed: 0.0035 + (j % 3) * 0.0012,
+                            r: r,
+                            g: g,
+                            b: b
+                        });
+                    }
+                }
+            });
+
+            const count = this.particlesData.length;
+            if (count === 0) return;
+
+            this.particlePositions = new Float32Array(count * 3);
+            const particleColors = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                const p = this.particlesData[i];
+                const x = p.start.x + (p.end.x - p.start.x) * p.t;
+                const y = p.start.y + (p.end.y - p.start.y) * p.t;
+                const z = p.start.z + (p.end.z - p.start.z) * p.t;
+                this.particlePositions[i * 3] = x;
+                this.particlePositions[i * 3 + 1] = y;
+                this.particlePositions[i * 3 + 2] = z;
+
+                particleColors[i * 3] = p.r;
+                particleColors[i * 3 + 1] = p.g;
+                particleColors[i * 3 + 2] = p.b;
+            }
+
+            this.particleGeometry = new THREE.BufferGeometry();
+            this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3));
+            this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 3.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.85,
+                blending: THREE.AdditiveBlending
+            });
+
+            this.particlePoints = new THREE.Points(this.particleGeometry, particleMaterial);
+            this.scene.add(this.particlePoints);
         }
 
         setupInteraction() {
@@ -277,14 +357,15 @@
             this.raycaster.setFromCamera(this.mouse, this.camera);
 
             const interactiveMeshes = Object.values(this.nodesMap).map(n => n.mesh);
-            const intersects = this.raycaster.intersectObjects(interactiveMeshes);
-
             if (intersects.length > 0) {
                 const hitMesh = intersects[0].object;
                 const nodeItem = this.nodesMap[hitMesh.userData.id];
                 if (nodeItem) {
                     this.handleNodeClick(nodeItem);
                 }
+            } else {
+                // Click on empty canvas deselects active node, resets camera focus and closes inspector
+                this.resetCameraFocus();
             }
         }
 
@@ -381,17 +462,31 @@
 
             // 3. Title & Summary
             const title = data.name || data.label;
-            const summary = project ? (project.summary || project.architecture?.solution) : (data.summary || "Nền tảng kiến trúc nhúng, tối ưu bộ nhớ SRAM/Flash/PSRAM và thời gian thực determinism.");
+            const domainSummaries = {
+                'root-cpp': 'Nền tảng kiến trúc C/C++ phần cứng nhúng (ESP32-S3), quản lý bộ nhớ trần (Bare-metal SRAM/Flash/PSRAM), tối ưu hóa SIMD PIE và thời gian thực determinism điều phối FreeRTOS.',
+                'branch-vision': 'Thị giác máy tính biên trên vi điều khiển, triển khai nén lượng tử hóa INT8 MobileNet/FOMO và pipeline camera DMA OV2640.',
+                'branch-audio': 'Xử lý âm thanh số & Voice AI biên, trích xuất đặc trưng MFCC/Spectrogram và nhận dạng từ khóa wake-word micro-power.',
+                'branch-hardware': 'Tối ưu hóa toán ma trận SIMD Xtensa PIE tăng tốc suy luận Tensor và giải thuật DSP thời gian thực.',
+                'branch-iot': 'Hệ điều hành thời gian thực FreeRTOS, kiến trúc IPC đa tác vụ và truyền thông không dây giao thức bảo mật cao.'
+            };
+            const summary = project ? (project.summary || (project.architecture && project.architecture.solution)) : (data.summary || domainSummaries[data.id] || "Nền tảng kiến trúc nhúng, tối ưu bộ nhớ SRAM/Flash/PSRAM và thời gian thực determinism.");
 
             // 4. Skills / Tags
-            const skills = project ? (project.tags || []) : (data.skills || []);
+            const defaultSkills = (data.type === 'root')
+                ? ["C/C++ Bare-Metal", "ESP-IDF", "FreeRTOS", "DMA Direct Access", "Xtensa PIE SIMD", "Memory Hygiene"]
+                : (data.type === 'branch' ? ["Embedded AI", "Signal Processing", "Firmware Architecture", "Edge Optimization"] : []);
+            const skills = project ? (project.tags || []) : (data.skills && data.skills.length ? data.skills : defaultSkills);
             const tagsHtml = skills.map(s => `<span class="inspector-tag">${s}</span>`).join('');
 
             // 5. Child Nodes (if root or branch)
             let childNodesHtml = '';
-            const childNodes = Object.values(this.nodesMap)
+            let childNodes = Object.values(this.nodesMap)
                 .filter(n => n.data && n.data.parent === data.id)
                 .map(n => n.data);
+
+            if (childNodes.length === 0 && portData.skillTreeNodes) {
+                childNodes = portData.skillTreeNodes.filter(n => n.parent === data.id);
+            }
 
             if (childNodes.length > 0) {
                 childNodesHtml = `
@@ -452,12 +547,25 @@
                         </button>
                     </div>
                 `;
-            } else if (data.parent && this.nodesMap[data.parent]) {
-                const parentData = this.nodesMap[data.parent].data;
+            } else if (data.type === 'branch') {
                 actionsHtml = `
                     <div class="inspector-actions">
-                        <button type="button" class="inspector-btn-grid" onclick="cyberTree3D.selectNodeById('${parentData.id}')">
-                            ⬆️ Về Gốc Rễ Nền Tảng (${parentData.label || parentData.name})
+                        <button type="button" class="inspector-btn-launch" onclick="PortfolioController ? (PortfolioController.switchView('grid'), PortfolioController.filterCategory('${data.category || 'all'}')) : null">
+                            📋 Lọc Đồ Án Nhánh Này trên Grid View
+                        </button>
+                        ${data.parent ? `
+                            <button type="button" class="inspector-btn-grid" onclick="cyberTree3D.selectNodeById('${data.parent}')">
+                                ⬆️ Về Gốc Rễ Nền Tảng (C/C++ Core)
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                // Root Core Node
+                actionsHtml = `
+                    <div class="inspector-actions">
+                        <button type="button" class="inspector-btn-grid" onclick="PortfolioController ? (PortfolioController.switchView('grid'), PortfolioController.filterCategory('all')) : null">
+                            📋 Xem Toàn Bộ Đồ Án trên Lưới (Grid View)
                         </button>
                     </div>
                 `;
@@ -566,15 +674,34 @@
             if (typeof requestAnimationFrame === 'undefined') return;
             requestAnimationFrame(() => this.animate());
 
-            // 1. Axial rotation for node halos
-            Object.values(this.nodesMap).forEach(node => {
-                if (node.halo && node.halo.rotation) {
-                    node.halo.rotation.y += 0.008;
-                    node.halo.rotation.x += 0.005;
+            // 1. Axial rotation for node halos (using cached halosList for zero allocation)
+            if (this.halosList && this.halosList.length > 0) {
+                for (let i = 0; i < this.halosList.length; i++) {
+                    const halo = this.halosList[i];
+                    if (halo && halo.rotation) {
+                        halo.rotation.y += 0.008;
+                        halo.rotation.x += 0.005;
+                    }
                 }
-            });
+            }
 
-            // 2. Starfield slow drift
+            // 2. Animate 1-way particle energy streams along branches
+            if (!this.is2DFallback && this.particleGeometry && this.particlesData && this.particlePositions) {
+                const count = this.particlesData.length;
+                for (let i = 0; i < count; i++) {
+                    const p = this.particlesData[i];
+                    p.t += p.speed;
+                    if (p.t > 1.0) p.t = 0.0;
+                    this.particlePositions[i * 3] = p.start.x + (p.end.x - p.start.x) * p.t;
+                    this.particlePositions[i * 3 + 1] = p.start.y + (p.end.y - p.start.y) * p.t;
+                    this.particlePositions[i * 3 + 2] = p.start.z + (p.end.z - p.start.z) * p.t;
+                }
+                if (this.particleGeometry.attributes && this.particleGeometry.attributes.position) {
+                    this.particleGeometry.attributes.position.needsUpdate = true;
+                }
+            }
+
+            // 3. Starfield slow drift
             if (this.starfield && this.starfield.rotation) {
                 this.starfield.rotation.y += 0.0003;
             }
