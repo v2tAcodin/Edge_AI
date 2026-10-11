@@ -185,6 +185,11 @@
                 };
             });
 
+            // Backward compatibility alias for trunk-core
+            if (this.nodesMap['root-cpp'] && !this.nodesMap['trunk-core']) {
+                this.nodesMap['trunk-core'] = this.nodesMap['root-cpp'];
+            }
+
             // 2. Build Glowing Branch Lines & Particle Streams
             rawNodes.forEach(nodeData => {
                 if (nodeData.parent && this.nodesMap[nodeData.parent]) {
@@ -251,7 +256,9 @@
                 if (nodeItem && this.hoveredNode !== nodeItem) {
                     this.setHoveredNode(nodeItem);
                     this.canvas.style.cursor = "pointer";
-                    this.showTooltip(event.clientX, event.clientY, nodeItem.data);
+                    const localX = event.clientX - rect.left;
+                    const localY = event.clientY - rect.top;
+                    this.showTooltip(localX, localY, nodeItem.data);
                 }
             } else if (this.hoveredNode) {
                 this.clearHoveredNode();
@@ -325,10 +332,164 @@
                 this.flyToNode(nodeItem.position);
             }
 
-            // If it's a project node, trigger project selection in PortfolioController
+            // Display Orbit Node Inspector HUD
+            this.showInspector(data);
+
+            // Notify PortfolioController
             const controller = root.PortfolioController || (typeof window !== 'undefined' ? window.PortfolioController : null);
             if (data && data.projectId && controller) {
                 controller.selectProject(data.projectId);
+            }
+        }
+
+        selectNodeById(nodeId) {
+            const nodeItem = this.nodesMap[nodeId];
+            if (nodeItem) {
+                this.handleNodeClick(nodeItem);
+            }
+        }
+
+        showInspector(data) {
+            if (typeof document === 'undefined') return;
+            const inspectorEl = document.getElementById("galaxy-node-inspector");
+            if (!inspectorEl) return;
+
+            const portData = root.PortfolioData || (typeof window !== 'undefined' ? window.PortfolioData : null) || {};
+            const allProjects = portData.projects || [];
+            const project = data.projectId ? allProjects.find(p => p.id === data.projectId) : null;
+
+            // 1. Badge & Type
+            let badgeClass = "badge-root";
+            let badgeText = "🏛️ GỐC RỄ NỀN TẢNG // ROOT CORE";
+            if (data.type === 'branch') {
+                badgeClass = "badge-branch";
+                badgeText = "🌿 NHÁNH KỸ NĂNG // BRANCH";
+            } else if (data.type === 'project') {
+                badgeClass = "badge-project";
+                badgeText = "🏆 ĐỒ ÁN THỰC CHIẾN // CAPSTONE";
+            }
+
+            // 2. Breadcrumb
+            let breadcrumbHtml = `<span>🏛️ C/C++ Core</span>`;
+            if (data.type === 'branch') {
+                breadcrumbHtml += ` <span>&gt;</span> <span style="color: #00f0ff;">${data.label || data.name}</span>`;
+            } else if (data.type === 'project') {
+                const parentBranch = this.nodesMap[data.parent]?.data;
+                const branchName = parentBranch ? (parentBranch.label || parentBranch.name) : 'Nhánh Chuyên Sâu';
+                breadcrumbHtml += ` <span>&gt;</span> <span>${branchName}</span> <span>&gt;</span> <span style="color: #00ff88;">${data.label || data.name}</span>`;
+            }
+
+            // 3. Title & Summary
+            const title = data.name || data.label;
+            const summary = project ? (project.summary || project.architecture?.solution) : (data.summary || "Nền tảng kiến trúc nhúng, tối ưu bộ nhớ SRAM/Flash/PSRAM và thời gian thực determinism.");
+
+            // 4. Skills / Tags
+            const skills = project ? (project.tags || []) : (data.skills || []);
+            const tagsHtml = skills.map(s => `<span class="inspector-tag">${s}</span>`).join('');
+
+            // 5. Child Nodes (if root or branch)
+            let childNodesHtml = '';
+            const childNodes = Object.values(this.nodesMap)
+                .filter(n => n.data && n.data.parent === data.id)
+                .map(n => n.data);
+
+            if (childNodes.length > 0) {
+                childNodesHtml = `
+                    <div class="inspector-section-label" style="margin-top: 10px;">🔗 LIÊN KẾT TRỰC THUỘC (${childNodes.length})</div>
+                    <div class="inspector-children-list">
+                        ${childNodes.map(c => `
+                            <div class="inspector-child-item" onclick="cyberTree3D.selectNodeById('${c.id}')">
+                                <div class="inspector-child-dot" style="background: ${c.color || '#00f0ff'}; color: ${c.color || '#00f0ff'};"></div>
+                                <div class="inspector-child-info">
+                                    <div class="inspector-child-name">${c.label || c.name}</div>
+                                    <div class="inspector-child-type">${c.type === 'project' ? '🏆 Đồ Án Thực Chiến' : '🌿 Nhánh Kỹ Năng'}</div>
+                                </div>
+                                <button type="button" class="inspector-child-jump-btn">Bay tới 🎯</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // 6. Project Metrics & Actions
+            let metricsHtml = '';
+            let actionsHtml = '';
+
+            if (project) {
+                metricsHtml = `
+                    <div class="inspector-section-label" style="margin-top: 10px;">📊 THÔNG SỐ VẬN HÀNH (BENCHMARKS)</div>
+                    <div class="inspector-benchmarks-grid">
+                        <div class="inspector-bench-card">
+                            <span class="bench-label">TRẠNG THÁI</span>
+                            <span class="bench-val" style="color: ${project.badgeColor || '#00ff88'};">${project.status || 'Completed'}</span>
+                        </div>
+                        <div class="inspector-bench-card">
+                            <span class="bench-label">CHUYÊN NGÀNH</span>
+                            <span class="bench-val">${project.category?.toUpperCase() || 'EDGE AI'}</span>
+                        </div>
+                        ${project.benchmarks?.latency ? `
+                            <div class="inspector-bench-card">
+                                <span class="bench-label">LATENCY</span>
+                                <span class="bench-val" style="color: #00f0ff;">${project.benchmarks.latency}</span>
+                            </div>
+                        ` : ''}
+                        ${project.benchmarks?.sramFootprint ? `
+                            <div class="inspector-bench-card">
+                                <span class="bench-label">SRAM</span>
+                                <span class="bench-val" style="color: #ffd700;">${project.benchmarks.sramFootprint}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                actionsHtml = `
+                    <div class="inspector-actions">
+                        <button type="button" class="inspector-btn-launch" onclick="PortfolioHUD ? PortfolioHUD.open('${project.id}') : (PortfolioController && PortfolioController.selectProject('${project.id}'))">
+                            ⚡ Mở Deep-Dive HUD &amp; UART Console
+                        </button>
+                        <button type="button" class="inspector-btn-grid" onclick="PortfolioController && PortfolioController.switchView('grid')">
+                            📋 Xem trong Lưới Đồ Án (Grid View)
+                        </button>
+                    </div>
+                `;
+            } else if (data.parent && this.nodesMap[data.parent]) {
+                const parentData = this.nodesMap[data.parent].data;
+                actionsHtml = `
+                    <div class="inspector-actions">
+                        <button type="button" class="inspector-btn-grid" onclick="cyberTree3D.selectNodeById('${parentData.id}')">
+                            ⬆️ Về Gốc Rễ Nền Tảng (${parentData.label || parentData.name})
+                        </button>
+                    </div>
+                `;
+            }
+
+            inspectorEl.innerHTML = `
+                <div class="inspector-header">
+                    <span class="inspector-badge ${badgeClass}">${badgeText}</span>
+                    <button type="button" class="inspector-close-btn" onclick="cyberTree3D.hideInspector()" title="Đóng bảng thanh tra">✕</button>
+                </div>
+                <div class="inspector-breadcrumb">${breadcrumbHtml}</div>
+                <h3 class="inspector-title" style="color: ${data.color || '#00f0ff'};">${title}</h3>
+                <div class="inspector-summary">${summary}</div>
+                ${tagsHtml ? `
+                    <div class="inspector-section-label">🛠️ KỸ NĂNG &amp; CÔNG NGHỆ CỐT LÕI</div>
+                    <div class="inspector-tags">${tagsHtml}</div>
+                ` : ''}
+                ${metricsHtml}
+                ${childNodesHtml}
+                ${actionsHtml}
+            `;
+
+            if (inspectorEl.style) {
+                inspectorEl.style.display = "flex";
+            }
+        }
+
+        hideInspector() {
+            if (typeof document === 'undefined') return;
+            const inspectorEl = document.getElementById("galaxy-node-inspector");
+            if (inspectorEl && inspectorEl.style) {
+                inspectorEl.style.display = "none";
             }
         }
 
@@ -346,6 +507,7 @@
             this.targetLookAt = new THREE.Vector3(this.defaultLookAt.x, this.defaultLookAt.y, this.defaultLookAt.z);
             this.targetCamPos = new THREE.Vector3(this.defaultCamPos.x, this.defaultCamPos.y, this.defaultCamPos.z);
             this.isCameraAnimating = true;
+            this.hideInspector();
         }
 
         toggleAutoOrbit() {
@@ -360,19 +522,32 @@
 
         showTooltip(x, y, data) {
             const tt = document.getElementById("galaxy-node-tooltip");
-            if (!tt) return;
+            if (!tt || !tt.style) return;
+            const badgeText = data.type === 'project' 
+                ? '🏆 Đồ Án Sản Xuất' 
+                : (data.type === 'branch' ? '🌿 Nhánh Kỹ Năng' : '🏛️ Gốc Rễ Nền Tảng');
+
             tt.innerHTML = `
-                <div style="font-weight: 700; color: #00f0ff; margin-bottom: 4px;">${data.label || data.name}</div>
-                <div style="font-size: 11px; color: #94a3b8;">${data.type === 'project' ? '🏆 Production Artifact • Click to Deep-Dive' : '🧠 Knowledge Branch'}</div>
+                <div style="font-weight: 700; color: #00f0ff; margin-bottom: 2px; font-size: 11px;">${data.label || data.name}</div>
+                <div style="font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                    <span>${badgeText}</span>
+                    <span style="color: #64748b;">•</span>
+                    <span style="color: #38bdf8;">Nhấp để thanh tra</span>
+                </div>
             `;
-            tt.style.left = `${x + 14}px`;
-            tt.style.top = `${y - 14}px`;
-            tt.style.display = "block";
+            // Safe bound clamping
+            const containerW = this.container?.clientWidth || 800;
+            const containerH = this.container?.clientHeight || 600;
+            const clampedX = Math.max(10, Math.min(x + 14, containerW - 220));
+            const clampedY = Math.max(10, Math.min(y + 14, containerH - 60));
+            tt.style.left = `${clampedX}px`;
+            tt.style.top = `${clampedY}px`;
+            tt.style.display = "flex";
         }
 
         hideTooltip() {
             const tt = document.getElementById("galaxy-node-tooltip");
-            if (tt) tt.style.display = "none";
+            if (tt && tt.style) tt.style.display = "none";
         }
 
         onWindowResize() {
@@ -453,12 +628,21 @@
             const data = root.PortfolioData || (typeof window !== 'undefined' ? window.PortfolioData : null) || (typeof PortfolioData !== 'undefined' ? PortfolioData : null) || {};
             const nodes = data.skillTreeNodes || [];
 
-            // Draw branches
+            // Draw hierarchical branches
             nodes.forEach(n => {
                 const cx = w / 2 + n.x * 2.5;
                 const cy = h / 2 - n.y * 2.2;
+                let parentX = w / 2;
+                let parentY = h / 2 + 100;
+                if (n.parent) {
+                    const p = nodes.find(item => item.id === n.parent);
+                    if (p) {
+                        parentX = w / 2 + p.x * 2.5;
+                        parentY = h / 2 - p.y * 2.2;
+                    }
+                }
                 ctx.beginPath();
-                ctx.moveTo(w / 2, h / 2 + 80);
+                ctx.moveTo(parentX, parentY);
                 ctx.lineTo(cx, cy);
                 ctx.stroke();
             });

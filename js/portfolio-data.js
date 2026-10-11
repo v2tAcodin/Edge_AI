@@ -465,129 +465,158 @@ gesture_type_t evaluate_imu_window(const float *imu_window_data) {
         ],
 
         // -------------------------------------------------------------
-        // 3. 3D CYBERNETIC SKILL TREE & CONSTELLATION NODES
+        // 3. 3D CYBERNETIC SKILL TREE & KNOWLEDGE GRAPH (HIERARCHICAL)
         // -------------------------------------------------------------
         skillTreeNodes: [
-            // Core Trunk / Root Nodes (Foundations)
+            // Level 0: Central Trunk / Root Node (The Foundation of Everything)
             {
-                id: "trunk-core",
-                name: "Thai Core Discipline",
-                type: "core",
-                x: 0, y: -40, z: 0,
-                color: "#00f0ff",
-                radius: 12,
-                label: "⚡ C/C++ & Hardware Core"
+                id: "root-cpp",
+                name: "C / C++ & System Architecture Core",
+                type: "root",
+                x: 0, y: -45, z: 0,
+                color: "#ffd700",
+                radius: 16,
+                label: "🏛️ C/C++ & Memory Core",
+                summary: "Gốc rễ vững chắc của hệ thống nhúng: C/C++, con trỏ nâng cao, cấp phát tĩnh bộ nhớ SRAM/Flash/PSRAM, ngắt cứng ISR và tư duy lập trình thời gian thực không rò rỉ (Zero-Leak Determinism).",
+                skills: ["Advanced C/C++ (C11/C++17)", "SRAM & PSRAM Alignment", "Bare-Metal Registers", "Zero-Dynamic Allocation", "Hardware ISR & Timers"]
             },
-            // Major Branch 1: Computer Vision
+
+            // Level 1: Major Knowledge Branches (Sprouting directly from root-cpp)
+            // Branch 1: Networking & Wireless Protocols
             {
-                id: "branch-vision",
-                name: "Embedded Vision Branch",
+                id: "branch-network",
+                name: "Networking & Wireless Protocols",
                 type: "branch",
-                x: -70, y: 10, z: -30,
-                color: "#00ff88",
-                radius: 8,
-                label: "👁️ Vision & Neural Nets",
-                parent: "trunk-core"
-            },
-            // Major Branch 2: Audio & TinyML
-            {
-                id: "branch-audio",
-                name: "Audio DSP & KWS Branch",
-                type: "branch",
-                x: 70, y: 15, z: -20,
-                color: "#ffaa00",
-                radius: 8,
-                label: "🎙️ Audio DSP & Voice AI",
-                parent: "trunk-core"
-            },
-            // Major Branch 3: FreeRTOS & Industrial IoT
-            {
-                id: "branch-iot",
-                name: "Industrial IoT Branch",
-                type: "branch",
-                x: -40, y: 55, z: 50,
+                parent: "root-cpp",
+                x: -60, y: 15, z: 50,
                 color: "#00d4ff",
-                radius: 8,
-                label: "📡 FreeRTOS & LoRaWAN",
-                parent: "trunk-core"
+                radius: 11,
+                label: "🌐 Networking & Protocols",
+                summary: "Mạng truyền thông nhúng không dây & giao thức công nghiệp: lwIP TCP/IP stack, Wi-Fi 802.11 b/g/n, BLE 5.0 GATT, LoRaWAN SX1262 tầm xa 15km, MQTT và TLS/SSL bảo mật biên.",
+                skills: ["lwIP TCP/IP Stack", "BLE 5.0 GATT Services", "LoRaWAN SX1262 Long-Range", "MQTT Over TLS", "Wi-Fi AP/STA Manager"]
             },
-            // Major Branch 4: Low-Level Optimization
+
+            // Branch 2: FreeRTOS & Real-Time Kernel
             {
-                id: "branch-dsp",
-                name: "SIMD Optimization Branch",
+                id: "branch-rtos",
+                name: "FreeRTOS & Real-Time Kernel",
                 type: "branch",
-                x: 50, y: 60, z: 40,
-                color: "#b026ff",
-                radius: 8,
-                label: "⚡ Xtensa SIMD & Assembly",
-                parent: "trunk-core"
+                parent: "root-cpp",
+                x: -65, y: 20, z: -45,
+                color: "#00ff88",
+                radius: 11,
+                label: "⏱️ FreeRTOS & Concurrency",
+                summary: "Nhân hệ điều hành thời gian thực FreeRTOS: đa nhiệm preemptive đa nhân (Dual-Core LX7), cơ chế đồng bộ Semaphore, Mutex, Queue, Event Groups và phân bổ tác vụ ưu tiên ngắt.",
+                skills: ["Preemptive Multitasking", "Dual-Core Task Pinning", "Inter-Task Queues", "Counting Semaphores", "Zero-Copy Buffering"]
             },
-            // Celestial Project Nodes (Fruit of the tree)
+
+            // Branch 3: Hardware Peripherals & DMA
+            {
+                id: "branch-hardware",
+                name: "Hardware Peripherals & DMA",
+                type: "branch",
+                parent: "root-cpp",
+                x: 65, y: 15, z: 50,
+                color: "#38bdf8",
+                radius: 11,
+                label: "🔌 Hardware Peripherals & DMA",
+                summary: "Giao tiếp phần cứng & bộ đệm DMA không chiếm dụng CPU: Camera DVP FIFO, I2S Digital Audio, SPI 80MHz Quad, I2C Fast-Mode, Timers và PWM điều khiển ngoại vi.",
+                skills: ["DMA Channel Allocation", "Camera DVP 8-bit Interface", "I2S Audio Pipeline", "High-Speed SPI 80MHz", "Hardware Timers & PWM"]
+            },
+
+            // Branch 4: Edge AI & TinyML Inference
+            {
+                id: "branch-edgeai",
+                name: "Edge AI & TinyML Inference Engine",
+                type: "branch",
+                parent: "root-cpp",
+                x: 60, y: 20, z: -45,
+                color: "#b026ff",
+                radius: 11,
+                label: "🧠 Edge AI & TinyML Engine",
+                summary: "Trí tuệ nhân tạo biên siêu nhẹ: Lượng tử hóa Full Integer INT8, TFLite Micro runtime, thư viện ESP-NN tối ưu hóa bằng tập lệnh Xtensa PIE SIMD 128-bit, cắt tỉa mạng nơ-ron (Model Pruning).",
+                skills: ["INT8 Post-Training Quantization", "TensorFlow Lite Micro", "ESP-NN SIMD Vector Math", "Feature Extraction (MFCC / Mel)", "Model Footprint Pruning"]
+            },
+
+            // Level 2: Celestial Project Nodes (Fruit of the tree linked to parent branches)
+            // Projects linked to branch-network
+            {
+                id: "node-freertos-edge-iot-hub",
+                projectId: "freertos-edge-iot-hub",
+                name: "FreeRTOS Industrial Gateway & LoRa Hub",
+                type: "project",
+                category: "iot",
+                x: -110, y: 70, z: 75,
+                color: "#00d4ff",
+                radius: 14,
+                label: "FreeRTOS IoT Gateway",
+                parent: "branch-network"
+            },
+
+            // Projects linked to branch-edgeai
             {
                 id: "node-esp32-s3-vision-guard",
                 projectId: "esp32-s3-vision-guard",
                 name: "ESP32-S3 TinyML Vision Guard",
                 type: "project",
-                x: -110, y: 35, z: -45,
+                category: "vision",
+                x: 105, y: 75, z: -70,
                 color: "#00ff88",
                 radius: 14,
                 label: "ESP32-S3 Vision Guard",
-                parent: "branch-vision"
+                parent: "branch-edgeai"
             },
             {
                 id: "node-offline-kws-engine",
                 projectId: "offline-kws-engine",
-                name: "Offline Keyword Spotting Engine",
+                name: "Offline Keyword Spotting (KWS) Engine",
                 type: "project",
-                x: 115, y: 40, z: -35,
+                category: "audio",
+                x: 75, y: 85, z: -20,
                 color: "#ffaa00",
-                radius: 14,
+                radius: 13,
                 label: "Offline KWS Engine",
-                parent: "branch-audio"
-            },
-            {
-                id: "node-freertos-edge-iot-hub",
-                projectId: "freertos-edge-iot-hub",
-                name: "FreeRTOS Industrial Gateway",
-                type: "project",
-                x: -75, y: 95, z: 75,
-                color: "#00d4ff",
-                radius: 14,
-                label: "FreeRTOS Industrial Gateway",
-                parent: "branch-iot"
+                parent: "branch-edgeai"
             },
             {
                 id: "node-acoustic-anomaly-detector",
                 projectId: "acoustic-anomaly-detector",
                 name: "Acoustic Anomaly Detector",
                 type: "project",
-                x: 100, y: 85, z: -5,
+                category: "audio",
+                x: 115, y: 40, z: -25,
                 color: "#ffaa00",
                 radius: 12,
                 label: "Acoustic Anomaly Detector",
-                parent: "branch-audio"
+                parent: "branch-edgeai"
             },
-            {
-                id: "node-simd-tensor-accelerator",
-                projectId: "simd-tensor-accelerator",
-                name: "Xtensa PIE SIMD Tensor Math",
-                type: "project",
-                x: 85, y: 105, z: 65,
-                color: "#b026ff",
-                radius: 14,
-                label: "Xtensa SIMD Tensor Math",
-                parent: "branch-dsp"
-            },
+
+            // Projects linked to branch-rtos
             {
                 id: "node-imu-tinyml-gesture",
                 projectId: "imu-tinyml-gesture",
                 name: "6-Axis IMU Gesture Controller",
                 type: "project",
-                x: -30, y: 120, z: -60,
-                color: "#00d4ff",
-                radius: 12,
+                category: "imu",
+                x: -115, y: 75, z: -65,
+                color: "#00ff88",
+                radius: 13,
                 label: "IMU Gesture Controller",
-                parent: "branch-vision"
+                parent: "branch-rtos"
+            },
+
+            // Projects linked to branch-hardware
+            {
+                id: "node-simd-tensor-accelerator",
+                projectId: "simd-tensor-accelerator",
+                name: "Xtensa PIE SIMD Tensor Math",
+                type: "project",
+                category: "dsp",
+                x: 110, y: 65, z: 80,
+                color: "#38bdf8",
+                radius: 14,
+                label: "Xtensa SIMD Tensor Math",
+                parent: "branch-hardware"
             }
         ]
     };
