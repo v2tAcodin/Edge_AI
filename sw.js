@@ -1,7 +1,7 @@
-// Version: 5.1.0 // Project Thai // Living Portfolio & Showcase HUD
+// Version: 5.2.0 // Project Thai // Living Portfolio & Showcase HUD
 // ==========================================
 
-const CACHE_NAME = 'project-thai-showcase-v5.1.0';
+const CACHE_NAME = 'project-thai-showcase-v5.2.0';
 
 const PRECACHE_ASSETS = [
     './',
