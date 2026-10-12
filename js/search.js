@@ -1,105 +1,79 @@
 // ==========================================
 // GLOBAL SEARCH ENGINE (Ctrl+K Spotlight)
-// Phase 2: Tìm kiếm toàn cục qua tất cả nội dung
+// Living Portfolio 3.0: Fast search across projects, skills & notes
 // ==========================================
 
 let searchIndex = [];
 let searchSelectedIdx = -1;
 
 // ==========================================
-// Build Search Index — gom tất cả dữ liệu
+// Build Search Index
 // ==========================================
 function buildSearchIndex() {
     searchIndex = [];
 
-    // 1. Tab navigation items
+    // 1. Core Tab navigation items
     const tabs = [
-        { icon: "🧭", title: "Tổng Quan (Menu)", tab: "menu" },
-        { icon: "⚡", title: "Lab & Sim (Phòng thí nghiệm ảo)", tab: "simulator" },
-        { icon: "🗺️", title: "Lộ Trình Edge AI", tab: "learning" },
-        { icon: "💻", title: "Đấu Trường Code C", tab: "practice" },
-        { icon: "🏆", title: "Dự Án Capstone", tab: "projects" },
-        { icon: "🎯", title: "Đấu Trường Phỏng Vấn", tab: "interview" },
-        { icon: "📚", title: "Sổ Tay AI (NotebookLM)", tab: "notebook" },
-        { icon: "👤", title: "Hồ Sơ Năng Lực (Profile)", tab: "profile" },
+        { icon: "🌌", title: "3D Cybernetic Skill Tree", tab: "tree3d", meta: "Không gian 3D • Universe Constellation" },
+        { icon: "🏆", title: "Projects Grid Showcase", tab: "grid", meta: "6 Dự án thực chiến ESP32-S3 & TinyML" },
+        { icon: "👤", title: "Hồ Sơ Năng Lực & CV 3.0", tab: "profile", meta: "Kỹ sư Thai • Radar Matrix & Tải PDF CV" }
     ];
     tabs.forEach(t => {
         searchIndex.push({
             type: "tab",
             icon: t.icon,
             title: t.title,
-            meta: "Chuyển tab",
+            meta: t.meta,
+            actionType: "tab",
+            target: t.tab,
             tab: t.tab,
-            searchText: t.title.toLowerCase()
+            searchText: `${t.title} ${t.meta}`.toLowerCase()
         });
     });
 
-    // Quick Notes Scratchpad action
+    // 2. Quick Notes Scratchpad action
     searchIndex.push({
         type: "action",
         icon: "📝",
         title: "Sổ Ghi Chú Nhanh (Quick Notes)",
         meta: "Ghi chú & nhắc việc cá nhân • Phím tắt Alt+N",
+        actionType: "quicknotes",
+        target: "quicknotes",
         tab: "quicknotes",
-        searchText: "ghi chú note notes memo scratchpad sổ tay nhắc nhớ việc cần làm"
+        searchText: "quicknotes ghi chú note notes memo scratchpad sổ tay nhắc nhớ việc cần làm"
     });
 
-    // 2. Roadmap tasks
-    if (typeof roadmap !== "undefined" && Array.isArray(roadmap)) {
-        roadmap.forEach((stage, si) => {
-            if (stage.tasks) {
-                stage.tasks.forEach(task => {
-                    searchIndex.push({
-                        type: "roadmap",
-                        icon: stage.icon || "📚",
-                        title: task.title,
-                        meta: `${stage.stage} • ${task.skill || ""}`,
-                        tab: "learning",
-                        searchText: `${task.title} ${task.skill || ""} ${stage.stage}`.toLowerCase()
-                    });
-                });
-            }
-        });
-    }
-
-    // 3. Practice exercises
-    if (typeof practiceExercises !== "undefined" && Array.isArray(practiceExercises)) {
-        practiceExercises.forEach(ex => {
+    // 3. Showcase Projects from PortfolioData
+    const pData = window.PortfolioData;
+    if (pData && Array.isArray(pData.projects)) {
+        pData.projects.forEach(p => {
+            const tags = Array.isArray(p.tags) ? p.tags.join(" ") : "";
+            const cat = p.category || "";
             searchIndex.push({
-                type: "practice",
-                icon: "💻",
-                title: ex.title,
-                meta: `${ex.topic} • ${ex.difficulty} • ${ex.xp} XP`,
-                tab: "practice",
-                searchText: `${ex.title} ${ex.topic} ${ex.desc || ""}`.toLowerCase()
+                type: "project",
+                icon: "⚡",
+                title: p.title,
+                meta: `[${p.status || 'Active'}] ${p.category ? p.category.toUpperCase() : 'PROJECT'} • Nhấp để mở Deep-Dive HUD`,
+                actionType: "project",
+                target: p.id,
+                tab: "grid",
+                searchText: `${p.title} ${p.summary || ""} ${tags} ${cat} ${p.id}`.toLowerCase()
             });
         });
     }
 
-    // 4. Interview questions
-    if (typeof interviewQuestions !== "undefined" && Array.isArray(interviewQuestions)) {
-        interviewQuestions.forEach(q => {
+    // 4. Skill Tree Nodes from PortfolioData
+    if (pData && Array.isArray(pData.skillTreeNodes)) {
+        pData.skillTreeNodes.forEach(node => {
             searchIndex.push({
-                type: "interview",
-                icon: "🎯",
-                title: q.question.substring(0, 100) + (q.question.length > 100 ? "..." : ""),
-                meta: `${q.category} • ${q.company}`,
-                tab: "interview",
-                searchText: `${q.question} ${q.category} ${q.company}`.toLowerCase()
-            });
-        });
-    }
-
-    // 5. CheatSheet topics (if available)
-    if (typeof cheatSheetData !== "undefined" && Array.isArray(cheatSheetData)) {
-        cheatSheetData.forEach(item => {
-            searchIndex.push({
-                type: "cheatsheet",
-                icon: "📖",
-                title: item.title || item.name || "CheatSheet",
-                meta: "CheatSheet tra cứu",
-                tab: "cheatsheet",
-                searchText: `${item.title || ""} ${item.name || ""} cheatsheet`.toLowerCase()
+                type: "skill",
+                icon: "🌿",
+                title: node.title,
+                meta: `Kỹ năng: ${node.category ? node.category.toUpperCase() : 'CORE'} • Tọa độ 3D`,
+                actionType: "skill",
+                target: node.id,
+                tab: "tree3d",
+                searchText: `${node.title} ${node.description || ""} ${node.id}`.toLowerCase()
             });
         });
     }
@@ -116,8 +90,7 @@ function performSearch(query) {
         return terms.every(term => item.searchText.includes(term));
     });
 
-    // Sort: exact title match first, then by type priority
-    const typePriority = { tab: 0, roadmap: 1, practice: 2, interview: 3, cheatsheet: 4 };
+    const typePriority = { tab: 0, project: 1, skill: 2, action: 3 };
     results.sort((a, b) => {
         const aExact = a.title.toLowerCase().includes(query.toLowerCase()) ? 0 : 1;
         const bExact = b.title.toLowerCase().includes(query.toLowerCase()) ? 0 : 1;
@@ -125,7 +98,7 @@ function performSearch(query) {
         return (typePriority[a.type] || 99) - (typePriority[b.type] || 99);
     });
 
-    return results.slice(0, 20); // Cap at 20 results
+    return results.slice(0, 15);
 }
 
 // ==========================================
@@ -155,7 +128,6 @@ function escapeSearchHtml(text) {
 // ==========================================
 function renderSearchResults(query) {
     const container = document.getElementById("search-results");
-    const emptyState = document.getElementById("search-empty");
     if (!container) return;
 
     if (!query || query.trim().length === 0) {
@@ -178,13 +150,11 @@ function renderSearchResults(query) {
         return;
     }
 
-    // Group by type
     const typeLabels = {
         tab: "ĐIỀU HƯỚNG",
-        roadmap: "LỘ TRÌNH HỌC",
-        practice: "BÀI TẬP CODE C",
-        interview: "CÂU HỎI PHỎNG VẤN",
-        cheatsheet: "CHEATSHEET"
+        project: "ĐỒ ÁN & THÀNH TỰU",
+        skill: "NĂNG LỰC & KỸ NĂNG",
+        action: "TIỆN ÍCH"
     };
 
     let html = "";
@@ -197,13 +167,13 @@ function renderSearchResults(query) {
             html += `<div class="search-category">${typeLabels[item.type] || item.type.toUpperCase()}</div>`;
         }
         html += `
-            <div class="search-item" data-idx="${itemIdx}" data-tab="${item.tab}" onclick="handleSearchSelect('${item.tab}')">
+            <div class="search-item" data-idx="${itemIdx}" data-action="${item.actionType}" data-target="${item.target}" onclick="handleSearchItemClick(${itemIdx})">
                 <div class="search-item-icon">${item.icon}</div>
                 <div class="search-item-content">
                     <div class="search-item-title">${highlightMatch(item.title, query)}</div>
                     <div class="search-item-meta">${escapeSearchHtml(item.meta)}</div>
                 </div>
-                <div class="search-item-action">Enter ↵</div>
+                <div class="search-item-action">Chọn ↵</div>
             </div>
         `;
         itemIdx++;
@@ -211,6 +181,7 @@ function renderSearchResults(query) {
 
     html += `<div class="search-count">${results.length} kết quả</div>`;
     container.innerHTML = html;
+    window._lastSearchResults = results;
     searchSelectedIdx = -1;
 }
 
@@ -220,11 +191,11 @@ function createEmptyState() {
     div.id = "search-empty";
     div.innerHTML = `
         <div class="search-empty-icon">⌨️</div>
-        <div>Gõ để tìm kiếm trong tất cả nội dung...</div>
+        <div>Gõ để tìm kiếm trong danh mục đồ án, kỹ năng...</div>
         <div class="search-shortcuts-hint">
-            <span><kbd>1</kbd>-<kbd>8</kbd> Chuyển tab</span>
-            <span><kbd>Ctrl+S</kbd> Lưu backup</span>
-            <span><kbd>Esc</kbd> Đóng</span>
+            <span><kbd>1</kbd>-<kbd>3</kbd> Chuyển tab</span>
+            <span><kbd>T</kbd> Đổi theme</span>
+            <span><kbd>Alt+N</kbd> Sổ ghi chú</span>
         </div>
     `;
     return div;
@@ -234,15 +205,13 @@ function createEmptyState() {
 // Open / Close Search
 // ==========================================
 function openGlobalSearch() {
-    // Build index on first open
-    if (searchIndex.length === 0) buildSearchIndex();
+    buildSearchIndex();
 
     const overlay = document.getElementById("search-overlay");
     const input = document.getElementById("search-input");
     if (!overlay) return;
 
     overlay.style.display = "flex";
-    // Force reflow then add opacity
     void overlay.offsetHeight;
     overlay.classList.add("open");
 
@@ -250,21 +219,46 @@ function openGlobalSearch() {
         input.value = "";
         input.focus();
     }
-
     renderSearchResults("");
-    document.body.style.overflow = "hidden";
 }
 
 function closeGlobalSearch() {
     const overlay = document.getElementById("search-overlay");
     if (!overlay) return;
-
     overlay.classList.remove("open");
     setTimeout(() => {
         overlay.style.display = "none";
     }, 200);
+}
 
-    document.body.style.overflow = "";
+// ==========================================
+// Handle Search Selection
+// ==========================================
+function handleSearchItemClick(idx) {
+    if (!window._lastSearchResults || !window._lastSearchResults[idx]) return;
+    const item = window._lastSearchResults[idx];
+    closeGlobalSearch();
+
+    setTimeout(() => {
+        if (item.actionType === "quicknotes" || item.tab === "quicknotes") {
+            if (window.QuickNotes) QuickNotes.open();
+        } else if (item.actionType === "project") {
+            if (window.PortfolioController) {
+                PortfolioController.selectProject(item.target);
+            } else if (window.PortfolioHUD) {
+                PortfolioHUD.open(item.target);
+            }
+        } else if (item.actionType === "skill") {
+            if (typeof switchTab === "function") switchTab("tree3d");
+            if (window.cyberTree3D && typeof cyberTree3D.showInspector === "function") {
+                const pData = window.PortfolioData;
+                const node = pData ? pData.skillTreeNodes.find(n => n.id === item.target) : null;
+                if (node) cyberTree3D.showInspector(node);
+            }
+        } else if (item.actionType === "tab") {
+            if (typeof switchTab === "function") switchTab(item.target);
+        }
+    }, 120);
 }
 
 function handleSearchSelect(tab) {
@@ -276,10 +270,7 @@ function handleSearchSelect(tab) {
         return;
     }
     if (typeof switchTab === "function") {
-        switchTab(tab === "cheatsheet" ? "menu" : tab);
-        if (tab === "cheatsheet" && typeof openCheatSheet === "function") {
-            setTimeout(() => openCheatSheet(), 300);
-        }
+        switchTab(tab);
     }
 }
 
@@ -317,7 +308,6 @@ function initSearchListeners() {
         });
     }
 
-    // Click backdrop to close
     if (overlay) {
         overlay.addEventListener("click", (e) => {
             if (e.target === overlay) closeGlobalSearch();
@@ -329,15 +319,11 @@ function updateSearchSelection(items) {
     items.forEach((item, i) => {
         item.classList.toggle("selected", i === searchSelectedIdx);
     });
-    // Scroll selected into view
     if (searchSelectedIdx >= 0 && items[searchSelectedIdx]) {
         items[searchSelectedIdx].scrollIntoView({ block: "nearest" });
     }
 }
 
-// ==========================================
-// Auto-init on DOM ready
-// ==========================================
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initSearchListeners);
 } else {

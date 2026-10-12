@@ -1,11 +1,12 @@
 // ==========================================
-// 11. APP ENTRY POINT & ROUTING
+// PROJECT THAI — APP ENTRY POINT & ROUTING
+// Living Portfolio & 3D Interactive Showcase HUD
 // ==========================================
 const STORAGE_THEME = "mr_thai_theme_v1";
 
 function switchTab(tabId) {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active", "active-menu"));
-    document.querySelectorAll("#view-tree3d, #view-galaxy, #view-grid, #view-menu, #view-simulator, #view-learning, #view-practice, #view-profile, #view-interview, #view-notebook, #view-projects").forEach(v => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("#view-tree3d, #view-galaxy, #view-grid, #view-profile, #view-projects").forEach(v => {
         if (v) {
             v.style.display = "none";
             v.classList.remove("view-enter");
@@ -22,7 +23,7 @@ function switchTab(tabId) {
     }
 
     if (tabId === 'tree3d' || tabId === 'galaxy') {
-        const tabEl = document.getElementById("tab-tree3d") || document.getElementById("tab-galaxy");
+        const tabEl = document.getElementById("tab-tree3d");
         if (tabEl) tabEl.classList.add("active");
         showView("view-tree3d");
         showView("view-galaxy");
@@ -35,7 +36,7 @@ function switchTab(tabId) {
             window.skillGalaxy3D.refreshNodeVisuals();
         }
     } else if (tabId === 'grid' || tabId === 'projects') {
-        const tabEl = document.getElementById("tab-grid") || document.getElementById("tab-projects");
+        const tabEl = document.getElementById("tab-grid");
         if (tabEl) tabEl.classList.add("active");
         showView("view-grid");
         showView("view-projects");
@@ -45,8 +46,6 @@ function switchTab(tabId) {
         if (window.PortfolioGrid) {
             window.PortfolioGrid.init();
             window.PortfolioGrid.render();
-        } else if (typeof renderProjectsView === 'function') {
-            renderProjectsView();
         }
     } else if (tabId === 'profile') {
         const tabEl = document.getElementById("tab-profile");
@@ -55,40 +54,15 @@ function switchTab(tabId) {
         if (window.PortfolioController) {
             window.PortfolioController.activeView = 'profile';
         }
-        if (typeof renderProfileView === 'function') renderProfileView();
-    } else if (tabId === 'menu') {
-        const tabEl = document.getElementById("tab-menu");
-        if (tabEl) tabEl.classList.add("active", "active-menu");
-        showView("view-menu");
+        if (typeof renderProfileView === 'function') {
+            renderProfileView();
+        }
     }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('tab');
-}
-
-function openTiengAnhRaTruong() {
-    window.open('https://tienganhratruong.com/dashboard', '_blank');
-}
-
-function updatePortalStats() {
-    const stats = calculateStats();
-    const portalRoadmap = document.getElementById("portal-roadmap-stat");
-    if (portalRoadmap) portalRoadmap.innerText = `${stats.completedTasks}/${stats.totalTasks} Hoàn thành`;
-
-    const portalCode = document.getElementById("portal-code-stat");
-    const solvedCount = profile.solvedProblems ? profile.solvedProblems.length : 0;
-    if (portalCode) portalCode.innerText = `${solvedCount}/${practiceExercises.length} Bài • ${profile.xp} XP`;
-
-    const portalRank = document.getElementById("portal-rank-stat");
-    if (portalRank) portalRank.innerText = `${stats.rank.code} • ${stats.percent}%`;
-    
-    const headerLvl = document.getElementById("header-level-badge");
-    if (headerLvl && stats.rank) headerLvl.innerText = stats.rank.title.includes(':') ? stats.rank.title.split(':')[1].trim() : stats.rank.title;
-    const headerXp = document.getElementById("header-xp-badge");
-    if (headerXp) headerXp.innerText = "⭐ " + (profile.xp || 0) + " XP";
-    const headerStreak = document.getElementById("header-streak-badge");
-    if (headerStreak && typeof studyStreak !== 'undefined') headerStreak.innerText = `🔥 ${studyStreak.count || 1} ngày`;
-
-    if (typeof renderProjectsView === 'function') renderProjectsView();
+    if (typeof AudioEngine !== 'undefined') {
+        AudioEngine.playSFX('tab');
+    }
 }
 
 function showToast(message) {
@@ -108,13 +82,11 @@ function escapeHtml(text) {
 }
 
 // ==========================================
-// DARK / LIGHT THEME TOGGLE (Phase 2)
+// DARK / LIGHT THEME TOGGLE
 // ==========================================
 function getPreferredTheme() {
-    // 1. Saved preference
     const saved = localStorage.getItem(STORAGE_THEME);
     if (saved) return saved;
-    // 2. System preference
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
         return "light";
     }
@@ -142,13 +114,14 @@ function toggleTheme() {
     const current = document.documentElement.getAttribute("data-theme") || "dark";
     const next = current === "dark" ? "light" : "dark";
     applyTheme(next);
-    // Play whoosh SFX for theme transition
-    if (typeof AudioEngine !== 'undefined') AudioEngine.playSFX('whoosh');
+    if (typeof AudioEngine !== 'undefined') {
+        AudioEngine.playSFX('whoosh');
+    }
     showToast(next === "light" ? "☀️ Chế độ sáng" : "🌙 Chế độ tối");
 }
 
 // ==========================================
-// SCROLL PROGRESS INDICATOR (Phase 2)
+// SCROLL PROGRESS INDICATOR
 // ==========================================
 function initScrollProgress() {
     const bar = document.getElementById("scroll-progress-bar");
@@ -178,7 +151,7 @@ function installPwaApp() {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
-                showToast("Đã cài đặt ứng dụng Edge AI Hub lên thiết bị của bạn!");
+                showToast("Đã cài đặt Project Thai Showcase lên thiết bị!");
             }
             deferredPrompt = null;
         });
@@ -186,14 +159,13 @@ function installPwaApp() {
 }
 
 // ==========================================
-// PWA SERVICE WORKER REGISTRATION (Phase 3)
+// PWA SERVICE WORKER REGISTRATION
 // ==========================================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
             .then((reg) => {
                 console.log('[PWA] Service Worker registered with scope:', reg.scope);
-                // Chủ động kiểm tra bản cập nhật mới nhất từ server
                 if (reg.update) reg.update();
             })
             .catch((err) => {
@@ -203,7 +175,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ==========================================
-// KHỞI CHẠY LẦN ĐẦU KHI DOM SẴN SÀNG
+// DOM READY INITIALIZER
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     // Apply saved theme
@@ -211,14 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Init scroll progress
     initScrollProgress();
-
-    // Existing init calls
-    renderQuote(0);
-    renderRoadmap();
-    renderNotes();
-    generateDailyDecision(false);
-    updatePortalStats();
-    updatePomoDisplay();
 
     // Living Portfolio 3.0: Core & Grid Initializers
     if (window.PortfolioData && window.PortfolioController) {
@@ -231,12 +195,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.PortfolioHUD) {
         window.PortfolioHUD.init();
     }
+    if (typeof renderProfileView === 'function') {
+        renderProfileView();
+    }
 });
 
 // Listen for system theme changes
 if (window.matchMedia) {
     window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
-        // Only auto-switch if user hasn't manually set preference
         if (!localStorage.getItem(STORAGE_THEME)) {
             applyTheme(e.matches ? "light" : "dark");
         }
@@ -244,15 +210,12 @@ if (window.matchMedia) {
 }
 
 // ==========================================
-// KEYBOARD SHORTCUTS (Phase 1 + 2)
+// KEYBOARD SHORTCUTS
 // ==========================================
 document.addEventListener("keydown", (e) => {
-    // Không kích hoạt shortcuts khi đang gõ trong input/textarea
     const tag = e.target.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target.isContentEditable) {
-        // Exception: Escape should always work to close overlays
         if (e.key === "Escape") {
-            // Close search if open
             if (typeof closeGlobalSearch === "function") {
                 const searchOverlay = document.getElementById("search-overlay");
                 if (searchOverlay && searchOverlay.classList.contains("open")) {
@@ -264,11 +227,7 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
-    // Không kích hoạt khi auth overlay đang hiện
-    const authOverlay = document.getElementById("auth-overlay");
-    if (authOverlay && !authOverlay.classList.contains("auth-hidden")) return;
-
-    // Ctrl+K — Mở tìm kiếm toàn cục
+    // Ctrl+K / Cmd+K — Mở tìm kiếm toàn cục
     if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         if (typeof openGlobalSearch === "function") {
@@ -277,16 +236,17 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
-    // Ctrl+S — Lưu sao lưu nhanh
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+    // Alt+N — Mở Quick Notes
+    if (e.altKey && (e.key === "n" || e.key === "N")) {
         e.preventDefault();
-        if (typeof exportBackupData === "function") exportBackupData();
+        if (window.QuickNotes) {
+            QuickNotes.open();
+        }
         return;
     }
 
-    // Escape — Đóng modal, drawer, overlay
+    // Escape — Đóng modal / overlays
     if (e.key === "Escape") {
-        // Close search overlay
         if (typeof closeGlobalSearch === "function") {
             const searchOverlay = document.getElementById("search-overlay");
             if (searchOverlay && searchOverlay.classList.contains("open")) {
@@ -294,19 +254,18 @@ document.addEventListener("keydown", (e) => {
                 return;
             }
         }
-        // Đóng CheatSheet drawer
-        const drawer = document.getElementById("cheatsheet-drawer");
-        if (drawer && drawer.classList.contains("open")) {
-            if (typeof closeCheatSheet === "function") closeCheatSheet();
+        if (window.QuickNotes && QuickNotes.isOpen && QuickNotes.isOpen()) {
+            QuickNotes.close();
             return;
         }
-        // Đóng các modal backdrop đang mở
-        document.querySelectorAll(".nb-modal-backdrop").forEach(m => {
-            if (m.style.display === "flex" || m.classList.contains("active")) {
-                m.style.display = "none";
-                m.classList.remove("active");
-            }
-        });
+        if (window.PortfolioHUD && PortfolioHUD.isOpen && PortfolioHUD.isOpen()) {
+            PortfolioHUD.close();
+            return;
+        }
+        if (window.PortfolioAdmin && PortfolioAdmin.isOpen && PortfolioAdmin.isOpen()) {
+            PortfolioAdmin.close();
+            return;
+        }
         return;
     }
 
@@ -316,21 +275,21 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
-    // Phím số 1-8 — Chuyển tab nhanh (không modifier)
+    // Phím số 1-3 — Chuyển tab nhanh
     if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         const tabMap = {
-            "1": "menu",
-            "2": "simulator",
-            "3": "learning",
-            "4": "practice",
-            "5": "projects",
-            "6": "interview",
-            "7": "notebook",
-            "8": "profile"
+            "1": "tree3d",
+            "2": "grid",
+            "3": "profile"
         };
         if (tabMap[e.key]) {
             switchTab(tabMap[e.key]);
-            showToast(`⌨️ Chuyển tab: ${tabMap[e.key].charAt(0).toUpperCase() + tabMap[e.key].slice(1)}`);
+            const names = {
+                "tree3d": "3D Skill Tree",
+                "grid": "Projects Grid",
+                "profile": "Profile & CV"
+            };
+            showToast(`⌨️ Chuyển tab: ${names[tabMap[e.key]]}`);
             return;
         }
     }
